@@ -1,0 +1,2482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GLITCH.EXE — AI Investigation Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #EFE6D3;
+    --paper-dark: #E3D6BA;
+    --paper-line: #C9BC9C;
+    --ink: #24211D;
+    --ink-soft: #55503F;
+    --stamp-red: #9C3B2E;
+    --folder-tab: #C9A66B;
+    --folder-tab-active: #EFE6D3;
+    --sticky: #F0C93D;
+    --good: #2e6b3e;
+
+    --blueprint-bg: #0E2233;
+    --blueprint-bg-2: #123049;
+    --blueprint-line: #6FD6FF;
+    --blueprint-dim: #3C6E88;
+    --blueprint-text: #D9F3FF;
+    --blueprint-accent: #FF7A5C;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: #1a1712;
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding: 28px 16px 60px;
+  }
+
+  .app{
+    width:100%;
+    max-width: 1040px;
+    background: linear-gradient(180deg, #d8ccae 0%, var(--paper) 40px, var(--paper) 100%);
+    border-radius: 6px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,0,0,0.15);
+    overflow:hidden;
+  }
+
+  /* ---------- HEADER ---------- */
+
+  header.masthead{
+    padding: 18px 28px 14px;
+    border-bottom: 2px solid var(--ink);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    flex-wrap: wrap;
+    gap:14px;
+  }
+  .masthead-left h1{
+    font-family:'Special Elite', cursive;
+    font-size: 28px;
+    letter-spacing: 1px;
+    margin:0;
+    color: var(--ink);
+  }
+  .masthead-left .sub{
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+
+  .masthead-right{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:8px;
+  }
+
+  .rank-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .rank-icon{
+    width:30px;height:30px;border-radius:50%;
+    background: var(--stamp-red); color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px; flex-shrink:0;
+    box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--ink);
+  }
+  .rank-text{ text-align:right; }
+  .rank-name{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; font-weight:600;
+    color: var(--ink);
+  }
+  .rank-xp{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-soft);
+  }
+  .xp-track{
+    width: 170px;
+    height: 7px;
+    background: var(--paper-dark);
+    border: 1px solid var(--ink);
+    margin-top: 4px;
+    position:relative;
+  }
+  .xp-fill{
+    height:100%;
+    background: var(--sticky);
+    width:0%;
+    transition: width 0.5s ease;
+  }
+
+  .badge-shelf{
+    display:flex;
+    gap:6px;
+  }
+  .badge-chip{
+    width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;
+    border:2px solid var(--paper-line);
+    background: var(--paper-dark);
+    opacity:0.4;
+    position:relative;
+    cursor:default;
+  }
+  .badge-chip.earned{
+    opacity:1;
+    border-color: var(--stamp-red);
+    background: var(--sticky);
+  }
+  .badge-chip .tip{
+    display:none;
+    position:absolute;
+    bottom: 38px; left:50%; transform:translateX(-50%);
+    background: var(--ink); color: var(--paper);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    padding:5px 8px;
+    border-radius:3px;
+    white-space:nowrap;
+    z-index:5;
+  }
+  .badge-chip:hover .tip{ display:block; }
+
+  .evidence-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    background: var(--ink);
+    color: var(--paper);
+    border:none;
+    padding: 7px 12px;
+    border-radius: 3px;
+    cursor:pointer;
+  }
+  .evidence-btn:hover{ background:#3a352a; }
+
+  /* ---------- LAYOUT ---------- */
+
+  .body-layout{
+    display:flex;
+    min-height: 560px;
+  }
+
+  nav.folders{
+    width: 226px;
+    flex-shrink:0;
+    background: var(--folder-tab);
+    padding: 14px 0;
+    border-right: 2px solid var(--ink);
+  }
+  .folder-group-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 1px;
+    text-transform:uppercase;
+    color: rgba(0,0,0,0.45);
+    padding: 8px 18px 4px;
+  }
+  .folder-tab{
+    display:block;
+    width:100%;
+    text-align:left;
+    background: transparent;
+    border:none;
+    border-bottom: 1px solid rgba(0,0,0,0.15);
+    padding: 12px 18px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #3a2f1c;
+    cursor:pointer;
+    position:relative;
+    transition: background 0.2s ease, padding-left 0.2s ease;
+  }
+  .folder-tab .fnum{ opacity:0.6; margin-right:8px; }
+  .folder-tab .fstatus{
+    display:block;
+    margin-top: 4px;
+    font-size: 9.5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .folder-tab.solved .fstatus{ color:var(--good); }
+  .folder-tab.partial .fstatus{ color:#7a5b1e; }
+  .folder-tab.unsolved .fstatus{ color:#7a5b1e; }
+  .folder-tab:hover{ padding-left: 24px; background: rgba(255,255,255,0.15); }
+  .folder-tab.active{
+    background: var(--folder-tab-active);
+    padding-left: 24px;
+    box-shadow: inset 4px 0 0 var(--stamp-red);
+  }
+
+  main.case-panel{
+    flex:1;
+    position:relative;
+    padding: 24px 30px 34px;
+    background: var(--paper);
+    overflow:hidden;
+  }
+
+  .case-panel.blueprint{
+    background: var(--blueprint-bg);
+  }
+
+  .stage-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--stamp-red);
+    margin: 18px 0 6px;
+  }
+  .stage-label:first-of-type{ margin-top:0; }
+  .case-panel.blueprint .stage-label{ color: var(--blueprint-accent); }
+
+  .case-title{
+    font-family:'Special Elite', cursive;
+    font-size: 21px;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .case-panel.blueprint .case-title{ color: var(--blueprint-text); }
+
+  .case-tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 1px;
+    text-transform:uppercase;
+    color: #fff;
+    background: var(--stamp-red);
+    padding: 2px 8px;
+    border-radius: 2px;
+    margin-bottom: 10px;
+  }
+  .case-panel.blueprint .case-tag{ background: var(--blueprint-accent); color: #1a1712; }
+
+  .case-narrative{
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+    max-width: 660px;
+    margin: 0;
+  }
+  .case-panel.blueprint .case-narrative{ color: var(--blueprint-text); opacity:0.9; }
+
+  .exhibit{
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 6px;
+  }
+  .case-panel.blueprint .exhibit{
+    background: rgba(111,214,255,0.05);
+    border: 1px solid var(--blueprint-dim);
+  }
+
+  .exhibit-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    text-transform:uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+  .case-panel.blueprint .exhibit-label{ color: var(--blueprint-dim); }
+
+  .xray-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.5px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 3px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition: transform 0.15s ease, background 0.2s ease;
+    margin-top: 8px;
+  }
+  .xray-btn:hover{ transform: translateY(-1px); background:#3a352a; }
+  .case-panel.blueprint .xray-btn{ background: var(--blueprint-accent); color: #1a1712; }
+  .xray-btn .dot{
+    width:8px; height:8px; border-radius:50%;
+    background: var(--stamp-red);
+  }
+  .case-panel.blueprint .xray-btn .dot{ background:#1a1712; }
+
+  .xray-explain{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--blueprint-text);
+    background: rgba(0,0,0,0.2);
+    border-left: 3px solid var(--blueprint-line);
+    padding: 12px 14px;
+    margin: 14px 0;
+    display:none;
+  }
+  .case-panel.blueprint .xray-explain{ display:block; }
+
+  .verdict{
+    margin-top: 16px;
+    display:none;
+  }
+  .case-panel.blueprint .verdict{ display:block; }
+  .verdict-q{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size: 13.5px;
+    color: var(--blueprint-text);
+    margin-bottom: 10px;
+  }
+  .verdict-opts{ display:flex; flex-direction:column; gap:8px; max-width: 520px; }
+  .verdict-opt{
+    text-align:left;
+    font-family:'Inter', sans-serif;
+    font-size: 13px;
+    background: rgba(111,214,255,0.06);
+    border: 1px solid var(--blueprint-dim);
+    color: var(--blueprint-text);
+    padding: 10px 14px;
+    border-radius: 4px;
+    cursor:pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .verdict-opt:hover{ background: rgba(111,214,255,0.14); }
+  .verdict-opt.correct{ border-color:#57C97A; background: rgba(87,201,122,0.15); }
+  .verdict-opt.wrong{ border-color: var(--blueprint-accent); background: rgba(255,122,92,0.12); }
+  .verdict-opt[disabled]{ cursor:default; }
+
+  .verdict-feedback{
+    margin-top: 12px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height:1.6;
+    color: var(--blueprint-text);
+    display:none;
+  }
+  .xp-toast{
+    display:inline-block;
+    margin-top:10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--sticky);
+    background: rgba(240,201,61,0.12);
+    border: 1px solid var(--sticky);
+    padding: 4px 10px;
+    border-radius: 3px;
+  }
+
+  svg text{ font-family:'IBM Plex Mono', monospace; }
+
+  .token-row{ display:flex; align-items:center; gap:10px; margin-bottom: 6px; }
+  .token-word{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    width: 150px;
+    flex-shrink:0;
+    color: var(--ink);
+  }
+  .case-panel.blueprint .token-word{ color: var(--blueprint-text); }
+  .token-bar-track{
+    flex:1;
+    height: 14px;
+    background: rgba(0,0,0,0.08);
+    border-radius: 3px;
+    overflow:hidden;
+  }
+  .case-panel.blueprint .token-bar-track{ background: rgba(255,255,255,0.06); }
+  .token-bar-fill{
+    height:100%;
+    background: var(--stamp-red);
+  }
+  .case-panel.blueprint .token-bar-fill{ background: var(--blueprint-line); }
+  .token-pct{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    width: 38px;
+    text-align:right;
+    color: var(--ink-soft);
+  }
+  .case-panel.blueprint .token-pct{ color: var(--blueprint-dim); }
+
+  /* ---------- CORRUPTION METER (Case 04) ---------- */
+
+  .meter-row{ display:flex; gap:22px; flex-wrap:wrap; margin-bottom:14px; }
+  .meter-readout{
+    flex:1; min-width:160px;
+    background: rgba(0,0,0,0.18);
+    border: 1px solid var(--blueprint-dim);
+    border-radius: 4px;
+    padding: 10px 14px;
+  }
+  .meter-readout .mr-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing:0.5px; text-transform:uppercase;
+    color: var(--blueprint-dim);
+  }
+  .meter-readout .mr-value{
+    font-family:'Special Elite', cursive;
+    font-size: 26px;
+    color: var(--blueprint-text);
+    margin-top:2px;
+  }
+  .meter-readout .mr-bar-track{
+    height:8px; background: rgba(255,255,255,0.08); border-radius:3px; margin-top:8px; overflow:hidden;
+  }
+  .meter-readout .mr-bar-fill{ height:100%; transition: width 0.25s ease; }
+  #accBar{ background: #57C97A; }
+  #fairBar{ background: var(--blueprint-accent); }
+
+  .meter-slider-wrap{ margin: 16px 0 8px; }
+  .meter-slider-wrap label{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--blueprint-text);
+    margin-bottom: 8px;
+  }
+  input[type=range].meter-slider{
+    width:100%; max-width:480px;
+    accent-color: var(--blueprint-accent);
+  }
+  .meter-hint{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--blueprint-dim);
+    margin-top: 6px;
+  }
+  .case-panel:not(.blueprint) .meter-static{
+    display:flex; gap:22px; flex-wrap:wrap;
+  }
+  .meter-static .ms-box{
+    background: rgba(255,255,255,0.5);
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    padding:10px 14px;
+    flex:1; min-width:150px;
+  }
+  .meter-static .ms-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--ink-soft); }
+  .meter-static .ms-value{ font-family:'Special Elite',cursive; font-size:22px; color:var(--ink); }
+
+  /* ---------- MISSION-SET MODULES ---------- */
+
+  .mission-card{
+    border: 1px solid var(--paper-line);
+    background: rgba(255,255,255,0.5);
+    border-radius: 5px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .mission-card.done{ border-color: var(--good); box-shadow: inset 3px 0 0 var(--good); }
+  .mission-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .mission-title{
+    font-family:'Special Elite', cursive;
+    font-size: 15.5px;
+    color: var(--ink);
+    margin:0;
+  }
+  .mission-status{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color: var(--ink-soft);
+  }
+  .mission-card.done .mission-status{ color: var(--good); }
+  .mission-body{ font-size:13.5px; line-height:1.55; color: var(--ink); }
+  .mission-explain{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height:1.6;
+    background: var(--paper-dark);
+    border-left: 3px solid var(--stamp-red);
+    padding: 10px 12px;
+    margin-top: 10px;
+    display:none;
+  }
+  .mission-explain.show{ display:block; }
+
+  .classify-item{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--paper-line);
+    flex-wrap:wrap;
+  }
+  .classify-item:last-child{ border-bottom:none; }
+  .classify-task{ font-size:13.5px; flex:1; min-width:180px; }
+  .classify-btns{ display:flex; gap:6px; }
+  .cbtn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 3px;
+    border: 1px solid var(--ink);
+    background: var(--paper-dark);
+    cursor:pointer;
+  }
+  .cbtn:hover{ background: var(--paper-line); }
+  .cbtn.chosen-ai{ background: var(--stamp-red); color:#fff; border-color:var(--stamp-red); }
+  .cbtn.chosen-human{ background: var(--ink); color:var(--paper); }
+  .classify-fb{
+    flex-basis:100%;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top:6px;
+    display:none;
+  }
+  .classify-fb.show{ display:block; }
+
+  .order-slots{ display:flex; gap:8px; flex-wrap:wrap; margin: 12px 0; min-height:42px; }
+  .order-slot{
+    width: 96px; height:36px;
+    border: 1px dashed var(--paper-line);
+    border-radius:4px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; color:var(--ink-soft);
+  }
+  .order-slot.filled{ border-style:solid; background:var(--paper-dark); color:var(--ink); }
+  .order-pool{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .order-chip{
+    padding: 8px 14px;
+    border: 1px solid var(--ink);
+    border-radius: 4px;
+    background: var(--paper-dark);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    cursor:pointer;
+  }
+  .order-chip:hover{ background: var(--paper-line); }
+  .order-chip.used{ opacity:0.3; cursor:default; pointer-events:none; }
+  .order-check-btn, .predict-check-btn, .mission-reset-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    background: var(--ink); color: var(--paper);
+    border:none; padding: 8px 14px; border-radius:3px; cursor:pointer; margin-top:6px; margin-right:8px;
+  }
+
+  .predict-table{ width:100%; border-collapse:collapse; margin: 10px 0; font-size:12.5px; }
+  .predict-table th, .predict-table td{
+    border: 1px solid var(--paper-line);
+    padding: 6px 10px;
+    text-align:left;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+  }
+  .predict-table th{ background: var(--paper-dark); }
+  .predict-opts{ display:flex; gap:8px; margin: 10px 0; flex-wrap:wrap; }
+
+  .promptlab-tabs{ display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+  .pl-tab{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    padding: 7px 12px;
+    border: 1px solid var(--ink);
+    border-radius: 3px 3px 0 0;
+    background: var(--paper-dark);
+    cursor:pointer;
+  }
+  .pl-tab.active{ background: var(--paper); border-bottom-color: var(--paper); font-weight:600; }
+  .pl-panel{ display:none; }
+  .pl-panel.active{ display:block; }
+  .pl-prompt{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    background: var(--paper-dark);
+    padding: 8px 10px;
+    border-radius:3px;
+    margin-bottom:8px;
+  }
+  .pl-output{
+    font-size: 13px;
+    line-height:1.55;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    padding: 10px 12px;
+  }
+  .pl-own-wrap textarea{
+    width:100%; max-width:520px; min-height:64px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    padding: 8px; border:1px solid var(--paper-line); border-radius:4px;
+    background: rgba(255,255,255,0.6);
+  }
+  .pl-criteria{ display:flex; gap:10px; flex-wrap:wrap; margin: 10px 0; }
+  .pl-crit-chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    padding: 4px 9px;
+    border-radius: 10px;
+    border: 1px solid var(--paper-line);
+    color: var(--ink-soft);
+  }
+  .pl-crit-chip.met{ background:var(--good); border-color:var(--good); color:#fff; }
+
+  footer.hint{
+    padding: 12px 28px;
+    border-top: 1px solid var(--paper-line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: var(--paper-dark);
+  }
+
+  /* ---------- EVIDENCE BOARD MODAL ---------- */
+
+  .board-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background: rgba(0,0,0,0.7);
+    z-index: 50;
+    align-items:flex-start;
+    justify-content:center;
+    padding: 30px 16px;
+    overflow-y:auto;
+  }
+  .board-overlay.open{ display:flex; }
+  .board-panel{
+    width:100%; max-width: 960px;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(0,0,0,0.08), transparent 60%),
+      #6b4a35;
+    border-radius: 6px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    padding: 22px 26px 30px;
+    position: relative;
+  }
+  .board-close{
+    position:absolute; top:16px; right:18px;
+    font-family:'IBM Plex Mono', monospace;
+    background: var(--ink); color:var(--paper);
+    border:none; padding:6px 12px; border-radius:3px; cursor:pointer; font-size:11px;
+  }
+  .board-title{
+    font-family:'Special Elite', cursive;
+    color: #F4EAD3;
+    font-size: 22px;
+    margin: 0 0 4px;
+  }
+  .board-sub{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: #E4D2B0;
+    margin-bottom: 18px;
+  }
+  #matchBoard{ position:relative; }
+  .board-cols{ display:flex; gap:40px; flex-wrap:wrap; position:relative; z-index:2; }
+  .board-col{ flex:1; min-width:260px; display:flex; flex-direction:column; gap:14px; }
+  .board-col-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing:1px; text-transform:uppercase;
+    color:#E4D2B0; margin-bottom:2px;
+  }
+  .clue-card{
+    background: var(--sticky);
+    color: #3a2f10;
+    font-family:'Inter', sans-serif;
+    font-size: 12.5px;
+    line-height:1.4;
+    padding: 12px 14px;
+    border-radius: 2px;
+    box-shadow: 2px 4px 8px rgba(0,0,0,0.35);
+    transform: rotate(-1deg);
+    cursor:pointer;
+    border: 2px solid transparent;
+  }
+  .clue-card:nth-child(even){ transform: rotate(1deg); background:#EFE6D3; }
+  .clue-card.locked{ opacity:0.35; cursor:default; filter:grayscale(1); }
+  .clue-card.selected{ border-color:#fff; box-shadow: 0 0 0 3px rgba(255,255,255,0.5); }
+  .clue-card.matched{ border-color: #57C97A; opacity:0.7; cursor:default; }
+  .clue-card .clue-quote{ font-style:italic; }
+  .clue-card .clue-src{ display:block; margin-top:6px; font-family:'IBM Plex Mono', monospace; font-size:9.5px; opacity:0.7; }
+
+  .diag-chip{
+    background: rgba(255,255,255,0.9);
+    color: var(--ink);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 12px 14px;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    cursor:pointer;
+    box-shadow: 1px 2px 5px rgba(0,0,0,0.3);
+  }
+  .diag-chip.selected{ border-color:#F0C93D; }
+  .diag-chip.matched{ border-color:#57C97A; opacity:0.6; cursor:default; }
+  .diag-chip.wrong-flash{ border-color:#c0392b; }
+
+  #boardSvg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; }
+  .board-progress{
+    font-family:'IBM Plex Mono', monospace;
+    color:#F4EAD3; font-size:12px; margin-top:18px;
+  }
+  .board-win{
+    margin-top:14px;
+    font-family:'IBM Plex Mono', monospace;
+    color:#57C97A; font-size:12.5px;
+    display:none;
+  }
+  .board-win.show{ display:block; }
+
+  @media (max-width: 680px){
+    .body-layout{ flex-direction:column; }
+    nav.folders{ width:100%; display:flex; overflow-x:auto; border-right:none; border-bottom:2px solid var(--ink); }
+    .folder-group-label{ display:none; }
+    .folder-tab{ width:auto; white-space:nowrap; border-bottom:none; border-right:1px solid rgba(0,0,0,0.15); }
+    .folder-tab.active{ box-shadow: inset 0 -4px 0 var(--stamp-red); padding-left:18px; }
+    .token-word{ width:100px; }
+    .masthead-right{ align-items:flex-start; width:100%; }
+    .board-cols{ flex-direction:column; gap:24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    * { transition: none !important; }
+  }
+
+/* =========================================================
+   GLITCH.EXE GAME LAYER — modern mobile-first tactical UI
+   ========================================================= */
+:root{
+  --bg:#070912;
+  --panel:#0d1220;
+  --panel2:#121a2b;
+  --line:#27324b;
+  --text:#eef3ff;
+  --muted:#8390aa;
+  --cyan:#55e6ff;
+  --violet:#9b7cff;
+  --green:#63f5a3;
+  --amber:#ffd166;
+  --red:#ff657a;
+}
+html,body{background:var(--bg)!important;color:var(--text)!important;}
+body{padding:0!important;display:block!important;overflow-x:hidden;background:
+ radial-gradient(circle at 15% 10%,rgba(85,230,255,.10),transparent 28%),
+ radial-gradient(circle at 85% 15%,rgba(155,124,255,.13),transparent 30%),
+ linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+ linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px)!important;
+ background-size:auto,auto,32px 32px,32px 32px!important;}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(transparent 49%,rgba(85,230,255,.018) 50%,transparent 51%);background-size:100% 8px;opacity:.5;z-index:0}
+.app{position:relative;z-index:1;max-width:1180px!important;margin:0 auto;min-height:100vh;background:rgba(7,9,18,.86)!important;border:1px solid #1d263a;border-radius:0!important;box-shadow:0 0 80px rgba(0,0,0,.55)!important;overflow:hidden}
+header.masthead{padding:16px 20px!important;border-bottom:1px solid var(--line)!important;background:rgba(10,14,25,.94);position:sticky;top:0;z-index:30;backdrop-filter:blur(14px);align-items:center!important}
+.masthead-left h1{font-family:'IBM Plex Mono',monospace!important;font-weight:700!important;font-size:22px!important;letter-spacing:2px!important;color:#fff!important;text-shadow:0 0 18px rgba(85,230,255,.28)}
+.masthead-left h1 span{color:var(--cyan)}
+.masthead-left .sub{color:var(--muted)!important;font-size:9px!important;letter-spacing:1.3px!important}
+.masthead-right{align-items:flex-end!important}
+.rank-row{gap:8px!important;flex-wrap:wrap;justify-content:flex-end}
+.rank-icon{width:34px!important;height:34px!important;background:linear-gradient(135deg,var(--violet),var(--cyan))!important;box-shadow:0 0 18px rgba(85,230,255,.18)!important;border:none!important}
+.rank-name,.rank-xp{color:var(--text)!important}
+.rank-name{font-size:11px!important}
+.rank-xp{color:var(--muted)!important}
+.xp-track{background:#070b14!important;border:1px solid var(--line)!important;height:6px!important;border-radius:99px!important}
+.xp-fill{background:linear-gradient(90deg,var(--violet),var(--cyan))!important;border-radius:99px}
+.badge-shelf{max-width:180px;overflow:hidden}
+.badge-chip{width:28px!important;height:28px!important;border:1px solid var(--line)!important;background:#121827!important;opacity:.45!important}
+.badge-chip.earned{opacity:1!important;background:rgba(99,245,163,.1)!important;border-color:var(--green)!important;box-shadow:0 0 12px rgba(99,245,163,.16)}
+.evidence-btn{background:#151d31!important;color:var(--text)!important;border:1px solid #33405d!important;border-radius:10px!important;padding:8px 11px!important;font-size:9px!important;box-shadow:inset 0 1px rgba(255,255,255,.04)}
+.evidence-btn:hover{background:#1b2740!important}
+.body-layout{min-height:calc(100vh - 74px)!important;display:grid!important;grid-template-columns:220px minmax(0,1fr)!important}
+nav.folders{width:auto!important;background:#090d18!important;border-right:1px solid var(--line)!important;padding:12px 8px!important;position:sticky;top:74px;height:calc(100vh - 74px);overflow:auto}
+.folder-group-label{color:#58657f!important;padding:12px 10px 6px!important;font-size:8px!important}
+.folder-tab{border:1px solid transparent!important;border-radius:10px!important;color:#b8c2d7!important;padding:11px 12px!important;margin:3px 0!important;background:transparent!important;font-family:'IBM Plex Mono',monospace!important;font-size:10px!important;transition:.18s!important}
+.folder-tab:hover{padding-left:16px!important;background:#111827!important}
+.folder-tab.active{background:linear-gradient(90deg,rgba(85,230,255,.12),rgba(155,124,255,.07))!important;border-color:#2d4564!important;box-shadow:inset 3px 0 var(--cyan),0 8px 20px rgba(0,0,0,.2)!important;padding-left:16px!important;color:#fff!important}
+.folder-tab .fnum{color:var(--cyan);opacity:.8!important}
+.folder-tab .fstatus{color:#697792!important}
+.folder-tab.solved .fstatus{color:var(--green)!important}.folder-tab.partial .fstatus{color:var(--amber)!important}
+.case-panel{padding:28px!important;background:radial-gradient(circle at 80% 0,rgba(155,124,255,.06),transparent 35%);color:var(--text)!important;min-width:0;position:relative;overflow:hidden}
+.case-panel:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,transparent 0 70%,rgba(85,230,255,.025) 70% 70.2%,transparent 70.2%);}
+.case-tag{color:var(--cyan)!important;font-family:'IBM Plex Mono',monospace!important;font-size:9px!important;letter-spacing:1.2px!important;border:1px solid #254052!important;background:rgba(85,230,255,.05)!important;padding:5px 8px!important;border-radius:999px!important}
+.case-title{font-family:'Inter',sans-serif!important;font-weight:800!important;letter-spacing:-1px!important;color:#fff!important;font-size:clamp(28px,4vw,46px)!important;line-height:1!important;margin:14px 0 10px!important}
+.case-narrative,.mission-body,.board-sub{color:#a9b4c9!important;line-height:1.65!important}
+.stage-label{font-family:'IBM Plex Mono',monospace!important;color:var(--muted)!important;font-size:8px!important;letter-spacing:1.5px!important;margin-top:22px!important}
+.exhibit,.mission-card,.verdict{background:linear-gradient(145deg,#0e1525,#0b101c)!important;border:1px solid #27344d!important;border-radius:16px!important;box-shadow:0 16px 40px rgba(0,0,0,.2)!important}
+.exhibit{padding:16px!important}
+.exhibit-label{color:#7f8da7!important;font-size:9px!important;letter-spacing:1px!important}
+.xray-btn,.order-check-btn,.mission-reset-btn{border-radius:10px!important;border:1px solid #36516b!important;background:#111c2c!important;color:#eaf7ff!important;min-height:44px!important;font-family:'IBM Plex Mono',monospace!important;font-size:10px!important;letter-spacing:.5px!important;box-shadow:0 8px 22px rgba(0,0,0,.18)!important}
+.xray-btn{background:linear-gradient(135deg,#142438,#152039)!important;border-color:#2e6980!important}
+.mission-card{padding:18px!important;margin:14px 0!important;position:relative;overflow:hidden}
+.mission-card:before{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(var(--violet),var(--cyan));opacity:.7}
+.mission-card.done{border-color:#25513e!important;background:linear-gradient(145deg,#0d1918,#0c121b)!important}
+.mission-head{display:flex!important;align-items:center;gap:10px;justify-content:space-between}
+.mission-title{font-size:16px!important;color:#fff!important}.mission-status{font-family:'IBM Plex Mono',monospace!important;color:var(--muted)!important;font-size:8px!important;text-transform:uppercase}
+.mission-card.done .mission-status{color:var(--green)!important}
+.cbtn,.verdict-opt,.pl-tab,.order-chip,.pl-crit-chip{background:#121b2c!important;border:1px solid #2a3852!important;color:#dbe5f6!important;border-radius:10px!important;min-height:44px!important;padding:10px 12px!important;font-family:'IBM Plex Mono',monospace!important;font-size:10px!important;transition:.15s!important}
+.cbtn:hover,.verdict-opt:hover,.order-chip:hover,.pl-tab:hover{transform:translateY(-1px);border-color:#5d78a4!important;background:#17243a!important}
+.cbtn.chosen-ai,.cbtn.chosen-human,.verdict-opt.correct{background:rgba(99,245,163,.1)!important;border-color:var(--green)!important;color:#b9ffd8!important}.verdict-opt.wrong{background:rgba(255,101,122,.08)!important;border-color:var(--red)!important}
+.order-pool,.order-slots,.predict-opts,.promptlab-tabs{display:flex!important;flex-wrap:wrap!important;gap:8px!important}
+.order-slot{background:#080d18!important;border:1px dashed #35425d!important;color:var(--cyan)!important;border-radius:10px!important;min-height:46px!important;padding:10px!important}
+.mission-explain,.classify-fb{background:#0a101c!important;border:1px solid #243047!important;border-radius:10px!important;color:#9eabc2!important}
+.pl-prompt{background:#070b14!important;border:1px solid #202c43!important;color:#8ea4c5!important;border-radius:10px!important;padding:12px!important}
+.pl-output{background:#111a2a!important;color:#e7edf8!important;border-radius:12px!important;border:1px solid #293a55!important;padding:14px!important}
+.pl-tab.active{background:linear-gradient(135deg,rgba(155,124,255,.22),rgba(85,230,255,.1))!important;border-color:#586aa0!important;color:#fff!important}
+.pl-crit-chip{min-height:auto!important;padding:7px 9px!important;font-size:8px!important}.pl-crit-chip.met{border-color:var(--green)!important;background:rgba(99,245,163,.1)!important;color:var(--green)!important}
+.pl-own-wrap textarea{background:#080d18!important;color:#eef3ff!important;border:1px solid #2c3953!important;border-radius:12px!important;min-height:120px!important;font-family:'IBM Plex Mono',monospace!important;font-size:13px!important}
+table{background:#0b111d!important;color:#dce5f4!important;border-color:#29374f!important}th{color:var(--cyan)!important;background:#111a2a!important}td{border-color:#202d44!important}
+/* game dock */
+.sim-dock{position:relative;z-index:5;margin:0 0 22px;border:1px solid #273650;border-radius:16px;overflow:hidden;background:#080d18;box-shadow:0 14px 36px rgba(0,0,0,.28)}
+.sim-top{height:34px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;font:8px 'IBM Plex Mono',monospace;letter-spacing:1px;color:#71809b;background:#0d1422;border-bottom:1px solid #202d43}
+.sim-live{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);margin-right:6px;animation:pulseLive 1.3s infinite}.sim-score{color:var(--cyan)}
+.sim-arena{height:150px;position:relative;background:radial-gradient(circle at center,rgba(85,230,255,.07),transparent 45%),linear-gradient(rgba(85,230,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(85,230,255,.025) 1px,transparent 1px);background-size:auto,24px 24px,24px 24px;touch-action:none}
+#simCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}.sim-crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:rgba(85,230,255,.15);font:20px 'IBM Plex Mono';pointer-events:none}.sim-help{position:absolute;right:9px;bottom:7px;color:#46536c;font:7px 'IBM Plex Mono';letter-spacing:1px;pointer-events:none}
+/* completion */
+.mission-complete-overlay{position:fixed;inset:0;background:rgba(3,5,10,.72);backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center;z-index:100;padding:18px}.mission-complete-overlay.open{display:flex}
+.mission-complete-card{width:min(420px,100%);background:linear-gradient(145deg,#10182a,#090e19);border:1px solid #3c4d70;border-radius:22px;padding:30px;text-align:center;box-shadow:0 30px 100px rgba(0,0,0,.6),0 0 60px rgba(85,230,255,.08);animation:popIn .22s ease}.complete-kicker{font:8px 'IBM Plex Mono';letter-spacing:2px;color:var(--cyan)}.complete-icon{font-size:40px;color:var(--green);text-shadow:0 0 30px rgba(99,245,163,.5);margin:12px}.mission-complete-card h2{font-size:26px;margin:0;color:#fff}.mission-complete-card p{color:#8d9ab2;font-size:13px;line-height:1.5}.complete-xp{font:700 18px 'IBM Plex Mono';color:var(--amber);margin:18px}.mission-complete-card button{width:100%;min-height:48px;border:1px solid #355a71;border-radius:12px;background:linear-gradient(90deg,#14283a,#1a203d);color:#eaffff;font:10px 'IBM Plex Mono';letter-spacing:1px}
+/* debrief / boss round */
+.module-check{margin:24px 0 4px;padding:20px;border:1px solid #4b3f74;border-radius:18px;background:radial-gradient(circle at 100% 0,rgba(155,124,255,.14),transparent 40%),#0b101c;position:relative;overflow:hidden}.module-check:before{content:"FINAL ROUND";display:block;color:#bcaeff;font:8px 'IBM Plex Mono';letter-spacing:2px;margin-bottom:7px}.module-check h3{margin:0 0 6px;color:#fff;font-size:21px}.module-check p{color:#8795ae;font-size:12px}.check-progress{height:5px;background:#080c15;border-radius:99px;overflow:hidden;margin:12px 0}.check-progress span{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));transition:.3s}.check-question{padding:15px;border:1px solid #283650;border-radius:14px;background:#0d1523}.check-question .scenario{font-size:13px;line-height:1.55;color:#e8eef9}.check-options{display:grid;gap:8px;margin-top:12px}.check-option{min-height:48px;text-align:left;padding:11px 13px;border-radius:11px;border:1px solid #2b3852;background:#111a2b;color:#dbe5f4;font:10px 'IBM Plex Mono';cursor:pointer}.check-option.correct{border-color:var(--green);background:rgba(99,245,163,.08)}.check-option.wrong{border-color:var(--red);background:rgba(255,101,122,.07)}.check-feedback{display:none;margin-top:10px;padding:10px;border-radius:10px;background:#080d17;color:#94a4bf;font-size:11px;line-height:1.5}.check-feedback.show{display:block}.check-result{display:none;text-align:center;padding:18px}.check-result.show{display:block}.check-result strong{font-size:22px;color:var(--green)}
+@keyframes pulseLive{50%{opacity:.35;transform:scale(.7)}}@keyframes popIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+@media(max-width:760px){
+ body{font-size:14px!important}.app{width:100%!important}.body-layout{display:block!important}.masthead-right{width:auto!important}.rank-row{gap:6px!important}.badge-shelf{display:none}.evidence-btn{font-size:8px!important}
+ nav.folders{position:sticky;top:69px;height:auto;display:flex!important;overflow-x:auto;z-index:25;border-right:0!important;border-bottom:1px solid var(--line)!important;padding:7px!important;gap:5px;scrollbar-width:none}.folder-tab{flex:0 0 auto!important;width:140px!important;margin:0!important}.folder-tab.active{box-shadow:inset 0 -3px var(--cyan)!important}
+ .case-panel{padding:18px 14px 80px!important}.case-title{font-size:31px!important}.case-narrative{font-size:13px!important}.sim-arena{height:165px}.mission-card{padding:14px!important}.mission-head{align-items:flex-start}.mission-title{font-size:14px!important}.cbtn,.verdict-opt,.order-chip{width:100%;min-height:48px!important}.order-pool,.order-slots{display:grid!important;grid-template-columns:1fr 1fr}.predict-opts{display:grid!important}.pl-tab{flex:1;min-width:80px}.board-cols{flex-direction:column!important}.mission-complete-card{padding:24px}
+}
+@media(prefers-reduced-motion:reduce){#simCanvas{display:none}.sim-arena{background:#0b101c!important}}
+
+
+/* ===== GAMEPLAY REDESIGN: ROBOT RUN + TARGET INTERACTIONS ===== */
+.sim-dock-inline{
+  float:right;
+  width:270px;
+  margin:0 0 18px 22px;
+  position:relative;
+  z-index:4;
+}
+.robot-dock{
+  margin:0;
+  border-color:#34486a;
+  box-shadow:0 18px 50px rgba(0,0,0,.35),0 0 35px rgba(85,230,255,.05);
+}
+.robot-arena{height:210px!important;overflow:hidden;cursor:crosshair}
+.robot-arena canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.robot-start{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  padding:7px 10px;border:1px solid rgba(85,230,255,.35);border-radius:999px;
+  background:rgba(5,10,20,.72);backdrop-filter:blur(5px);
+  color:#dffaff;font:700 9px 'IBM Plex Mono',monospace;letter-spacing:1px;
+  pointer-events:none;white-space:nowrap;transition:opacity .18s;
+}
+.robot-dock .sim-help{font-size:7px;color:#70809a}
+.robot-dock .sim-score{font-size:8px}
+.robot-dock .sim-score-value{color:#63f5a3;font-weight:700}
+.robot-dock .sim-best{color:#9b7cff}
+
+/* Make the content feel like a game board, not a worksheet. */
+.case-panel{
+  background:
+    radial-gradient(circle at 85% 8%,rgba(155,124,255,.07),transparent 25%),
+    radial-gradient(circle at 20% 80%,rgba(85,230,255,.045),transparent 28%),
+    #0a0f1b!important;
+  color:#e8eef8!important;
+}
+.case-title{color:#f7fbff!important;letter-spacing:-.5px}
+.case-tag{background:linear-gradient(90deg,#7357ff,#35c9ff)!important;color:#fff!important;border-radius:999px!important;border:0!important}
+.case-narrative{color:#aebbd0!important}
+.stage-label{color:#6fdbff!important;font-size:8px!important}
+.exhibit{
+  background:rgba(13,21,36,.88)!important;
+  border:1px solid #263750!important;
+  border-radius:16px!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+.exhibit-label{color:#6f829e!important}
+.mission-card{
+  position:relative;
+  background:linear-gradient(145deg,#111a2b,#0c1421)!important;
+  border:1px solid #273650!important;
+  border-radius:18px!important;
+  padding:16px!important;
+  box-shadow:0 10px 25px rgba(0,0,0,.18);
+  overflow:hidden;
+}
+.mission-card:after{
+  content:"";position:absolute;inset:auto -20% -45% auto;width:150px;height:100px;
+  background:radial-gradient(circle,rgba(85,230,255,.07),transparent 70%);pointer-events:none;
+}
+.mission-card.done{border-color:#3b8d72!important;box-shadow:0 0 0 1px rgba(99,245,163,.08),0 10px 25px rgba(0,0,0,.18)}
+.mission-head{margin-bottom:3px!important}
+.run-label{
+  font:700 8px 'IBM Plex Mono',monospace;letter-spacing:1.6px;color:#8c9ab2;
+}
+.mission-title{font:700 20px Inter,sans-serif!important;color:#f4f8ff!important;margin:0 0 8px!important}
+.mission-status{font-size:8px!important;color:#63f5a3!important}
+.intel-brief{margin:0 0 12px;color:#8fa0b8}
+.intel-brief summary{
+  display:inline-flex;align-items:center;gap:7px;cursor:pointer;list-style:none;
+  padding:6px 9px;border:1px solid #2c3b56;border-radius:999px;
+  font:700 8px 'IBM Plex Mono',monospace;letter-spacing:1px;color:#7edfff;
+  background:#0b1321;
+}
+.intel-brief summary::-webkit-details-marker{display:none}
+.intel-brief summary:before{content:"+";font-size:12px}
+.intel-brief[open] summary:before{content:"−"}
+.intel-brief .mission-body{margin-top:8px;color:#aab7ca!important;font-size:12px!important;line-height:1.5!important}
+.classify-item{
+  display:grid!important;grid-template-columns:1fr auto;gap:10px!important;
+  padding:13px 0!important;border-bottom:1px solid #202d43!important;
+}
+.classify-task{font-weight:600;color:#e8eef8!important}
+.classify-btns{display:flex;gap:7px;align-items:center}
+.cbtn,.verdict-opt,.order-chip{
+  position:relative!important;
+  border-radius:12px!important;
+  border:1px solid #33445f!important;
+  background:#101b2d!important;
+  color:#dfe9f7!important;
+  transition:transform .12s,box-shadow .12s,border-color .12s!important;
+}
+.cbtn{font:700 10px 'IBM Plex Mono',monospace!important;padding:9px 12px!important}
+.cbtn:before,.target-choice:before{
+  content:"⊙";display:inline-block;margin-right:6px;color:#55e6ff;
+  font-size:13px;vertical-align:-1px;
+}
+.cbtn:hover,.target-choice:hover,.order-chip:hover{
+  transform:translateY(-2px) scale(1.01)!important;
+  border-color:#55e6ff!important;
+  box-shadow:0 0 20px rgba(85,230,255,.12)!important;
+}
+.cbtn.chosen-ai,.cbtn.chosen-human{
+  background:linear-gradient(135deg,#173a4a,#16223a)!important;
+  border-color:#63f5a3!important;color:#fff!important;
+}
+.verdict{
+  background:linear-gradient(145deg,#0d1727,#0a101c)!important;
+  border:1px solid #263750!important;border-radius:18px!important;padding:16px!important;
+}
+.verdict-q{font-size:15px!important;line-height:1.4!important;color:#f4f8ff!important}
+.target-kicker{display:block;color:#63f5a3;font:700 8px 'IBM Plex Mono';letter-spacing:1.5px;margin-bottom:6px}
+.verdict-opts{max-width:none!important}
+.verdict-opt{text-align:left!important;padding:13px 14px!important;font-size:12px!important}
+.verdict-opt.correct{background:rgba(99,245,163,.12)!important;border-color:#63f5a3!important}
+.verdict-opt.wrong{background:rgba(255,105,130,.08)!important;border-color:#ff6982!important}
+.order-pool,.order-slots{gap:8px!important}
+.order-chip{padding:10px 12px!important;font-weight:700!important}
+.xray-btn{
+  border-radius:999px!important;background:linear-gradient(90deg,#7458ff,#32c9ff)!important;
+  color:#fff!important;font-weight:700!important;border:0!important;
+  box-shadow:0 8px 24px rgba(90,100,255,.2);
+}
+.xray-btn:hover{transform:translateY(-2px)}
+/* Hide long explanations until the player asks for them. */
+.mission-explain{border-radius:12px!important;background:#0a1321!important;border:1px solid #263750!important;color:#9fb0c8!important}
+@media(max-width:900px){
+  .sim-dock-inline{float:none;width:100%;margin:0 0 14px}
+  .robot-arena{height:175px!important}
+  .case-panel{padding:16px 14px 70px!important}
+}
+@media(max-width:600px){
+  .robot-arena{height:155px!important}
+  .mission-title{font-size:18px!important}
+  .classify-item{grid-template-columns:1fr!important}
+  .classify-btns{display:grid!important;grid-template-columns:1fr 1fr;width:100%}
+  .cbtn{width:100%!important;min-height:48px!important}
+  .verdict-opt{min-height:54px!important}
+  .sim-top{height:32px}
+}
+
+
+/* ===== MENU ROBOT: starts below the last file, draggable when grabbed ===== */
+nav.folders{display:flex!important;flex-direction:column!important;}
+.menu-game-dock{order:999;display:block!important;width:100%!important;margin:14px 0 0!important;float:none!important;position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;z-index:20!important;transition:box-shadow .18s,transform .18s;}
+.menu-game-dock .sim-dock{margin:0!important;width:100%!important;}
+.robot-drag-handle{cursor:grab!important;user-select:none;touch-action:none!important;}
+.robot-drag-handle:active,.menu-game-dock.dragging .robot-drag-handle{cursor:grabbing!important;}
+.drag-hint{color:#52627c;font-size:7px;letter-spacing:.7px;}
+.menu-game-dock.dragging{box-shadow:0 18px 50px rgba(0,0,0,.5)!important;}
+/* After a drag the game becomes a floating mini-window; its starting position is still in the menu. */
+.menu-game-dock[style*="position: fixed"]{width:270px!important;}
+/* Keep the menu and game visually part of the same GLITCH.EXE HUD. */
+nav.folders .folder-group-label{font-family:'Rajdhani',sans-serif!important;font-weight:600;letter-spacing:1.5px;color:#64738f!important;}
+nav.folders .folder-tab{font-family:'Rajdhani',sans-serif!important;font-size:14px!important;line-height:1.05!important;letter-spacing:.2px;}
+nav.folders .folder-tab .fstatus{font-family:'IBM Plex Mono',monospace!important;font-size:7px!important;letter-spacing:1px;}
+.case-panel,.mission-card,.exhibit,.verdict,.board-panel{color:#e8eef8!important;}
+.board-panel{background:linear-gradient(145deg,#0e1525,#090f1a)!important;border:1px solid #2a3a55!important;color:#e8eef8!important;box-shadow:0 24px 70px rgba(0,0,0,.5)!important;}
+.board-title{color:#fff!important}.board-sub,.board-col-label{color:#9eabc2!important}
+@media(max-width:760px){
+  nav.folders{display:block!important;overflow-y:visible!important;overflow-x:hidden!important;height:auto!important;max-height:none!important;position:relative!important;padding:8px!important;}
+  nav.folders .folder-group-label{margin-top:4px!important;}
+  nav.folders .folder-tab{width:100%!important;display:block!important;margin:3px 0!important;min-height:52px!important;text-align:left!important;}
+  .menu-game-dock{width:100%!important;margin:10px 0 2px!important;}
+  .menu-game-dock .robot-arena{height:175px!important;}
+  .menu-game-dock[style*="position: fixed"]{width:min(290px,calc(100vw - 12px))!important;}
+}
+
+/* ===== V5 MENU / FLOATING GAME FIX ===== */
+html,body{min-height:100%;height:auto!important;overflow-x:hidden!important;overflow-y:auto!important}
+.app{overflow:visible!important;min-height:100vh!important}
+.body-layout{min-height:0!important;align-items:start!important}
+nav.folders{
+  position:relative!important;
+  top:auto!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  align-self:start!important;
+  scrollbar-width:none!important;
+}
+nav.folders::-webkit-scrollbar{display:none!important}
+/* The menu is a full page column, not a little scrolling viewport. */
+.menu-game-dock{
+  position:relative!important;
+  width:100%!important;
+  margin:18px 0 10px!important;
+  transform:none;
+  border:1px solid #2b3a58!important;
+  border-radius:14px!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.28)!important;
+}
+.menu-game-dock .sim-dock{width:100%!important}
+/* Make it obvious the game can be picked up and moved without adding a button. */
+.menu-game-dock .robot-drag-handle{
+  cursor:grab!important;
+  background:linear-gradient(90deg,#111a2c,#0d1422)!important;
+  position:relative!important;
+  padding-left:30px!important;
+}
+.menu-game-dock .robot-drag-handle:before{
+  content:'⠿';
+  position:absolute;left:11px;top:50%;transform:translateY(-53%);
+  color:#55e6ff;font-size:15px;letter-spacing:-3px;opacity:.8;
+}
+.menu-game-dock .robot-drag-handle:after{
+  content:'MOVE';
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  color:#53627d;font:700 7px 'IBM Plex Mono',monospace;letter-spacing:1.2px;
+}
+.menu-game-dock.dragging .robot-drag-handle{cursor:grabbing!important;box-shadow:0 0 0 1px rgba(85,230,255,.25) inset!important}
+/* Once dragged, it becomes a clean floating game window. */
+.menu-game-dock[style*="position: fixed"]{
+  width:300px!important;
+  margin:0!important;
+  z-index:200!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.62),0 0 0 1px rgba(85,230,255,.12)!important;
+}
+.menu-game-dock[style*="position: fixed"] .sim-dock{border-radius:14px!important}
+@media(max-width:900px){
+  .body-layout{display:block!important}
+  nav.folders{width:100%!important;padding:10px 8px 16px!important}
+  .case-panel{width:100%!important}
+}
+@media(max-width:600px){
+  nav.folders{display:block!important;overflow:visible!important;height:auto!important;max-height:none!important;position:relative!important}
+  nav.folders .folder-tab{width:100%!important;display:block!important}
+  .menu-game-dock{width:100%!important;margin-top:14px!important}
+  .menu-game-dock .robot-arena{height:180px!important}
+  .menu-game-dock[style*="position: fixed"]{
+    width:min(300px,calc(100vw - 16px))!important;
+    max-width:calc(100vw - 16px)!important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="masthead">
+    <div class="masthead-left">
+      <h1>GLITCH<span>.EXE</span></h1>
+      <div class="sub">AI INVESTIGATION LAB</div>
+    </div>
+    <div class="masthead-right">
+      <div class="rank-row">
+        <button class="evidence-btn" id="openBoardBtn">🧩 CASE BOARD</button>
+        <div class="badge-shelf" id="badgeShelf"></div>
+        <div class="rank-icon" id="rankIcon">🔍</div>
+        <div class="rank-text">
+          <div class="rank-name" id="rankName">Rookie Analyst</div>
+          <div class="rank-xp" id="rankXp">0 XP</div>
+          <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="body-layout">
+    <nav class="folders" id="folders"></nav>
+    <main class="case-panel" id="casePanel"></main>
+  </div>
+
+  <footer class="hint">GLITCH.EXE is a playable AI investigation network. Learn the system, collect intel, crack the case, then prove you can spot the mechanism in the wild.</footer>
+</div>
+
+<div class="mission-complete-overlay" id="missionCompleteOverlay">
+  <div class="mission-complete-card">
+    <div class="complete-kicker">OPERATION UPDATE</div>
+    <div class="complete-icon">✦</div>
+    <h2 id="completeTitle">OBJECTIVE CLEARED</h2>
+    <p id="completeText">Evidence added to your case file.</p>
+    <div class="complete-xp" id="completeXp">+35 XP</div>
+    <button id="completeContinue">CONTINUE OPERATION →</button>
+  </div>
+</div>
+
+<!-- EVIDENCE BOARD -->
+<div class="board-overlay" id="boardOverlay">
+  <div class="board-panel">
+    <button class="board-close" id="closeBoardBtn">CLOSE ✕</button>
+    <div class="board-title">The Evidence Board</div>
+    <div class="board-sub">Click a clue, then click the diagnosis it belongs to. Solve case files to unlock more clues.</div>
+    <div id="matchBoard">
+      <svg id="boardSvg"></svg>
+      <div class="board-cols">
+        <div class="board-col">
+          <div class="board-col-label">Clues pulled from the field</div>
+          <div id="clueCol"></div>
+        </div>
+        <div class="board-col">
+          <div class="board-col-label">Diagnoses</div>
+          <div id="diagCol"></div>
+        </div>
+      </div>
+    </div>
+    <div class="board-progress" id="boardProgress">0 / 4 clues connected</div>
+    <div class="board-win" id="boardWin">✔ Board fully connected. Every clue traces back to a mechanism, not a mystery.</div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   MODULES DATA
+   ========================================================= */
+
+const MISSION_XP = 35;
+const CASE_XP = 90;
+
+const RANKS = [
+  {min:0,   name:'Rookie Analyst',       icon:'🔍'},
+  {min:150, name:'Junior Investigator',  icon:'🗂'},
+  {min:350, name:'Senior Investigator',  icon:'🕵'},
+  {min:600, name:'Chief Investigator',   icon:'⭐'},
+];
+
+const modules = [
+
+/* ---------------- TRAINING FILE 01: MEET THE MACHINE ---------------- */
+{
+  id: 'meet-machine',
+  type: 'missionset',
+  tag: 'Training File 01 — Fundamentals',
+  title: 'Meet the Machine',
+  intro: `Before you can investigate an AI system, you need to know what one actually is.
+  Three short drills. No math required.`,
+  badge: { icon: '⚙️', name: 'Systems Badge' },
+  missions: [
+    {
+      id: 'mm1',
+      kind: 'classify',
+      title: 'Mission 1 — Human or Machine?',
+      body: `For each task below, call it: can today's AI do this well, or is it still mostly a human strength? Pick one, then read why.`,
+      items: [
+        { task: 'Recognizing a face in a photo', answer:'ai',
+          explain: 'AI is very strong here — trained on millions of labeled faces, this is one of the most mature capabilities.' },
+        { task: 'Predicting exactly what the stock market does tomorrow', answer:'human',
+          explain: 'Neither humans nor AI can do this reliably — markets are close to random at short timescales. AI can spot patterns, not predict chaos.' },
+        { task: 'Sorting emails into folders by topic', answer:'ai',
+          explain: 'A textbook AI task: lots of labeled examples, a clear pattern to learn (word patterns → category).' },
+        { task: 'Understanding sarcasm in a text message from a friend', answer:'human',
+          explain: 'AI often misses sarcasm because it relies on tone, shared history, and context it doesn\'t have access to — it can guess, but unreliably.' },
+        { task: 'Writing a technically correct poem about heartbreak', answer:'ai',
+          explain: 'AI can produce fluent, technically competent poetry easily — it has seen huge amounts of poetry. Whether it\'s a *good* poem is a different question.' },
+      ]
+    },
+    {
+      id: 'mm2',
+      kind: 'order',
+      title: 'Mission 2 — What\'s Actually Happening?',
+      body: `Every AI system you\'ll investigate follows the same basic pipeline. Click the pieces below, in order, to assemble it.`,
+      pool: ['Model', 'Training', 'Output', 'Data', 'Input'],
+      correctOrder: ['Data', 'Training', 'Model', 'Input', 'Output'],
+      explain: `Data goes in, the system is Trained on it to find patterns, producing a Model. Later, new
+      Input is fed to that model, which produces an Output. Every case file you investigate is really
+      a dispute about one of these five stages — usually "what was actually in the Data."`
+    },
+    {
+      id: 'mm3',
+      kind: 'predict',
+      title: 'Mission 3 — The Prediction Machine',
+      body: `Here\'s a tiny training set an AI model might learn from. Study the pattern, then predict the new case.`,
+      table: {
+        headers: ['Fruit', 'Color', 'Firmness', 'Ripe?'],
+        rows: [
+          ['Avocado A', 'Dark green/black', 'Soft', 'Yes'],
+          ['Avocado B', 'Bright green', 'Hard', 'No'],
+          ['Avocado C', 'Dark green/black', 'Soft', 'Yes'],
+          ['Avocado D', 'Bright green', 'Hard', 'No'],
+          ['Avocado E', 'Dark green/black', 'Medium', 'Yes'],
+        ]
+      },
+      question: 'New avocado: dark green/black, soft. Ripe or not?',
+      options: [
+        { text: 'Ripe', correct: true },
+        { text: 'Not ripe', correct: false },
+        { text: 'Impossible to tell', correct: false },
+      ],
+      explain: `You just did what a model does: you didn\'t "know" avocados — you matched a pattern
+      (dark + soft → ripe, every time in the data) and predicted forward. That\'s it. No understanding
+      of fruit biology required, just consistent correlation. This is also exactly how a model can be
+      confidently wrong: if the pattern in its training data was misleading, it repeats the mistake
+      with just as much apparent confidence.`
+    }
+  ]
+},
+
+/* ---------------- TRAINING FILE 02: PROMPT LAB ---------------- */
+{
+  id: 'prompt-lab',
+  type: 'missionset',
+  tag: 'Training File 02 — Prompting',
+  title: 'Prompt Lab',
+  intro: `Forget memorizing "17 prompt engineering techniques." Run the experiment yourself and watch
+  the pattern emerge.`,
+  badge: { icon: '🧪', name: 'Prompting Badge' },
+  missions: [
+    {
+      id: 'pl1',
+      kind: 'promptlab',
+      title: 'Mission 1 — Same Task, Three Prompts',
+      body: `Task: get an AI to explain photosynthesis. Flip between these three real prompt attempts
+      and compare what came back.`,
+      versions: [
+        {
+          label: 'V1',
+          prompt: 'Explain photosynthesis.',
+          output: `"Photosynthesis is the biological process by which chlorophyll-containing organisms
+          convert light energy into chemical energy, synthesizing carbohydrates from carbon dioxide
+          and water while releasing oxygen as a byproduct, primarily via the light-dependent and
+          light-independent (Calvin cycle) reactions..."`
+        },
+        {
+          label: 'V2',
+          prompt: 'Explain photosynthesis to a 10-year-old.',
+          output: `"Photosynthesis is how plants make their own food! They take in sunlight, water, and
+          air, and turn it into sugar for energy — kind of like a plant's kitchen. As a bonus, they
+          also let out oxygen, which is what we breathe!"`
+        },
+        {
+          label: 'V3',
+          prompt: 'Explain photosynthesis to a 10-year-old using a simple analogy and no scientific jargon.',
+          output: `"Think of a leaf like a tiny solar-powered kitchen. Sunlight is the power switch,
+          water and air are the ingredients, and sugar is the meal the plant cooks up for itself.
+          The 'exhaust' from this kitchen happens to be oxygen — which is lucky for us, since that's
+          the air we breathe!"`
+        }
+      ],
+      explain: `Same model, same underlying knowledge — three completely different outputs. Nothing
+      about the AI changed between versions. What changed was the instruction: audience (V2), then
+      audience + format constraint (V3). That's the whole trick: <b>context + constraints + audience +
+      format → better outputs.</b>`
+    },
+    {
+      id: 'pl2',
+      kind: 'promptown',
+      title: 'Mission 2 — Write Your Own',
+      body: `New task: get an AI to explain how compound interest works. Write a prompt below. We\'ll
+      score it against the same four levers you just saw — not by running a real model, but by
+      checking which levers your prompt actually pulls.`,
+      criteria: [
+        { key:'audience', label:'Names an audience', test: t => /kid|child|beginner|10.year|teen|student|grandma|someone who/i.test(t) },
+        { key:'format', label:'Sets a format/length', test: t => /analog(y|ies)|short|sentence|bullet|no jargon|simple|step.by.step|example/i.test(t) },
+        { key:'goal', label:'States the actual goal', test: t => /explain|teach|show|help.*understand/i.test(t) },
+        { key:'constraint', label:'Adds a real constraint', test: t => /without|no (technical|scientific|medical)?\s*jargon|avoid|under \\d+|in \\d+ (words|sentences|bullets)|keep it (short|simple)/i.test(t) },
+      ]
+    }
+  ]
+},
+
+/* ---------------- CASE 01: BIAS ---------------- */
+{
+  id: 'hiring',
+  type: 'case',
+  render: 'scatter',
+  tag: 'Case File 01 — Automated Hiring',
+  title: 'The Applicant Who Never Gets Called',
+  narrative: `A staffing platform's screening model has rejected the same well-qualified
+  applicant, Dana R., four times across four different job posts. HR swears the model is
+  "just looking at qualifications." Your job: pull the model's actual scoring and find out
+  what it's really weighing.`,
+  exhibitLabel: 'EXHIBIT A — SCORING SAMPLE (12 APPLICANTS)',
+  badge: { icon: '⚖️', name: 'Bias Badge' },
+  clue: { quote: '"The model barely uses experience at all — it\'s overwhelmingly driven by a school-prestige score."', src: 'Exhibit A, Model Weights' },
+  diagnosis: 'A proxy variable (school prestige) standing in for wealth and class background',
+  data: [
+    {name:"Dana R.", exp:7, prestige:2, decision:"reject"},
+    {name:"J. Alvarez", exp:6, prestige:2, decision:"reject"},
+    {name:"P. Okafor", exp:8, prestige:3, decision:"reject"},
+    {name:"S. Kim", exp:3, prestige:9, decision:"hire"},
+    {name:"M. Chen", exp:2, prestige:8, decision:"hire"},
+    {name:"T. Novak", exp:4, prestige:9, decision:"hire"},
+    {name:"L. Fischer", exp:5, prestige:7, decision:"hire"},
+    {name:"R. Osei", exp:9, prestige:2, decision:"reject"},
+    {name:"A. Patel", exp:3, prestige:8, decision:"hire"},
+    {name:"K. Dubois", exp:6, prestige:3, decision:"reject"},
+    {name:"W. Santos", exp:2, prestige:9, decision:"hire"},
+    {name:"E. Haddad", exp:8, prestige:2, decision:"reject"},
+  ],
+  axisX: "Years of relevant experience →",
+  axisY: "↑ School \"prestige\" score",
+  xrayExplain: `X-RAY — MODEL WEIGHTS<br>
+  Experience ................. weight 0.06<br>
+  School Prestige Score ...... weight 0.81<br>
+  Age bracket ................. weight 0.11<br><br>
+  The model barely uses experience at all. It is overwhelmingly driven by a "school
+  prestige" score — which correlates with tuition cost, which correlates with family
+  income. It's not evaluating skill. It's using prestige as a stand-in (a "proxy") for
+  class background, and rejecting anyone who didn't attend an expensive school —
+  regardless of how qualified they are.`,
+  verdictQ: "What is actually driving the rejections?",
+  verdictOpts: [
+    {text:"Years of experience — Dana just hasn't worked long enough", correct:false,
+      feedback:"Not quite. Look at the weights again — experience barely moves the score at all."},
+    {text:"A \"school prestige\" score acting as a proxy for wealth/class background", correct:true,
+      feedback:"That's it. This is a classic proxy variable: the model never sees \"income\" directly, but prestige score encodes it anyway."},
+    {text:"Random noise in the scoring system", correct:false,
+      feedback:"The pattern is too consistent to be noise — high prestige score reliably predicts \"hire\" regardless of experience."},
+  ]
+},
+
+/* ---------------- CASE 02: HALLUCINATION ---------------- */
+{
+  id: 'hallucination',
+  type: 'case',
+  render: 'tokens',
+  tag: 'Case File 02 — The Confident Chatbot',
+  title: 'The Citation That Doesn\'t Exist',
+  narrative: `A law student asked an AI assistant for a precedent supporting a tenant's-rights
+  argument. It replied instantly, in full confidence, with a real-sounding case name, year,
+  and court. The case does not exist. Nobody can find it — because it was never real. Find out
+  how the model produced something so specific while being completely wrong.`,
+  exhibitLabel: 'EXHIBIT B — GENERATION TRACE ("...ruled in Whitfield v. ")',
+  badge: { icon: '🔮', name: 'Truth Badge' },
+  clue: { quote: '"91% confidence on the first word, dropping to 47% by the year — a plausible shape, not a checked fact."', src: 'Exhibit B, Generation Trace' },
+  diagnosis: 'High confidence measuring word-plausibility, not fact-checked truth',
+  data: [
+    {word: "Whitfield", pct: 91},
+    {word: "v.", pct: 97},
+    {word: "Marsden", pct: 68},
+    {word: "Housing", pct: 54},
+    {word: "Authority", pct: 61},
+    {word: "(2014)", pct: 47},
+  ],
+  xrayExplain: `X-RAY — WHAT "CONFIDENCE" ACTUALLY MEANS HERE<br>
+  Each bar above is not "how true is this" — it's "how statistically likely is this
+  next word, given everything before it." The model has read millions of real case
+  citations, so it knows exactly what a *plausible* one sounds like: a surname, "v.",
+  another surname, an institution, a year. It generated something that pattern-matches
+  perfectly to real citations. It has no database it's checking against — it never
+  "looked up" whether Whitfield v. Marsden is real, because that's not what it does.`,
+  verdictQ: "What does the model's high confidence actually indicate?",
+  verdictOpts: [
+    {text:"That the citation is real and was verified", correct:false,
+      feedback:"That's the trap. High confidence here never meant \"checked and verified\" — the model has no way to check."},
+    {text:"That this is a statistically likely-sounding sequence of words, not a fact-checked answer", correct:true,
+      feedback:"Exactly. Fluency and confidence are about word patterns, not truth. This is the core mechanism behind hallucination."},
+    {text:"That the model is malfunctioning", correct:false,
+      feedback:"It's not broken — it's doing exactly what it's built to do (predict likely text). That's precisely the problem."},
+  ]
+},
+
+/* ---------------- CASE 03: PRIVACY / RECOMMENDER ---------------- */
+{
+  id: 'recommender',
+  type: 'case',
+  render: 'embedding',
+  tag: 'Case File 03 — The Recommendation That Felt Like Surveillance',
+  title: '"It\'s Listening To Me"',
+  narrative: `A user watched three videos about vintage typewriter repair — a genuinely obscure
+  hobby — and the next day their feed recommended a niche typewriter-ribbon shop that they
+  swear they never searched for or mentioned out loud. They're convinced their phone's
+  microphone is spying on them. Your job: check the actual recommendation engine, not the
+  conspiracy.`,
+  exhibitLabel: 'EXHIBIT C — EMBEDDING MAP (WHAT THE SYSTEM ACTUALLY SAW)',
+  badge: { icon: '🕸️', name: 'Privacy Badge' },
+  clue: { quote: '"The ribbon-shop ad sits inside the same tight cluster as the three watched videos — no audio data anywhere in the pipeline."', src: 'Exhibit C, Embedding Map' },
+  diagnosis: 'Closeness in embedding space to already-watched content, not surveillance',
+  data: [
+    {name:"Typewriter repair pt.1", x:0.72, y:0.66, watched:true},
+    {name:"Typewriter repair pt.2", x:0.78, y:0.60, watched:true},
+    {name:"Ribbon spool history", x:0.81, y:0.70, watched:true},
+    {name:"Ribbon shop ad", x:0.83, y:0.64, watched:false, recommended:true},
+    {name:"Fountain pen review", x:0.55, y:0.40, watched:false},
+    {name:"Mechanical keyboards", x:0.40, y:0.35, watched:false},
+    {name:"Cooking: pasta night", x:0.10, y:0.85, watched:false},
+    {name:"Travel vlog: Lisbon", x:0.08, y:0.15, watched:false},
+    {name:"Gym routine", x:0.20, y:0.55, watched:false},
+  ],
+  xrayExplain: `X-RAY — EMBEDDING SPACE<br>
+  Every video gets converted into a point in this space based on its content — words in
+  the title/transcript, who else watched it, what it's tagged with. Videos about closely
+  related things end up near each other, with no audio, location, or microphone data
+  involved at all.<br><br>
+  The three watched videos cluster tightly. The "ribbon shop" ad sits inside that same
+  cluster — because it shares vocabulary and viewer overlap with obscure typewriter content,
+  not because anything was overheard. Niche interests produce *tiny* clusters, which makes
+  the recommendation feel eerily specific — it's precision, not surveillance.`,
+  verdictQ: "What actually caused the eerily specific recommendation?",
+  verdictOpts: [
+    {text:"The phone's microphone picked up a conversation", correct:false,
+      feedback:"No microphone data is used anywhere in this system — check the exhibit again, it's built entirely from watch history."},
+    {text:"Closeness in embedding space to videos the user already watched", correct:true,
+      feedback:"Right. Niche interests form small, tight clusters — so recommendations from that cluster feel unnervingly precise, even though it's just similarity math."},
+    {text:"Coincidence — the algorithm picked it at random", correct:false,
+      feedback:"Not random — the ad sits measurably closer to the watched cluster than every other video in the exhibit."},
+  ]
+},
+
+/* ---------------- CASE 04: THE TRADE-OFF (corruption meter) ---------------- */
+{
+  id: 'tradeoff',
+  type: 'case',
+  render: 'slider',
+  tag: 'Case File 04 — The Trade-Off',
+  title: 'The Fix That Broke Something Else',
+  narrative: `A platform's content-moderation model was flagged for treating one community more
+  harshly than others. The team cranked up a "fairness correction" to close the gap — and a
+  week later, complaints spiked that obviously-fine posts were getting removed. Nobody lied
+  about the fairness number. Nobody lied about the accuracy drop, either. Your job: pull the
+  actual lever and see what everybody was too rushed to look at — both numbers at once.`,
+  exhibitLabel: 'EXHIBIT D — LIVE MODERATION MODEL (EXPERIMENTAL)',
+  badge: { icon: '⚗️', name: 'Trade-off Badge' },
+  clue: { quote: '"At threshold 10 the fairness gap nearly vanishes — and overall accuracy falls from 94% to 58%."', src: 'Exhibit D, Fairness Correction Sweep' },
+  diagnosis: 'A genuine trade-off: correcting one metric (fairness) degrades another (accuracy)',
+  sliderData: [
+    {t:0,  accuracy:94, fairnessGap:38},
+    {t:1,  accuracy:93, fairnessGap:34},
+    {t:2,  accuracy:92, fairnessGap:29},
+    {t:3,  accuracy:90, fairnessGap:25},
+    {t:4,  accuracy:88, fairnessGap:21},
+    {t:5,  accuracy:85, fairnessGap:17},
+    {t:6,  accuracy:81, fairnessGap:13},
+    {t:7,  accuracy:77, fairnessGap:10},
+    {t:8,  accuracy:71, fairnessGap:6},
+    {t:9,  accuracy:65, fairnessGap:4},
+    {t:10, accuracy:58, fairnessGap:2},
+  ],
+  xrayExplain: `X-RAY — WHY THIS HAPPENS<br>
+  The "fairness correction" works by shifting the model's decision threshold differently
+  per group, so both groups get flagged at closer to the same rate. Push that shift harder
+  and the gap between groups really does shrink — that part is real, not spin.<br><br>
+  But the threshold shift also pulls the model away from the pattern it actually learned
+  from the data, so it starts making more plain mistakes on <i>everyone</i> — that's the
+  accuracy drop. There is no setting on this slider where the gap hits zero AND accuracy
+  stays at 94%. That combination doesn't exist in this system. Every fix sits somewhere on
+  this curve — the question isn't "how do we escape the trade-off," it's "where on this
+  curve is defensible, and who gets to decide that."`,
+  verdictQ: "What's the most accurate way to describe this system's fairness problem?",
+  verdictOpts: [
+    {text:"It's a bug — a well-built model shouldn't have any trade-off at all", correct:false,
+      feedback:"Not a bug. The trade-off shows up precisely because the correction works — it's a structural feature of this fix, not sloppy code."},
+    {text:"Fairness and accuracy trade off against each other here, so the choice of setting is a judgment call, not a technical one", correct:true,
+      feedback:"Exactly right. The data can tell you the shape of the curve. It can't tell you which point on it is the right one to pick — that's a values decision, made in the open, not a bug to be engineered away."},
+    {text:"The team should just leave the slider at 0 and ignore the fairness gap", correct:false,
+      feedback:"That's also a choice on the curve — just one that ignores the harm on the other side. \"Do nothing\" isn't neutral, it's picking t=0."},
+  ]
+},
+
+];
+
+/* =========================================================
+   FINAL DEBRIEFS — scenario-based boss rounds, not quiz screens
+   ========================================================= */
+const moduleChecks = {
+  'meet-machine': [
+    {s:'A model sees thousands of examples, learns a recurring pattern, then uses that pattern on a new input. What is it doing?',o:['Understanding the world like a human','Pattern matching from learned data','Checking a database for the exact answer'],a:1,f:'The model is using a learned pattern to make a prediction; it does not need human-like understanding.'},
+    {s:'Which chain best matches the basic AI pipeline you just built?',o:['Data → Training → Model → Input → Output','Input → Output → Training → Data → Model','Model → Data → Output → Training → Input'],a:0,f:'Training uses data to produce a model; later, new input goes through the model to produce an output.'},
+    {s:'A model is confidently wrong because its training data contains a misleading pattern. What is the key lesson?',o:['Confidence guarantees truth','A model can reproduce patterns without understanding them','Models only fail when the code is broken'],a:1,f:'A model can be very consistent and still wrong when the pattern it learned is misleading.'}
+  ],
+  'prompt-lab': [
+    {s:'You want an explanation aimed at a 13-year-old. Which instruction adds the most useful context?',o:['Explain this.','Explain this to a 13-year-old using a simple analogy.','Explain this with maximum technical detail.'],a:1,f:'Naming the audience gives the model a target for vocabulary, examples and complexity.'},
+    {s:'Two prompts go to the same model but produce very different answers. What changed?',o:['The model secretly became smarter','The instruction/context changed','The internet changed the model instantly'],a:1,f:'The model can respond differently because the prompt changes the context and constraints it is given.'},
+    {s:'Which prompt is strongest for a beginner?',o:['Explain photosynthesis.','Explain photosynthesis to a beginner in 5 bullet points using one everyday analogy.','Photosynthesis. Make it good.'],a:1,f:'The second prompt gives an audience, format and concrete constraints instead of leaving the target vague.'}
+  ],
+  'hiring': [
+    {s:'The hiring model gives school prestige a weight of 0.81 and experience a weight of 0.06. What is driving the result?',o:['Experience is the main signal','School prestige is overwhelmingly influential','The decisions are random'],a:1,f:'The displayed weights show that school prestige contributes far more to the score than experience.'},
+    {s:'Why is school prestige called a proxy here?',o:['It is a direct measurement of skill','It stands in for another factor, such as wealth/class background','It is a random number added to the model'],a:1,f:'The model does not directly use income, but prestige correlates with it and therefore acts as a stand-in.'},
+    {s:'If a model looks fair on paper but a proxy reproduces a social disadvantage, what should investigators do?',o:['Only inspect the final accuracy number','Trace which features are actually driving decisions','Assume the model is neutral because it is automated'],a:1,f:'AI investigation means looking beneath the headline metric to the features and mechanisms producing the decision.'}
+  ],
+  'hallucination': [
+    {s:'The chatbot gives a 91% score to a word in a fake citation. What does that score mean here?',o:['91% chance the citation is legally real','91% likelihood of that next word given the context','91% chance a human checked the source'],a:1,f:'The generation trace is about statistical word prediction, not external fact verification.'},
+    {s:'A citation sounds extremely specific and confident. What is the safest move?',o:['Trust it because specificity means accuracy','Verify the citation against a reliable source','Assume all AI citations are fake'],a:1,f:'Specificity and fluency are not proof. Important claims should be checked against a source.'},
+    {s:'Why did the model produce a fake case that sounded real?',o:['It intentionally decided to lie','It generated a plausible pattern without checking whether the fact existed','It searched the court database and found a typo'],a:1,f:'The model generated a sequence that fit learned citation patterns without actually verifying the case.'}
+  ],
+  'recommender': [
+    {s:'The ribbon-shop ad sits inside the same tight cluster as the watched typewriter videos. What does that suggest?',o:['The phone microphone must have heard a conversation','The system found similar content in its representation space','The ad was chosen completely at random'],a:1,f:'The exhibit shows the recommendation near the watched-content cluster, which is a similarity signal.'},
+    {s:'What is an embedding doing in this case?',o:['Turning content into a representation where related items can be near each other','Recording everything the microphone hears','Encrypting a user password'],a:0,f:'Embeddings represent content as points/vectors so similarity between items can be measured.'},
+    {s:'Why can a niche recommendation feel like surveillance even when it is not?',o:['Niche interests can create very tight similarity clusters','Algorithms can always hear private conversations','Specific recommendations are necessarily illegal'],a:0,f:'A small, tight cluster can make a similarity-based recommendation feel eerily specific.'}
+  ],
+  'tradeoff': [
+    {s:'At threshold 10, the fairness gap is 2 while accuracy is 58%. What does this show?',o:['The correction fixed everything with no downside','Improving one metric can worsen another','Accuracy and fairness are always identical'],a:1,f:'The displayed sweep shows the fairness gap shrinking while overall accuracy also falls.'},
+    {s:'If leaving the slider at 0 keeps accuracy high but leaves a large fairness gap, is that neutral?',o:['Yes, doing nothing is not a decision','No, it is still a choice about which outcome to accept','Yes, because only the algorithm decides'],a:1,f:'Choosing the default setting still chooses a point on the trade-off curve and its consequences.'},
+    {s:'What can the graph tell the team, and what can it not decide by itself?',o:['It shows the trade-off; it cannot decide which values are most defensible','It decides the morally correct threshold automatically','It cannot show any useful information'],a:0,f:'The graph describes consequences. Deciding which trade-off is acceptable involves human judgment.'}
+  ]
+};
+
+/* =========================================================
+   STATE
+   ========================================================= */
+
+const state = {
+  xp: 0,
+  completedMissions: new Set(),   // mission ids
+  solvedCases: new Set(),         // case module ids
+  badgedModules: new Set(),       // module ids whose badge is earned
+  matchedClues: new Set(),        // case ids matched on evidence board
+  passedChecks: new Set(),         // modules whose final debrief is passed
+};
+
+let activeIndex = 0;
+
+/* =========================================================
+   XP / RANK / BADGES
+   ========================================================= */
+
+function addXP(amount){
+  state.xp += amount;
+  renderHeader();
+}
+
+function currentRank(){
+  let r = RANKS[0];
+  for (const rk of RANKS) if (state.xp >= rk.min) r = rk;
+  return r;
+}
+
+function nextRank(){
+  const idx = RANKS.indexOf(currentRank());
+  return RANKS[idx+1] || null;
+}
+
+function renderHeader(){
+  const rank = currentRank();
+  const next = nextRank();
+  document.getElementById('rankIcon').textContent = rank.icon;
+  document.getElementById('rankName').textContent = rank.name;
+  document.getElementById('rankXp').textContent = next
+    ? `${state.xp} XP — ${next.min - state.xp} to ${next.name}`
+    : `${state.xp} XP — max rank`;
+  const pct = next ? Math.round(((state.xp - rank.min) / (next.min - rank.min)) * 100) : 100;
+  document.getElementById('xpFill').style.width = pct + '%';
+
+  const shelf = document.getElementById('badgeShelf');
+  shelf.innerHTML = '';
+  modules.forEach(m => {
+    const earned = state.badgedModules.has(m.id);
+    const chip = document.createElement('div');
+    chip.className = 'badge-chip' + (earned ? ' earned' : '');
+    chip.innerHTML = `${m.badge.icon}<span class="tip">${m.badge.name}${earned ? '' : ' — locked'}</span>`;
+    shelf.appendChild(chip);
+  });
+}
+
+function moduleCoreDone(m){
+  if (m.type === 'case') return state.solvedCases.has(m.id);
+  if (m.type === 'missionset') return m.missions.every(ms => state.completedMissions.has(ms.id));
+  return false;
+}
+function moduleFullyDone(m){ return moduleCoreDone(m) && state.passedChecks.has(m.id); }
+function checkBadge(m){
+  if (moduleFullyDone(m) && !state.badgedModules.has(m.id)) state.badgedModules.add(m.id);
+}
+
+/* =========================================================
+   NAV
+   ========================================================= */
+
+function renderFolders(){
+  const nav = document.getElementById('folders');
+  const oldGame = nav.querySelector('.menu-game-dock');
+  const wasFloating = oldGame && getComputedStyle(oldGame).position === 'fixed';
+  const savedGamePos = wasFloating ? {left:oldGame.style.left, top:oldGame.style.top, zIndex:oldGame.style.zIndex} : null;
+  nav.innerHTML = '';
+  let lastGroup = null;
+  modules.forEach((m, i) => {
+    const group = m.type === 'missionset' ? 'TRAINING FILES' : 'CASE FILES';
+    if (group !== lastGroup){
+      const lbl = document.createElement('div');
+      lbl.className = 'folder-group-label';
+      lbl.textContent = group;
+      nav.appendChild(lbl);
+      lastGroup = group;
+    }
+    const done = moduleFullyDone(m);
+    let partial = false;
+    if (m.type === 'missionset'){
+      const doneCount = m.missions.filter(ms => state.completedMissions.has(ms.id)).length;
+      partial = doneCount > 0 && doneCount < m.missions.length;
+    }
+    const btn = document.createElement('button');
+    btn.className = 'folder-tab' + (i === activeIndex ? ' active' : '') +
+      (done ? ' solved' : (partial ? ' partial' : ' unsolved'));
+    const statusText = done ? '✓ cleared' : (partial ? 'in progress' : 'play');
+    btn.innerHTML = `<span class="fnum">${String(i+1).padStart(2,'0')}</span>${m.title}
+      <span class="fstatus">${statusText}</span>`;
+    btn.onclick = () => { activeIndex = i; renderAll(); };
+    nav.appendChild(btn);
+  });
+
+  // Robot Run lives directly under the last file in the menu.
+  const gameDock = document.createElement('div');
+  gameDock.className = 'sim-dock-inline menu-game-dock';
+  nav.appendChild(gameDock);
+  if (savedGamePos){
+    gameDock.style.position='fixed';
+    gameDock.style.left=savedGamePos.left;
+    gameDock.style.top=savedGamePos.top;
+    gameDock.style.right='auto';
+    gameDock.style.bottom='auto';
+    gameDock.style.zIndex=savedGamePos.zIndex || '200';
+  }
+}
+
+
+/* =========================================================
+   PLAYABLE BACKGROUND: ROBOT RUN
+   A tiny Flappy-Bird-style side game. It is optional, continuous,
+   touch-friendly, and deliberately separate from the lesson content.
+   ========================================================= */
+let simState = {score:0, best:0, raf:null, active:false};
+
+function renderSimDock(){
+  const existing = document.querySelector('.sim-dock-inline');
+  if (!existing) return;
+  existing.innerHTML = `
+    <div class="sim-dock robot-dock">
+      <div class="sim-top robot-drag-handle">
+        <div><span class="sim-live"></span> ROBOT RUN <span class="drag-hint">· DRAG</span></div>
+        <div class="sim-score"><span class="sim-score-value">${simState.score}</span> BEST <span class="sim-best">${simState.best}</span></div>
+      </div>
+      <div class="sim-arena robot-arena">
+        <canvas class="sim-canvas-local"></canvas>
+        <div class="robot-start">TAP TO FLY</div>
+        <div class="sim-help">TAP / SPACE = BOOST</div>
+      </div>
+    </div>`;
+  startRobotRun(existing.querySelector('.sim-canvas-local'), existing);
+  enableRobotDrag(existing);
+} 
+
+function enableRobotDrag(root){
+  const handle=root.querySelector('.robot-drag-handle');
+  if(!handle || handle.dataset.dragReady) return;
+  handle.dataset.dragReady='1';
+  let dragging=false, sx=0, sy=0, ox=0, oy=0;
+  handle.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse' && e.button!==0) return;
+    dragging=true; handle.setPointerCapture?.(e.pointerId);
+    const r=root.getBoundingClientRect(); sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    root.classList.add('dragging');
+    e.preventDefault();
+  });
+  handle.addEventListener('pointermove',e=>{
+    if(!dragging) return;
+    const w=root.offsetWidth, h=root.offsetHeight;
+    let x=ox+e.clientX-sx, y=oy+e.clientY-sy;
+    x=Math.max(6,Math.min(window.innerWidth-w-6,x));
+    y=Math.max(6,Math.min(window.innerHeight-h-6,y));
+    root.style.position='fixed'; root.style.left=x+'px'; root.style.top=y+'px';
+    root.style.right='auto'; root.style.bottom='auto'; root.style.margin='0';
+    root.style.zIndex='80';
+  });
+  const stop=()=>{dragging=false;root.classList.remove('dragging')};
+  handle.addEventListener('pointerup',stop); handle.addEventListener('pointercancel',stop);
+}
+
+function startRobotRun(canvas, root){
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const arena = canvas.parentElement;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let w=0,h=0,last=0,started=false,dead=false,raf=0;
+  let robot={x:58,y:90,vy:0,r:12};
+  let gates=[],distance=0,spawnTimer=0;
+  const gravity=0.42, boost=-7.0, speed=2.4;
+
+  function resize(){
+    w=arena.clientWidth; h=arena.clientHeight;
+    canvas.width=w*dpr; canvas.height=h*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    robot.x=Math.max(42,Math.min(68,w*.22));
+    if(!started) robot.y=h*.48;
+  }
+  resize();
+  window.addEventListener('resize',resize,{passive:true});
+
+  function reset(){
+    robot.y=h*.48; robot.vy=0; gates=[]; distance=0; spawnTimer=0;
+    simState.score=0; root.querySelector('.sim-score-value').textContent='0';
+    root.querySelector('.robot-start').textContent='TAP TO FLY';
+    root.querySelector('.robot-start').style.opacity='1';
+    started=false; dead=false;
+  }
+  function flap(){
+    if(dead){ reset(); return; }
+    started=true; robot.vy=boost;
+    root.querySelector('.robot-start').style.opacity='0';
+  }
+  function spawnGate(){
+    const gap=Math.max(72,Math.min(105,h*.48));
+    const top=18+Math.random()*Math.max(10,h-gap-36);
+    gates.push({x:w+20,top,gap,passed:false});
+  }
+
+  function drawRobot(){
+    ctx.save();
+    ctx.translate(robot.x,robot.y);
+    ctx.rotate(Math.max(-.35,Math.min(.5,robot.vy*.035)));
+    // antenna
+    ctx.strokeStyle='#63f5a3'; ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(3,-17);ctx.stroke();
+    ctx.fillStyle='#63f5a3';ctx.beginPath();ctx.arc(3,-18,2.5,0,Math.PI*2);ctx.fill();
+    // body
+    ctx.fillStyle='#b9c7da';ctx.strokeStyle='#55e6ff';ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(-13,-9,26,20,5);ctx.fill();ctx.stroke();
+    // screen face
+    ctx.fillStyle='#07111e';ctx.beginPath();ctx.roundRect(-8,-5,16,10,3);ctx.fill();
+    ctx.fillStyle='#55e6ff';ctx.beginPath();ctx.arc(-4,0,2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(4,0,2,0,Math.PI*2);ctx.fill();
+    // little jet
+    ctx.fillStyle='#ffcf5a';ctx.beginPath();ctx.moveTo(-13,4);ctx.lineTo(-20,8);ctx.lineTo(-13,8);ctx.fill();
+    ctx.restore();
+  }
+
+  function draw(t){
+    ctx.clearRect(0,0,w,h);
+    // sky / scrolling grid
+    const grad=ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,'#081323');grad.addColorStop(1,'#0b1020');
+    ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='rgba(85,230,255,.055)';ctx.lineWidth=1;
+    const off=(t*.025)%24;
+    for(let x=-24+off;x<w;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+    for(let y=0;y<h;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+    // stars / data sparks
+    for(let i=0;i<12;i++){
+      const x=(i*53-(t*.018)%53+w)%w, y=(i*31)%Math.max(1,h);
+      ctx.fillStyle=i%2?'rgba(155,124,255,.35)':'rgba(85,230,255,.35)';
+      ctx.fillRect(x,y,2,2);
+    }
+
+    if(started && !dead){
+      robot.vy+=gravity;
+      robot.y+=robot.vy;
+      spawnTimer+=16;
+      if(spawnTimer>145){spawnGate();spawnTimer=0}
+      gates.forEach(g=>g.x-=speed);
+      gates=gates.filter(g=>g.x>-45);
+      gates.forEach(g=>{
+        if(!g.passed && g.x+30<robot.x){g.passed=true;simState.score++;simState.best=Math.max(simState.best,simState.score);
+          root.querySelector('.sim-score-value').textContent=simState.score;
+          root.querySelector('.sim-best').textContent=simState.best;
+        }
+      });
+      const hitWall=robot.y-12<0 || robot.y+12>h;
+      const hitGate=gates.some(g=>robot.x+10>g.x && robot.x-10<g.x+30 &&
+        (robot.y-10<g.top || robot.y+10>g.top+g.gap));
+      if(hitWall||hitGate){
+        dead=true;
+        root.querySelector('.robot-start').textContent='CRASH — TAP TO RETRY';
+        root.querySelector('.robot-start').style.opacity='1';
+      }
+    }
+
+    // gates
+    gates.forEach(g=>{
+      const x=g.x;
+      const pipe=(px,py,pw,ph)=>{
+        ctx.fillStyle='#182b42';ctx.strokeStyle='#55e6ff';ctx.lineWidth=2;
+        ctx.fillRect(px,py,pw,ph);ctx.strokeRect(px,py,pw,ph);
+        ctx.fillStyle='rgba(85,230,255,.12)';ctx.fillRect(px+4,py+4,pw-8,ph-8);
+      };
+      pipe(x,0,30,g.top);
+      pipe(x,g.top+g.gap,30,h-g.top-g.gap);
+      ctx.fillStyle='#63f5a3';
+      ctx.fillRect(x-3,g.top-5,36,5);ctx.fillRect(x-3,g.top+g.gap,36,5);
+    });
+
+    drawRobot();
+    if(!started || dead){
+      ctx.fillStyle='rgba(255,255,255,.06)';
+      ctx.fillRect(0,h-1,w,1);
+    }
+    raf=requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('pointerdown',e=>{e.preventDefault();flap()},{passive:false});
+  canvas.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+  window.addEventListener('keydown',e=>{if(e.code==='Space' && document.activeElement?.tagName!=='TEXTAREA'){e.preventDefault();flap()}});
+  raf=requestAnimationFrame(draw);
+}
+
+function showCompletion(title,text,xp){
+  const o=document.getElementById('missionCompleteOverlay'); if(!o)return;
+  document.getElementById('completeTitle').textContent=title;document.getElementById('completeText').textContent=text;document.getElementById('completeXp').textContent=`+${xp} XP`;o.classList.add('open');
+}
+document.addEventListener('click',e=>{if(e.target.id==='completeContinue')document.getElementById('missionCompleteOverlay').classList.remove('open')});
+
+function renderAll(){
+  renderFolders();
+  renderHeader();
+  renderSimDock();
+  const m = modules[activeIndex];
+  if (m.type === 'case') renderCaseModule(m);
+  else renderMissionSetModule(m);
+}
+
+/* =========================================================
+   CASE MODULES (paper / X-RAY / verdict)
+   ========================================================= */
+
+function renderCaseModule(c){
+  const panel = document.getElementById('casePanel');
+  panel.className = 'case-panel';
+  panel.innerHTML = `
+    <span class="case-tag">${c.tag}</span>
+    <h2 class="case-title">${c.title}</h2>
+    <div class="stage-label">FIELD NOTE</div>
+    <p class="case-narrative">${c.narrative}</p>
+    <div class="stage-label">OPEN EVIDENCE</div>
+    <div class="exhibit">
+      <div class="exhibit-label">${c.exhibitLabel}</div>
+      <div id="exhibitBody"></div>
+    </div>
+    <button class="xray-btn" id="xrayBtn"><span class="dot"></span> OPEN X-RAY</button>
+    <div class="stage-label" style="display:none" id="expLabel">X-RAY</div>
+    <div class="xray-explain" id="xrayExplain">${c.xrayExplain}</div>
+    <div class="stage-label" style="display:none" id="reflLabel">YOUR CALL</div>
+    <div class="verdict" id="verdict">
+      <div class="verdict-q"><span class="target-kicker">MAKE THE CALL</span>${c.verdictQ}</div>
+      <div class="verdict-opts" id="verdictOpts"></div>
+      <div class="verdict-feedback" id="verdictFeedback"></div>
+    </div>
+  `;
+
+  renderExhibit(c, false);
+
+  document.getElementById('xrayBtn').onclick = () => {
+    const isX = panel.classList.toggle('blueprint');
+    document.getElementById('xrayBtn').innerHTML = isX
+      ? '<span class="dot"></span> CLOSE X-RAY'
+      : '<span class="dot"></span> OPEN X-RAY';
+    document.getElementById('expLabel').style.display = isX ? 'block' : 'none';
+    document.getElementById('reflLabel').style.display = isX ? 'block' : 'none';
+    renderExhibit(c, isX);
+  };
+
+  const optsWrap = document.getElementById('verdictOpts');
+  c.verdictOpts.forEach(opt => {
+    const b = document.createElement('button');
+    b.className = 'verdict-opt target-choice';
+    b.textContent = opt.text;
+    b.onclick = () => {
+      document.querySelectorAll('.verdict-opt').forEach(el => el.setAttribute('disabled', 'true'));
+      b.classList.add(opt.correct ? 'correct' : 'wrong');
+      const fb = document.getElementById('verdictFeedback');
+      fb.innerHTML = opt.feedback;
+      fb.style.display = 'block';
+      if (opt.correct) {
+        const alreadySolved = state.solvedCases.has(c.id);
+        state.solvedCases.add(c.id);
+        checkBadge(c);
+        if (!alreadySolved){
+          addXP(CASE_XP);
+          const toast = document.createElement('div');
+          toast.className = 'xp-toast';
+          toast.textContent = `+${CASE_XP} XP — CASE CRACKED. Intel unlocked.`;
+          fb.after(toast);
+          showCompletion('CASE CRACKED','Mechanism identified. New intel is now available on the board.',CASE_XP);
+        }
+        renderFolders();
+        renderHeader();
+        if (moduleCoreDone(c) && !state.passedChecks.has(c.id)) renderAll();
+      }
+    };
+    optsWrap.appendChild(b);
+  });
+  if (moduleCoreDone(c)) renderModuleCheck(panel,c);
+}
+
+function renderExhibit(c, xray){
+  const body = document.getElementById('exhibitBody');
+  body.innerHTML = '';
+  if (c.render === 'scatter') renderScatter(body, c, xray);
+  else if (c.render === 'tokens') renderTokens(body, c, xray);
+  else if (c.render === 'embedding') renderEmbedding(body, c, xray);
+  else if (c.render === 'slider') renderSlider(body, c, xray);
+}
+
+function svgEl(tag, attrs){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+function renderScatter(body, c, xray){
+  const W = 560, H = 260, pad = 36;
+  const svg = svgEl('svg', {viewBox:`0 0 ${W} ${H}`, width:'100%', height:H});
+  const lineColor = xray ? '#3C6E88' : '#C9BC9C';
+  const textColor = xray ? '#D9F3FF' : '#55503F';
+
+  svg.appendChild(svgEl('line', {x1:pad, y1:H-pad, x2:W-10, y2:H-pad, stroke:lineColor}));
+  svg.appendChild(svgEl('line', {x1:pad, y1:H-pad, x2:pad, y2:10, stroke:lineColor}));
+
+  const axX = svgEl('text', {x:W/2, y:H-6, 'text-anchor':'middle', fill:textColor, 'font-size':'10.5'});
+  axX.textContent = c.axisX;
+  svg.appendChild(axX);
+  const axY = svgEl('text', {x:14, y:14, 'text-anchor':'start', fill:textColor, 'font-size':'10.5'});
+  axY.textContent = c.axisY;
+  svg.appendChild(axY);
+
+  c.data.forEach(d => {
+    const px = pad + (d.exp / 10) * (W - pad - 30);
+    const py = (H - pad) - (d.prestige / 10) * (H - pad - 20);
+    const isFlagged = d.name === "Dana R.";
+    const color = d.decision === 'hire' ? '#57C97A' : (xray ? '#FF7A5C' : '#9C3B2E');
+    const r = isFlagged ? 7 : 5;
+    const circle = svgEl('circle', {cx:px, cy:py, r, fill:color, opacity: d.decision==='hire' ? 0.85 : 0.9,
+      stroke: isFlagged ? '#F0C93D' : 'none', 'stroke-width': isFlagged ? 2.5 : 0});
+    svg.appendChild(circle);
+    if (isFlagged){
+      const lbl = svgEl('text', {x:px+10, y:py-8, fill: xray ? '#F0C93D' : '#9C3B2E', 'font-size':'10.5', 'font-weight':'600'});
+      lbl.textContent = 'Dana R.';
+      svg.appendChild(lbl);
+    }
+  });
+  body.appendChild(svg);
+
+  const legend = document.createElement('div');
+  legend.style.cssText = 'display:flex;gap:16px;margin-top:8px;font-family:IBM Plex Mono,monospace;font-size:10.5px;';
+  legend.style.color = xray ? '#D9F3FF' : '#55503F';
+  legend.innerHTML = `<span>● hire</span><span style="color:${xray?'#FF7A5C':'#9C3B2E'}">● reject</span><span style="color:#F0C93D">◎ flagged applicant</span>`;
+  body.appendChild(legend);
+}
+
+function renderTokens(body, c, xray){
+  c.data.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'token-row';
+    row.innerHTML = `
+      <span class="token-word">${t.word}</span>
+      <span class="token-bar-track"><span class="token-bar-fill" style="width:${t.pct}%"></span></span>
+      <span class="token-pct">${t.pct}%</span>
+    `;
+    body.appendChild(row);
+  });
+  const note = document.createElement('div');
+  note.style.cssText = 'margin-top:8px;font-family:IBM Plex Mono,monospace;font-size:10.5px;';
+  note.style.color = xray ? '#6FD6FF' : '#55503F';
+  note.textContent = xray
+    ? '↑ these are next-word likelihood scores, not truth-checks.'
+    : '↑ the assistant\'s own confidence display for each word it generated.';
+  body.appendChild(note);
+}
+
+function renderEmbedding(body, c, xray){
+  const W = 560, H = 260;
+  const svg = svgEl('svg', {viewBox:`0 0 ${W} ${H}`, width:'100%', height:H});
+  const textColor = xray ? '#D9F3FF' : '#55503F';
+
+  if (xray){
+    const watched = c.data.filter(d => d.watched);
+    const rec = c.data.find(d => d.recommended);
+    watched.forEach(w => {
+      svg.appendChild(svgEl('line', {
+        x1: w.x*W, y1: (1-w.y)*H, x2: rec.x*W, y2: (1-rec.y)*H,
+        stroke:'#6FD6FF', 'stroke-width':1, opacity:0.35
+      }));
+    });
+  }
+
+  c.data.forEach(d => {
+    const px = d.x * W, py = (1 - d.y) * H;
+    let color = xray ? '#3C6E88' : '#C9BC9C';
+    if (d.watched) color = '#57C97A';
+    if (d.recommended) color = '#F0C93D';
+    const r = d.recommended ? 8 : (d.watched ? 6 : 5);
+    svg.appendChild(svgEl('circle', {cx:px, cy:py, r, fill:color, opacity:0.9,
+      stroke: d.recommended ? '#9C3B2E' : 'none', 'stroke-width': d.recommended ? 2 : 0}));
+    const lbl = svgEl('text', {x:px+9, y:py+3, fill:textColor, 'font-size':'9'});
+    lbl.textContent = d.name;
+    if (d.watched || d.recommended) svg.appendChild(lbl);
+  });
+
+  body.appendChild(svg);
+
+  const legend = document.createElement('div');
+  legend.style.cssText = 'display:flex;gap:16px;margin-top:8px;font-family:IBM Plex Mono,monospace;font-size:10.5px;';
+  legend.style.color = xray ? '#D9F3FF' : '#55503F';
+  legend.innerHTML = `<span style="color:#57C97A">● watched</span><span style="color:#F0C93D">● recommended</span><span>● everything else</span>`;
+  body.appendChild(legend);
+}
+
+function renderSlider(body, c, xray){
+  if (!xray){
+    const zero = c.sliderData[0];
+    const wrap = document.createElement('div');
+    wrap.className = 'meter-static';
+    wrap.innerHTML = `
+      <div class="ms-box"><div class="ms-label">Current accuracy</div><div class="ms-value">${zero.accuracy}%</div></div>
+      <div class="ms-box"><div class="ms-label">Current fairness gap</div><div class="ms-value">${zero.fairnessGap} pts</div></div>
+    `;
+    body.appendChild(wrap);
+    const note = document.createElement('div');
+    note.style.cssText = 'margin-top:10px;font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--ink-soft);';
+    note.textContent = 'Flip to X-RAY to open the live correction lab and see what happens when you push the fix harder.';
+    body.appendChild(note);
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+    <div class="meter-row">
+      <div class="meter-readout">
+        <div class="mr-label">Overall accuracy</div>
+        <div class="mr-value" id="accVal">94%</div>
+        <div class="mr-bar-track"><div class="mr-bar-fill" id="accBar" style="width:94%"></div></div>
+      </div>
+      <div class="meter-readout">
+        <div class="mr-label">Fairness gap between groups</div>
+        <div class="mr-value" id="fairVal">38 pts</div>
+        <div class="mr-bar-track"><div class="mr-bar-fill" id="fairBar" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="meter-slider-wrap">
+      <label for="corrSlider">Fairness correction strength: <span id="corrLevel">0</span> / 10</label>
+      <input type="range" min="0" max="10" step="1" value="0" class="meter-slider" id="corrSlider">
+    </div>
+    <div class="meter-hint">Drag the slider. Watch both numbers — not just the one you're trying to fix.</div>
+  `;
+  body.appendChild(wrap);
+
+  const slider = wrap.querySelector('#corrSlider');
+  slider.addEventListener('input', () => {
+    const d = c.sliderData[parseInt(slider.value, 10)];
+    wrap.querySelector('#corrLevel').textContent = d.t;
+    wrap.querySelector('#accVal').textContent = d.accuracy + '%';
+    wrap.querySelector('#fairVal').textContent = d.fairnessGap + ' pts';
+    wrap.querySelector('#accBar').style.width = d.accuracy + '%';
+    wrap.querySelector('#fairBar').style.width = Math.round((d.fairnessGap/38)*100) + '%';
+  });
+}
+
+/* =========================================================
+   MISSION-SET MODULES
+   ========================================================= */
+
+
+function renderModuleCheck(panel,m){
+  if (state.passedChecks.has(m.id)) return;
+  const questions=moduleChecks[m.id]; if(!questions) return;
+  const wrap=document.createElement('section'); wrap.className='module-check'; wrap.id='moduleCheck';
+  wrap.innerHTML=`<h3>Debrief: can you spot the mechanism?</h3><p>This is the boss round. Three field decisions. Get 2 right to clear the operation.</p><div class="check-progress"><span></span></div><div class="check-question"><div class="scenario"></div><div class="check-options"></div><div class="check-feedback"></div></div><div class="check-result"></div>`;
+  panel.appendChild(wrap);
+  let qi=0,score=0,locked=false;
+  const progress=wrap.querySelector('.check-progress span'), scenario=wrap.querySelector('.scenario'), opts=wrap.querySelector('.check-options'), fb=wrap.querySelector('.check-feedback'), result=wrap.querySelector('.check-result');
+  function load(){
+    locked=false;fb.classList.remove('show');opts.innerHTML='';const q=questions[qi];scenario.textContent=q.s;progress.style.width=((qi)/questions.length*100)+'%';
+    q.o.forEach((text,i)=>{const b=document.createElement('button');b.className='check-option';b.textContent=text;b.onclick=()=>{if(locked)return;locked=true;const good=i===q.a;if(good){score++;b.classList.add('correct')}else{b.classList.add('wrong');opts.children[q.a].classList.add('correct')}fb.textContent=q.f;fb.classList.add('show');setTimeout(()=>{qi++;if(qi<questions.length)load();else finish()},650)};opts.appendChild(b)})
+  }
+  function finish(){
+    progress.style.width='100%';wrap.querySelector('.check-question').style.display='none';result.classList.add('show');
+    if(score>=2){
+      state.passedChecks.add(m.id); checkBadge(m); addXP(50); result.innerHTML=`<strong>OPERATION CLEARED</strong><p>${score}/3 field decisions correct. Badge secured. +50 XP.</p><button class="check-option" id="checkContinue">RETURN TO OPS</button>`;showCompletion('OPERATION CLEARED','Final debrief passed. The intel is now yours.',50);
+      result.querySelector('#checkContinue').onclick=()=>renderAll();
+    }else{
+      result.innerHTML=`<strong style="color:var(--amber)">NOT ENOUGH INTEL</strong><p>${score}/3. You need 2/3. Review the operation and run the debrief again.</p><button class="check-option" id="checkRetry">RETRY DEBRIEF</button>`;
+      result.querySelector('#checkRetry').onclick=()=>{qi=0;score=0;wrap.querySelector('.check-question').style.display='block';result.classList.remove('show');load()};
+    }
+  }
+  load();
+}
+
+function renderMissionSetModule(m){
+  const panel = document.getElementById('casePanel');
+  panel.className = 'case-panel';
+  panel.innerHTML = `
+    <span class="case-tag">${m.tag}</span>
+    <h2 class="case-title">${m.title}</h2>
+    <p class="case-narrative">${m.intro}</p>
+    <div id="missionList" style="margin-top:16px;"></div>
+  `;
+  const list = document.getElementById('missionList');
+  m.missions.forEach(ms => {
+    const card = document.createElement('div');
+    card.className = 'mission-card' + (state.completedMissions.has(ms.id) ? ' done' : '');
+    const cleanTitle = ms.title.replace(/^Mission\s+\d+\s*[—-]\s*/i,'');
+    const runNo = String(m.missions.indexOf(ms)+1).padStart(2,'0');
+    card.innerHTML = `
+      <div class="mission-head">
+        <div class="run-label">RUN ${runNo}</div>
+        <span class="mission-status">${state.completedMissions.has(ms.id) ? '✓ CLEARED' : 'LIVE'}</span>
+      </div>
+      <h3 class="mission-title">${cleanTitle}</h3>
+      <details class="intel-brief">
+        <summary>BRIEF</summary>
+        <div class="mission-body">${ms.body}</div>
+      </details>
+      <div id="missionInner-${ms.id}"></div>
+    `;
+    list.appendChild(card);
+    renderMissionInner(m, ms);
+  });
+  if (moduleCoreDone(m)) renderModuleCheck(panel,m);
+}
+
+function markMissionDone(missionId){
+  const already = state.completedMissions.has(missionId);
+  state.completedMissions.add(missionId);
+  if (!already){
+    addXP(MISSION_XP);
+    const m = modules.find(mod => mod.type === 'missionset' && mod.missions.some(ms => ms.id === missionId));
+    if (m) { checkBadge(m); showCompletion('OBJECTIVE CLEARED','Signal logged. Your field notes just got stronger.',MISSION_XP); }
+  }
+  renderFolders();
+  renderHeader();
+  const activeModule = modules[activeIndex];
+  if (moduleCoreDone(activeModule) && !state.passedChecks.has(activeModule.id)) renderAll();
+}
+
+function renderMissionInner(module, ms){
+  const host = document.getElementById(`missionInner-${ms.id}`);
+  if (ms.kind === 'classify') return renderClassifyMission(host, module, ms);
+  if (ms.kind === 'order') return renderOrderMission(host, module, ms);
+  if (ms.kind === 'predict') return renderPredictMission(host, module, ms);
+  if (ms.kind === 'promptlab') return renderPromptLabMission(host, module, ms);
+  if (ms.kind === 'promptown') return renderPromptOwnMission(host, module, ms);
+}
+
+function renderClassifyMission(host, module, ms){
+  host.innerHTML = '';
+  const answered = new Set();
+  ms.items.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'classify-item';
+    row.innerHTML = `
+      <div class="classify-task">${item.task}</div>
+      <div class="classify-btns">
+        <button class="cbtn" data-choice="ai">AI handles this well</button>
+        <button class="cbtn" data-choice="human">Still mostly human</button>
+      </div>
+      <div class="classify-fb">${item.explain}</div>
+    `;
+    host.appendChild(row);
+    row.querySelectorAll('.cbtn').forEach(btn => {
+      btn.onclick = () => {
+        row.querySelectorAll('.cbtn').forEach(b => b.classList.remove('chosen-ai','chosen-human'));
+        btn.classList.add(btn.dataset.choice === 'ai' ? 'chosen-ai' : 'chosen-human');
+        row.querySelector('.classify-fb').classList.add('show');
+        answered.add(idx);
+        if (answered.size === ms.items.length) markMissionDone(ms.id);
+      };
+    });
+  });
+}
+
+function renderOrderMission(host, module, ms){
+  host.innerHTML = '';
+  let picked = [];
+  const pool = document.createElement('div');
+  pool.className = 'order-pool';
+  const slots = document.createElement('div');
+  slots.className = 'order-slots';
+  ms.correctOrder.forEach(() => {
+    const slot = document.createElement('div');
+    slot.className = 'order-slot';
+    slot.textContent = '?';
+    slots.appendChild(slot);
+  });
+  const shuffled = [...ms.pool];
+  ms.pool.forEach((word, i) => {
+    const chip = document.createElement('button');
+    chip.className = 'order-chip';
+    chip.textContent = word;
+    chip.onclick = () => {
+      if (picked.length >= ms.correctOrder.length) return;
+      picked.push(word);
+      chip.classList.add('used');
+      const slotEls = slots.querySelectorAll('.order-slot');
+      slotEls[picked.length-1].textContent = word;
+      slotEls[picked.length-1].classList.add('filled');
+    };
+    pool.appendChild(chip);
+  });
+  const checkBtn = document.createElement('button');
+  checkBtn.className = 'order-check-btn';
+  checkBtn.textContent = 'LOCK IN';
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'mission-reset-btn';
+  resetBtn.textContent = 'CLEAR';
+  const explain = document.createElement('div');
+  explain.className = 'mission-explain';
+  explain.innerHTML = ms.explain;
+
+  checkBtn.onclick = () => {
+    const correct = picked.length === ms.correctOrder.length &&
+      picked.every((w,i) => w === ms.correctOrder[i]);
+    explain.classList.add('show');
+    if (correct){
+      explain.style.borderLeftColor = '#2e6b3e';
+      markMissionDone(ms.id);
+    } else {
+      explain.style.borderLeftColor = '#9C3B2E';
+      explain.innerHTML = `Not quite the right order yet. Hint: it starts with what goes <b>in</b>, and ends with what comes <b>out</b>.<br><br>` + ms.explain;
+    }
+  };
+  resetBtn.onclick = () => {
+    picked = [];
+    pool.querySelectorAll('.order-chip').forEach(c => c.classList.remove('used'));
+    slots.querySelectorAll('.order-slot').forEach(s => { s.textContent = '?'; s.classList.remove('filled'); });
+    explain.classList.remove('show');
+  };
+
+  host.appendChild(pool);
+  host.appendChild(slots);
+  host.appendChild(checkBtn);
+  host.appendChild(resetBtn);
+  host.appendChild(explain);
+}
+
+function renderPredictMission(host, module, ms){
+  host.innerHTML = '';
+  const table = document.createElement('table');
+  table.className = 'predict-table';
+  const thead = `<tr>${ms.table.headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+  const rows = ms.table.rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
+  table.innerHTML = thead + rows;
+  host.appendChild(table);
+
+  const q = document.createElement('div');
+  q.style.cssText = 'font-size:13.5px;font-weight:600;margin-top:8px;';
+  q.textContent = ms.question;
+  host.appendChild(q);
+
+  const optsWrap = document.createElement('div');
+  optsWrap.className = 'predict-opts';
+  const explain = document.createElement('div');
+  explain.className = 'mission-explain';
+  explain.innerHTML = ms.explain;
+
+  ms.options.forEach(opt => {
+    const b = document.createElement('button');
+    b.className = 'cbtn';
+    b.textContent = opt.text;
+    b.onclick = () => {
+      optsWrap.querySelectorAll('.cbtn').forEach(el => el.setAttribute('disabled','true'));
+      b.classList.add(opt.correct ? 'chosen-ai' : 'chosen-human');
+      explain.classList.add('show');
+      markMissionDone(ms.id);
+    };
+    optsWrap.appendChild(b);
+  });
+
+  host.appendChild(optsWrap);
+  host.appendChild(explain);
+}
+
+function renderPromptLabMission(host, module, ms){
+  host.innerHTML = '';
+  const tabs = document.createElement('div');
+  tabs.className = 'promptlab-tabs';
+  const panels = document.createElement('div');
+
+  ms.versions.forEach((v, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'pl-tab' + (i === 0 ? ' active' : '');
+    tab.textContent = v.label;
+    tab.onclick = () => {
+      tabs.querySelectorAll('.pl-tab').forEach(t => t.classList.remove('active'));
+      panels.querySelectorAll('.pl-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      panels.children[i].classList.add('active');
+      if (i === ms.versions.length - 1) markMissionDone(ms.id);
+    };
+    tabs.appendChild(tab);
+
+    const panel = document.createElement('div');
+    panel.className = 'pl-panel' + (i === 0 ? ' active' : '');
+    panel.innerHTML = `
+      <div class="pl-prompt">PROMPT: "${v.prompt}"</div>
+      <div class="pl-output">${v.output}</div>
+    `;
+    panels.appendChild(panel);
+  });
+
+  const explain = document.createElement('div');
+  explain.className = 'mission-explain show';
+  explain.innerHTML = ms.explain;
+
+  host.appendChild(tabs);
+  host.appendChild(panels);
+  host.appendChild(explain);
+}
+
+function renderPromptOwnMission(host, module, ms){
+  host.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'pl-own-wrap';
+  wrap.innerHTML = `<textarea placeholder="Write a prompt asking an AI to explain compound interest..."></textarea>`;
+  host.appendChild(wrap);
+
+  const critWrap = document.createElement('div');
+  critWrap.className = 'pl-criteria';
+  ms.criteria.forEach(c => {
+    const chip = document.createElement('span');
+    chip.className = 'pl-crit-chip';
+    chip.id = `crit-${ms.id}-${c.key}`;
+    chip.textContent = c.label;
+    critWrap.appendChild(chip);
+  });
+  host.appendChild(critWrap);
+
+  const scoreLine = document.createElement('div');
+  scoreLine.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:11.5px;margin-top:6px;color:var(--ink-soft);';
+  host.appendChild(scoreLine);
+
+  const textarea = wrap.querySelector('textarea');
+  let doneFired = false;
+  textarea.addEventListener('input', () => {
+    const text = textarea.value;
+    let metCount = 0;
+    ms.criteria.forEach(c => {
+      const chip = document.getElementById(`crit-${ms.id}-${c.key}`);
+      const met = text.trim().length > 0 && c.test(text);
+      chip.classList.toggle('met', met);
+      if (met) metCount++;
+    });
+    scoreLine.textContent = text.trim() ? `${metCount} / ${ms.criteria.length} prompt levers pulled` : '';
+    if (metCount >= ms.criteria.length && !doneFired){
+      doneFired = true;
+      markMissionDone(ms.id);
+    }
+  });
+}
+
+/* =========================================================
+   EVIDENCE BOARD
+   ========================================================= */
+
+function caseModules(){ return modules.filter(m => m.type === 'case'); }
+
+function renderBoard(){
+  const clueCol = document.getElementById('clueCol');
+  const diagCol = document.getElementById('diagCol');
+  clueCol.innerHTML = '';
+  diagCol.innerHTML = '';
+  document.getElementById('boardSvg').innerHTML = '';
+
+  const cases = caseModules();
+  const shuffledDiag = [...cases].sort(() => Math.random() - 0.5);
+
+  cases.forEach(c => {
+    const solved = state.solvedCases.has(c.id);
+    const matched = state.matchedClues.has(c.id);
+    const card = document.createElement('div');
+    card.className = 'clue-card' + (!solved ? ' locked' : '') + (matched ? ' matched' : '');
+    card.id = `clue-${c.id}`;
+    card.innerHTML = solved
+      ? `<span class="clue-quote">${c.clue.quote}</span><span class="clue-src">${c.clue.src}</span>`
+      : `<span class="clue-quote">Locked — close ${c.tag.split('—')[0].trim()} to pull this clue.</span>`;
+    if (solved && !matched){
+      card.onclick = () => selectClue(c.id);
+    }
+    clueCol.appendChild(card);
+  });
+
+  shuffledDiag.forEach(c => {
+    const matched = state.matchedClues.has(c.id);
+    const chip = document.createElement('div');
+    chip.className = 'diag-chip' + (matched ? ' matched' : '');
+    chip.id = `diag-${c.id}`;
+    chip.textContent = c.diagnosis;
+    if (!matched){
+      chip.onclick = () => selectDiagnosis(c.id);
+    }
+    diagCol.appendChild(chip);
+  });
+
+  updateBoardProgress();
+}
+
+let selectedClueId = null;
+
+function selectClue(caseId){
+  document.querySelectorAll('.clue-card').forEach(el => el.classList.remove('selected'));
+  selectedClueId = caseId;
+  document.getElementById(`clue-${caseId}`).classList.add('selected');
+}
+
+function selectDiagnosis(caseId){
+  if (!selectedClueId) return;
+  const clueEl = document.getElementById(`clue-${selectedClueId}`);
+  const diagEl = document.getElementById(`diag-${caseId}`);
+  if (selectedClueId === caseId){
+    clueEl.classList.remove('selected');
+    clueEl.classList.add('matched');
+    diagEl.classList.add('matched');
+    diagEl.onclick = null;
+    clueEl.onclick = null;
+    state.matchedClues.add(caseId);
+    drawBoardLine(clueEl, diagEl);
+    selectedClueId = null;
+    updateBoardProgress();
+  } else {
+    diagEl.classList.add('wrong-flash');
+    setTimeout(() => diagEl.classList.remove('wrong-flash'), 450);
+  }
+}
+
+function drawBoardLine(fromEl, toEl){
+  const svg = document.getElementById('boardSvg');
+  const boardRect = document.getElementById('matchBoard').getBoundingClientRect();
+  const fr = fromEl.getBoundingClientRect();
+  const tr = toEl.getBoundingClientRect();
+  const x1 = fr.right - boardRect.left;
+  const y1 = fr.top + fr.height/2 - boardRect.top;
+  const x2 = tr.left - boardRect.left;
+  const y2 = tr.top + tr.height/2 - boardRect.top;
+  const line = svgEl('line', {x1, y1, x2, y2, stroke:'#F0C93D', 'stroke-width':2, 'stroke-dasharray':'5,4'});
+  svg.appendChild(line);
+}
+
+function updateBoardProgress(){
+  const n = state.matchedClues.size;
+  document.getElementById('boardProgress').textContent = `${n} / 4 clues connected`;
+  document.getElementById('boardWin').classList.toggle('show', n === caseModules().length);
+}
+
+document.getElementById('openBoardBtn').onclick = () => {
+  document.getElementById('boardOverlay').classList.add('open');
+  selectedClueId = null;
+  renderBoard();
+};
+document.getElementById('closeBoardBtn').onclick = () => {
+  document.getElementById('boardOverlay').classList.remove('open');
+};
+document.getElementById('boardOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'boardOverlay') document.getElementById('boardOverlay').classList.remove('open');
+});
+
+/* =========================================================
+   INIT
+   ========================================================= */
+
+renderAll();
+</script>
+</body>
+</html>
