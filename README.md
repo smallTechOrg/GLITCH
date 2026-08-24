@@ -1,8 +1,8 @@
-# GLITCH.EXE
+# GLITCH
 
 ## About
 
-GLITCH.EXE is an interactive AI literacy website designed to help users understand how artificial intelligence works through a game-like, detective-inspired experience.
+GLITCH is an interactive AI literacy website designed to help users understand how artificial intelligence works through a game-like, detective-inspired experience.
 The website introduces users to key concepts in AI and encourages them to investigate, experiment, and understand what is happening "behind the scenes" of AI systems.
 
 ## Features
