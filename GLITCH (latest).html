@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GLITCH.EXE — AI Investigation Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070912;
+  --panel:#0d1220;
+  --panel2:#121a2b;
+  --panel3:#161f33;
+  --line:#27324b;
+  --text:#eef3ff;
+  --muted:#8390aa;
+  --cyan:#55e6ff;
+  --violet:#9b7cff;
+  --green:#63f5a3;
+  --amber:#ffd166;
+  --red:#ff657a;
+  --blue:#5aa7ff;
+  --pink:#ff6fae;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+  background-image:
+    radial-gradient(circle at 15% 8%,rgba(85,230,255,.10),transparent 30%),
+    radial-gradient(circle at 88% 18%,rgba(155,124,255,.13),transparent 32%),
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:auto,auto,32px 32px,32px 32px;
+}
+button{font-family:inherit;}
+
+/* ---------- hacking ambience layer ---------- */
+#matrixRain{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;opacity:.5;pointer-events:none;}
+.scanline-overlay{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(transparent 50%,rgba(85,230,255,.022) 50%);
+  background-size:100% 4px;
+  mix-blend-mode:overlay;
+}
+.scanline-overlay:after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.45) 100%);
+}
+body.glitching{animation:bodyGlitch .25s steps(2,end);}
+@keyframes bodyGlitch{
+  0%{filter:none;}
+  20%{filter:hue-rotate(15deg) saturate(1.6);transform:translateX(-2px);}
+  40%{filter:hue-rotate(-10deg);transform:translateX(2px);}
+  60%{filter:none;transform:translateX(-1px);}
+  100%{filter:none;transform:translateX(0);}
+}
+.glitch-text{position:relative;display:inline-block;}
+.glitch-text.pop{animation:glitchPop .4s ease;}
+@keyframes glitchPop{
+  0%{text-shadow:2px 0 var(--red),-2px 0 var(--cyan);}
+  30%{text-shadow:-2px 0 var(--red),2px 0 var(--cyan);}
+  60%{text-shadow:1px 0 var(--red),-1px 0 var(--cyan);}
+  100%{text-shadow:none;}
+}
+.hud-brand .t{font-family:'Orbitron',sans-serif!important;}
+.node-title,.stage-title,.complete-title,.results-score{font-family:'Orbitron',sans-serif;}
+
+.app{
+  max-width:560px;
+  margin:0 auto;
+  min-height:100vh;
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  background:rgba(7,9,18,.82);
+  border-left:1px solid rgba(85,230,255,.08);
+  border-right:1px solid rgba(85,230,255,.08);
+}
+
+/* ---------- shared HUD ---------- */
+.hud{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;
+  border-bottom:1px solid var(--line);
+  background:rgba(10,14,25,.9);
+  backdrop-filter:blur(10px);
+  position:sticky;top:0;z-index:40;
+}
+.hud-brand{display:flex;flex-direction:column;gap:1px;}
+.hud-brand .t{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:16px;letter-spacing:1.5px;color:#fff;}
+.hud-brand .t span{color:var(--cyan);}
+.hud-brand .s{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--muted);}
+.hud-rank{display:flex;align-items:center;gap:8px;}
+.hud-rank-icon{
+  width:30px;height:30px;border-radius:50%;
+  background:linear-gradient(135deg,var(--violet),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  box-shadow:0 0 14px rgba(85,230,255,.25);
+  flex-shrink:0;
+}
+.hud-rank-text{text-align:right;}
+.hud-rank-name{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#fff;}
+.hud-xp-track{width:90px;height:5px;background:#070b14;border:1px solid var(--line);border-radius:99px;margin-top:3px;overflow:hidden;}
+.hud-xp-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));width:0%;transition:width .6s ease;}
+
+/* ---------- screens ---------- */
+.screen{display:none;flex:1;flex-direction:column;position:relative;}
+.screen.active{display:flex;}
+
+/* ================= MAP SCREEN ================= */
+#mapScreen{padding:22px 18px 60px;}
+.map-intro{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+  line-height:1.6;margin-bottom:26px;
+}
+.map-path{position:relative;padding-left:6px;}
+.map-track{
+  position:absolute;left:29px;top:6px;bottom:6px;width:3px;
+  background:repeating-linear-gradient(180deg,var(--line) 0 8px,transparent 8px 16px);
+  border-radius:3px;z-index:0;
+}
+.map-track-fill{
+  position:absolute;left:29px;top:6px;width:3px;
+  background:linear-gradient(180deg,var(--cyan),var(--violet));
+  border-radius:3px;z-index:1;height:0%;transition:height 1s ease;
+  box-shadow:0 0 10px rgba(85,230,255,.5);
+}
+.node-row{
+  position:relative;z-index:2;
+  display:flex;align-items:flex-start;gap:16px;
+  margin-bottom:8px;
+  padding:6px 0;
+}
+.node-dot{
+  width:60px;height:60px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;position:relative;
+  border:2px solid var(--line);
+  background:var(--panel2);
+  transition:transform .15s ease;
+  cursor:default;
+}
+.node-row.locked .node-dot{opacity:.4;filter:grayscale(1);}
+.node-row.available .node-dot{
+  border-color:var(--cyan);
+  background:radial-gradient(circle,#132436,var(--panel2));
+  box-shadow:0 0 0 4px rgba(85,230,255,.12),0 0 22px rgba(85,230,255,.35);
+  cursor:pointer;
+  animation:nodePulse 2.2s ease-in-out infinite;
+}
+.node-row.available .node-dot:active{transform:scale(.92);}
+.node-row.done .node-dot{
+  border-color:var(--green);
+  background:radial-gradient(circle,#0e2419,var(--panel2));
+  cursor:pointer;
+}
+.node-row.boss .node-dot{width:68px;height:68px;font-size:28px;}
+@keyframes nodePulse{
+  0%,100%{box-shadow:0 0 0 4px rgba(85,230,255,.12),0 0 18px rgba(85,230,255,.3);}
+  50%{box-shadow:0 0 0 8px rgba(85,230,255,.05),0 0 30px rgba(85,230,255,.5);}
+}
+.node-stars{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;letter-spacing:1px;}
+.node-body{flex:1;padding-top:6px;}
+.node-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.2px;color:var(--muted);}
+.node-row.available .node-tag{color:var(--cyan);}
+.node-row.done .node-tag{color:var(--green);}
+.node-title{font-weight:700;font-size:15px;margin:2px 0 4px;color:#fff;}
+.node-row.locked .node-title{color:var(--muted);}
+.node-status{
+  display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9px;
+  letter-spacing:.5px;padding:3px 8px;border-radius:99px;
+  border:1px solid var(--line);color:var(--muted);
+}
+.node-row.available .node-status{border-color:var(--cyan);color:var(--cyan);}
+.node-row.done .node-status{border-color:var(--green);color:var(--green);}
+
+/* ================= LEVEL RUNNER ================= */
+#levelScreen{background:radial-gradient(circle at 80% 0,rgba(155,124,255,.07),transparent 40%);}
+.run-top{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;border-bottom:1px solid var(--line);
+  background:rgba(10,14,25,.9);position:sticky;top:57px;z-index:30;
+}
+.run-exit{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);
+  background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+  padding:7px 10px;cursor:pointer;flex-shrink:0;
+}
+.run-exit:hover{color:#fff;border-color:var(--red);}
+.run-dots{display:flex;gap:5px;flex:1;justify-content:center;}
+.run-dot{width:8px;height:8px;border-radius:50%;background:var(--line);transition:.2s;}
+.run-dot.done{background:var(--green);}
+.run-dot.active{background:var(--cyan);width:20px;border-radius:5px;}
+.run-hud{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--amber);flex-shrink:0;}
+
+.stage-wrap{padding:20px 18px 90px;flex:1;animation:stageIn .35s ease;}
+@keyframes stageIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.stage-kicker{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:var(--cyan);margin-bottom:6px;}
+.stage-title{font-size:20px;font-weight:800;color:#fff;margin:0 0 10px;letter-spacing:-.3px;}
+.stage-body{font-size:13.5px;line-height:1.6;color:#a9b4c9;margin-bottom:18px;}
+
+.continue-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:35;
+  display:none;justify-content:center;padding:14px 18px 20px;
+  background:linear-gradient(0deg,rgba(7,9,18,.97) 60%,transparent);
+}
+.continue-bar.show{display:flex;animation:barUp .3s ease;}
+@keyframes barUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.continue-btn{
+  width:100%;max-width:520px;
+  background:linear-gradient(135deg,var(--violet),var(--cyan));
+  color:#04121a;font-weight:800;font-size:14px;letter-spacing:.5px;
+  border:none;border-radius:12px;padding:15px;cursor:pointer;
+  box-shadow:0 10px 26px rgba(85,230,255,.25);
+}
+.continue-btn:active{transform:scale(.98);}
+
+/* explain card */
+.explain-card{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.65;
+  background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--cyan);
+  border-radius:10px;padding:13px 14px;margin-top:14px;color:#c3cee2;
+  display:none;
+}
+.explain-card.show{display:block;animation:stageIn .3s ease;}
+.explain-card b{color:#fff;}
+
+/* ---- SORT RUSH (classify) ---- */
+.sr-progress{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:14px;text-align:center;}
+.sr-stage{position:relative;height:150px;margin-bottom:18px;}
+.sr-card{
+  position:absolute;inset:0;
+  background:var(--panel2);border:1px solid var(--line);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:20px;font-size:16px;font-weight:600;color:#fff;
+  box-shadow:0 14px 34px rgba(0,0,0,.35);
+  transition:transform .4s cubic-bezier(.2,.8,.2,1),opacity .4s ease;
+}
+.sr-card.fly-human{transform:translateX(-140%) rotate(-18deg);opacity:0;}
+.sr-card.fly-ai{transform:translateX(140%) rotate(18deg);opacity:0;}
+.sr-card.enter{animation:srEnter .35s ease;}
+@keyframes srEnter{from{transform:translateY(30px) scale(.9);opacity:0;}to{transform:translateY(0) scale(1);opacity:1;}}
+.sr-bins{display:flex;gap:12px;}
+.sr-bin{
+  flex:1;border-radius:14px;padding:16px 10px;border:2px solid var(--line);
+  background:var(--panel2);text-align:center;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;
+  transition:transform .12s ease;
+}
+.sr-bin:active{transform:scale(.95);}
+.sr-bin.human{color:var(--violet);border-color:rgba(155,124,255,.4);}
+.sr-bin.ai{color:var(--cyan);border-color:rgba(85,230,255,.4);}
+.sr-bin .emoji{display:block;font-size:22px;margin-bottom:4px;}
+.sr-feedback{
+  margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+  color:var(--muted);text-align:center;min-height:16px;
+}
+.sr-feedback.correct{color:var(--green);}
+.sr-feedback.wrong{color:var(--red);}
+.sr-summary{text-align:center;padding:20px 0;}
+.sr-summary .big{font-size:34px;font-weight:800;color:var(--cyan);}
+
+/* ---- BUILD THE PIPELINE (order) ---- */
+.conveyor{
+  position:relative;overflow:hidden;border-radius:12px;
+  border:1px solid var(--line);background:var(--panel2);
+  padding:14px 12px;margin-bottom:16px;
+}
+.conveyor:before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(85,230,255,.05) 0 18px,transparent 18px 36px);
+  animation:convMove 2.5s linear infinite;
+}
+@keyframes convMove{from{background-position:0 0;}to{background-position:72px 0;}}
+.slots{display:flex;gap:8px;flex-wrap:wrap;position:relative;z-index:1;}
+.slot{
+  min-width:78px;height:44px;flex:1;
+  border:2px dashed #35425d;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+  background:#080d18;transition:.2s;
+}
+.slot.filled{border-style:solid;border-color:var(--green);background:rgba(99,245,163,.08);color:#fff;font-weight:700;}
+.slot.shake{animation:shakeX .35s ease;border-color:var(--red);}
+@keyframes shakeX{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+.pool{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0;}
+.pchip{
+  padding:11px 16px;border-radius:10px;border:1px solid #2a3852;
+  background:var(--panel2);color:#dbe5f6;font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;
+}
+.pchip:hover{transform:translateY(-2px);border-color:var(--cyan);}
+.pchip.used{opacity:0;pointer-events:none;transform:scale(.5);}
+.pchip.wrong-pop{animation:shakeX .35s ease;border-color:var(--red);}
+
+/* ---- PATTERN HUNTER (predict) ---- */
+.ph-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11.5px;border-radius:10px;overflow:hidden;}
+.ph-table th,.ph-table td{border:1px solid var(--line);padding:8px 9px;text-align:left;font-family:'IBM Plex Mono',monospace;}
+.ph-table th{background:var(--panel3);color:var(--cyan);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;}
+.ph-table td{background:var(--panel2);}
+.ph-table tr{opacity:0;animation:rowIn .4s ease forwards;}
+.ph-table tr:nth-child(1){animation-delay:.05s;}
+.ph-table tr:nth-child(2){animation-delay:.13s;}
+.ph-table tr:nth-child(3){animation-delay:.21s;}
+.ph-table tr:nth-child(4){animation-delay:.29s;}
+.ph-table tr:nth-child(5){animation-delay:.37s;}
+.ph-table tr:nth-child(6){animation-delay:.45s;}
+@keyframes rowIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
+.ph-q{font-weight:700;font-size:14px;color:#fff;margin-bottom:12px;}
+
+/* ---- tile-based MCQ (predict / verdict / quiz) — terminal node buttons ---- */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.tiles.col1{grid-template-columns:1fr;}
+.tile{
+  border-radius:9px;padding:14px 12px 14px 14px;min-height:64px;
+  font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;
+  color:#dbe9ff;cursor:pointer;text-align:left;line-height:1.4;
+  display:flex;align-items:center;gap:9px;
+  transition:transform .12s ease,filter .15s ease,background .15s ease,border-color .15s ease;
+  background:linear-gradient(135deg,#0d1626,#0a1120);
+  border:1px solid var(--tile-c,#2a3852);
+  border-left:3px solid var(--tile-c,#2a3852);
+  box-shadow:0 8px 18px rgba(0,0,0,.3), inset 0 0 14px rgba(85,230,255,.02);
+  position:relative; overflow:hidden;
+}
+.tile:before{
+  content:attr(data-node);
+  font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:10px;
+  color:var(--tile-c,#55e6ff);flex-shrink:0;
+  border:1px solid var(--tile-c,#2a3852);border-radius:4px;
+  width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+}
+.tile:hover{transform:translateY(-1px);filter:brightness(1.15);}
+.tile:active{transform:scale(.97);}
+.tile.c0{--tile-c:var(--red);}
+.tile.c1{--tile-c:var(--blue);}
+.tile.c2{--tile-c:var(--amber);}
+.tile.c3{--tile-c:var(--green);}
+.tile.disabled{pointer-events:none;opacity:.45;}
+.tile.correct-flash{
+  background:linear-gradient(135deg,rgba(99,245,163,.18),rgba(99,245,163,.05));
+  border-color:var(--green);--tile-c:var(--green);opacity:1!important;
+  box-shadow:0 0 0 1px var(--green),0 0 22px rgba(99,245,163,.35);
+}
+.tile.correct-flash:before{content:"✓";}
+.tile.wrong-flash{
+  background:linear-gradient(135deg,rgba(255,101,122,.16),rgba(255,101,122,.04));
+  border-color:var(--red);--tile-c:var(--red);opacity:1!important;
+  animation:shakeX .3s ease;
+}
+.tile.wrong-flash:before{content:"✕";}
+
+/* ---- PROMPT REMIX ---- */
+.pl-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.pl-tab{
+  flex:1;padding:9px 6px;border-radius:9px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--muted);font-family:'IBM Plex Mono',monospace;
+  font-size:11px;font-weight:700;cursor:pointer;transition:.15s;
+}
+.pl-tab.active{background:linear-gradient(135deg,rgba(155,124,255,.3),rgba(85,230,255,.15));border-color:var(--cyan);color:#fff;}
+.pl-tab.visited:not(.active):after{content:" ✓";color:var(--green);}
+.pl-prompt{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--panel3);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px;color:var(--cyan);}
+.pl-output{font-size:13px;line-height:1.6;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 14px;min-height:70px;color:#e7edf8;}
+.pl-cursor{display:inline-block;width:7px;height:14px;background:var(--cyan);margin-left:2px;animation:blink 1s step-end infinite;vertical-align:middle;}
+@keyframes blink{50%{opacity:0;}}
+
+/* ---- PROMPT BUILDER ---- */
+.pb-ring{width:74px;height:74px;border-radius:50%;margin:0 auto 14px;position:relative;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--cyan) 0deg,var(--line) 0deg);transition:background 1s ease;}
+.pb-ring:before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--bg);}
+.pb-ring span{position:relative;z-index:1;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;}
+.pb-textarea{width:100%;min-height:90px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:12px;resize:vertical;}
+.pb-textarea:focus{outline:none;border-color:var(--cyan);}
+.pb-crits{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.pb-crit{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:6px 11px;border-radius:99px;
+  border:1px solid var(--line);color:var(--muted);transition:.25s;
+}
+.pb-crit.met{background:rgba(99,245,163,.15);border-color:var(--green);color:var(--green);animation:popIn .3s ease;}
+@keyframes popIn{0%{transform:scale(.7);}60%{transform:scale(1.12);}100%{transform:scale(1);}}
+
+/* ---- INVESTIGATE (exhibit) ---- */
+.exhibit{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;}
+.exhibit-label{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.scan-btn{
+  width:100%;background:linear-gradient(135deg,#142438,#152039);border:1px solid #2e6980;
+  color:#eaf7ff;border-radius:11px;padding:13px;font-family:'IBM Plex Mono',monospace;
+  font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.scan-btn:disabled{opacity:.5;}
+.scan-line{position:relative;height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin:12px 0;display:none;}
+.scan-line.on{display:block;}
+.scan-line span{position:absolute;top:0;left:-30%;width:30%;height:100%;background:linear-gradient(90deg,transparent,var(--cyan),transparent);animation:scanMove 1s linear infinite;}
+@keyframes scanMove{from{left:-30%;}to{left:100%;}}
+.token-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+.token-word{font-family:'IBM Plex Mono',monospace;font-size:11.5px;width:88px;flex-shrink:0;color:#dbe5f6;}
+.token-bar-track{flex:1;height:12px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.token-bar-fill{height:100%;background:var(--cyan);width:0%;transition:width .8s ease;}
+.token-pct{font-family:'IBM Plex Mono',monospace;font-size:10.5px;width:32px;text-align:right;color:var(--muted);}
+.meter-row{display:flex;gap:12px;margin-bottom:14px;}
+.meter-box{flex:1;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+.meter-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);}
+.meter-value{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:22px;color:#fff;margin-top:2px;}
+.meter-bar-track{height:6px;background:rgba(255,255,255,.08);border-radius:3px;margin-top:7px;overflow:hidden;}
+.meter-bar-fill{height:100%;transition:width .25s ease;}
+input[type=range].meter-slider{width:100%;accent-color:var(--violet);margin:10px 0;}
+.meter-hint{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);}
+
+/* ---- BLOOKET-STYLE RAPID QUIZ ---- */
+.quiz-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.quiz-streak{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:4px;}
+.quiz-qnum{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);}
+.timer-track{height:7px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-bottom:16px;}
+.timer-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red));width:100%;}
+.quiz-q{font-size:16px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:16px;}
+.quiz-points-pop{
+  position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);
+  font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:26px;
+  color:var(--green);pointer-events:none;z-index:60;opacity:0;
+}
+.quiz-points-pop.go{animation:pointsPop 1s ease forwards;}
+@keyframes pointsPop{0%{opacity:0;transform:translate(-50%,-40%) scale(.6);}25%{opacity:1;transform:translate(-50%,-60%) scale(1.15);}100%{opacity:0;transform:translate(-50%,-90%) scale(1);}}
+
+/* results */
+.results-wrap{text-align:center;padding:34px 20px;}
+.results-score{font-family:'IBM Plex Mono',monospace;font-size:40px;font-weight:800;color:var(--cyan);margin:6px 0;}
+.results-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px;}
+
+/* ================= COMPLETE SCREEN ================= */
+#completeScreen{align-items:center;justify-content:center;text-align:center;padding:40px 24px;position:relative;overflow:hidden;}
+.complete-kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);}
+.complete-badge{
+  width:96px;height:96px;border-radius:50%;margin:18px auto 10px;
+  background:radial-gradient(circle,rgba(85,230,255,.18),transparent 70%);
+  border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;
+  font-size:44px;box-shadow:0 0 40px rgba(85,230,255,.3);
+  animation:badgeIn .5s cubic-bezier(.2,.9,.3,1.4);
+}
+@keyframes badgeIn{0%{transform:scale(0) rotate(-30deg);opacity:0;}100%{transform:scale(1) rotate(0);opacity:1;}}
+.complete-title{font-size:22px;font-weight:800;color:#fff;margin:6px 0 4px;}
+.complete-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:16px;}
+.complete-stars{font-size:30px;letter-spacing:8px;margin-bottom:16px;}
+.complete-stars span{opacity:0;display:inline-block;}
+.complete-stars span.show{opacity:1;animation:popIn .4s ease;}
+.complete-xp{
+  font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:18px;color:var(--green);
+  background:rgba(99,245,163,.1);border:1px solid var(--green);border-radius:99px;
+  padding:8px 20px;display:inline-block;margin-bottom:26px;
+}
+.complete-btn{
+  background:linear-gradient(135deg,var(--violet),var(--cyan));color:#04121a;
+  font-weight:800;font-size:14px;border:none;border-radius:12px;
+  padding:15px 40px;cursor:pointer;box-shadow:0 10px 26px rgba(85,230,255,.25);
+}
+
+/* confetti */
+.confetti-piece{
+  position:fixed;top:-10px;width:8px;height:8px;z-index:70;pointer-events:none;
+  animation:confettiFall linear forwards;
+}
+@keyframes confettiFall{
+  to{transform:translateY(110vh) rotate(540deg);opacity:.2;}
+}
+
+/* ================= FINALE BOARD ================= */
+#boardScreen{padding:20px 16px 90px;}
+.board-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:18px;}
+.board-cols{display:flex;gap:12px;}
+.board-col{flex:1;display:flex;flex-direction:column;gap:10px;}
+.board-col-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+.clue-card{
+  background:var(--amber);color:#2c2205;font-size:11.5px;line-height:1.4;
+  padding:12px 12px;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,.3);
+  cursor:pointer;border:2px solid transparent;
+}
+.clue-card .clue-src{display:block;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:9px;opacity:.7;}
+.clue-card.locked{opacity:.3;cursor:default;filter:grayscale(1);}
+.clue-card.selected{border-color:#fff;}
+.clue-card.matched{border-color:var(--green);opacity:.6;cursor:default;}
+.diag-chip{
+  background:var(--panel2);color:#dbe5f6;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  padding:12px 12px;border-radius:8px;border:2px solid var(--line);cursor:pointer;
+}
+.diag-chip.matched{border-color:var(--green);opacity:.5;cursor:default;}
+.diag-chip.wrong-flash{border-color:var(--red);animation:shakeX .35s ease;}
+.board-progress{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);margin-top:18px;text-align:center;}
+#boardSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+#matchBoard{position:relative;}
+
+/* ================= ROBOT RUN — floating fidget widget ================= */
+.robot-dock{
+  position:fixed;right:14px;bottom:14px;width:230px;z-index:90;
+  background:linear-gradient(160deg,#0e1626,#080d18);
+  border:1px solid #2b3a58;border-radius:14px;
+  box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 24px rgba(85,230,255,.06);
+  overflow:hidden;user-select:none;
+  transition:opacity .2s ease,transform .2s ease;
+}
+.robot-dock.hidden{display:none;}
+.robot-drag-handle{
+  height:30px;padding:0 8px 0 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(90deg,#111a2c,#0d1422);
+  border-bottom:1px solid #202d43;
+  cursor:grab;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;color:#8fa0be;
+}
+.robot-dock.dragging .robot-drag-handle{cursor:grabbing;box-shadow:0 0 0 1px rgba(85,230,255,.25) inset;}
+.robot-handle-left{display:flex;align-items:center;gap:5px;}
+.robot-live{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);display:inline-block;animation:pulseLive 1.3s infinite;}
+@keyframes pulseLive{50%{opacity:.35;transform:scale(.7);}}
+.robot-drag-hint{color:#4a5773;}
+.robot-handle-right{display:flex;align-items:center;gap:7px;}
+.robot-score{color:#7f8fac;}
+.robot-score b{color:var(--cyan);}
+.robot-score b.robot-best{color:var(--violet);}
+.robot-min-btn{
+  width:16px;height:16px;line-height:14px;border-radius:4px;border:1px solid #33405d;
+  background:#121b2c;color:#9fb0c8;font-size:11px;cursor:pointer;padding:0;
+}
+.robot-arena{position:relative;height:150px;background:#081323;touch-action:none;overflow:hidden;}
+#robotCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;}
+.robot-start{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  padding:6px 10px;border:1px solid rgba(85,230,255,.35);border-radius:999px;
+  background:rgba(5,10,20,.72);color:#dffaff;font:700 9px 'IBM Plex Mono',monospace;
+  letter-spacing:1px;pointer-events:none;white-space:nowrap;transition:opacity .18s;
+}
+.robot-help{position:absolute;right:8px;bottom:6px;color:#3f4c66;font:7px 'IBM Plex Mono',monospace;letter-spacing:1px;pointer-events:none;}
+.robot-bubble{
+  display:none;position:fixed;right:16px;bottom:16px;z-index:90;
+  width:46px;height:46px;border-radius:50%;font-size:20px;cursor:pointer;
+  background:radial-gradient(circle,#132436,#0d1422);border:1px solid var(--cyan);
+  box-shadow:0 0 20px rgba(85,230,255,.3);
+}
+@media(max-width:600px){ .robot-dock{width:190px;} .robot-arena{height:125px;} }
+
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+</style>
+</head>
+<body>
+<canvas id="matrixRain"></canvas>
+<div class="scanline-overlay"></div>
+
+<div class="app">
+  <div class="hud">
+    <div class="hud-brand">
+      <div class="t">GLITCH<span>.EXE</span></div>
+      <div class="s">AI INVESTIGATION LAB</div>
+    </div>
+    <div class="hud-rank">
+      <div class="hud-rank-text">
+        <div class="hud-rank-name" id="hudRankName">Rookie Analyst</div>
+        <div class="hud-xp-track"><div class="hud-xp-fill" id="hudXpFill"></div></div>
+      </div>
+      <div class="hud-rank-icon" id="hudRankIcon">🔍</div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="screen active" id="mapScreen">
+    <div class="map-intro">Six files. One glitch in the machine. Clear each file in order to unlock the next — finish them all to open the Case Board.</div>
+    <div class="map-path" id="mapPath"></div>
+  </div>
+
+  <!-- LEVEL RUNNER -->
+  <div class="screen" id="levelScreen">
+    <div class="run-top">
+      <button class="run-exit" id="runExit">✕ ABORT</button>
+      <div class="run-dots" id="runDots"></div>
+      <div class="run-hud" id="runHud"></div>
+    </div>
+    <div class="stage-wrap" id="stageWrap"></div>
+    <div class="continue-bar" id="continueBar">
+      <button class="continue-btn" id="continueBtn">CONTINUE →</button>
+    </div>
+  </div>
+
+  <!-- COMPLETE -->
+  <div class="screen" id="completeScreen">
+    <div class="complete-kicker">ACCESS GRANTED</div>
+    <div class="complete-badge" id="completeBadge">✦</div>
+    <div class="complete-title" id="completeTitle">Objective Cleared</div>
+    <div class="complete-sub" id="completeSub">Evidence logged.</div>
+    <div class="complete-stars" id="completeStars"><span>★</span><span>★</span><span>★</span></div>
+    <div class="complete-xp" id="completeXp">+100 XP</div>
+    <div><button class="complete-btn" id="completeBtn">CONTINUE →</button></div>
+  </div>
+
+  <!-- FINALE: EVIDENCE BOARD -->
+  <div class="screen" id="boardScreen">
+    <div class="stage-kicker">FINAL FILE — CASE BOARD</div>
+    <div class="stage-title">Connect Every Clue</div>
+    <div class="board-sub">Tap a clue, then tap the diagnosis it belongs to. All four clues came from the files you already cracked.</div>
+    <div id="matchBoard">
+      <svg id="boardSvg"></svg>
+      <div class="board-cols">
+        <div class="board-col">
+          <div class="board-col-label">Clues</div>
+          <div id="clueCol"></div>
+        </div>
+        <div class="board-col">
+          <div class="board-col-label">Diagnoses</div>
+          <div id="diagCol"></div>
+        </div>
+      </div>
+    </div>
+    <div class="board-progress" id="boardProgress">0 / 4 connected</div>
+  </div>
+</div>
+
+<!-- floating fidget minigame: ROBOT RUN -->
+<div class="robot-dock" id="robotDock">
+  <div class="robot-drag-handle" id="robotHandle">
+    <div class="robot-handle-left"><span class="robot-live"></span>ROBOT RUN<span class="robot-drag-hint"> · DRAG</span></div>
+    <div class="robot-handle-right">
+      <span class="robot-score"><b id="robotScoreVal">0</b> BEST <b id="robotBestVal" class="robot-best">0</b></span>
+      <button class="robot-min-btn" id="robotMinBtn" title="minimize">–</button>
+    </div>
+  </div>
+  <div class="robot-arena" id="robotArena">
+    <canvas id="robotCanvas"></canvas>
+    <div class="robot-start" id="robotStart">TAP TO FLY</div>
+    <div class="robot-help">TAP / SPACE = BOOST</div>
+  </div>
+</div>
+<button class="robot-bubble" id="robotBubble" title="open Robot Run">🤖</button>
+
+<script>
+/* =========================================================
+   DATA
+   ========================================================= */
+const RANKS = [
+  {min:0,   name:'Rookie Analyst',      icon:'🔍'},
+  {min:150, name:'Junior Investigator', icon:'🗂'},
+  {min:350, name:'Senior Investigator', icon:'🕵'},
+  {min:600, name:'Chief Investigator',  icon:'⭐'},
+  {min:850, name:'Master Investigator', icon:'🏆'},
+];
+
+const LEVELS = [
+
+/* ---------------- FILE 01: MEET THE MACHINE ---------------- */
+{
+  id:'meet-machine', tag:'TRAINING FILE 01', title:'Meet the Machine', icon:'⚙️',
+  badgeName:'Systems Badge',
+  stages:[
+    { type:'classify', title:'Sort Rush',
+      body:'For each task: is today\'s AI good at this, or is it still mostly a human strength? Tap the right bin.',
+      items:[
+        { task:'Recognizing a face in a photo', answer:'ai',
+          explain:'AI is very strong here — trained on millions of labeled faces, this is one of its most mature skills.' },
+        { task:'Predicting exactly what the stock market does tomorrow', answer:'human',
+          explain:'Neither humans nor AI can do this reliably — markets are close to random at short timescales. AI spots patterns, not chaos.' },
+        { task:'Sorting emails into folders by topic', answer:'ai',
+          explain:'A textbook AI task: lots of labeled examples, a clear pattern to learn (word patterns → category).' },
+        { task:'Understanding sarcasm in a text from a friend', answer:'human',
+          explain:'AI often misses sarcasm — it relies on tone, shared history, and context it doesn\'t have. It can guess, but unreliably.' },
+        { task:'Writing a technically correct poem about heartbreak', answer:'ai',
+          explain:'AI can produce fluent, technically competent poetry easily. Whether it\'s a *good* poem is a different question.' },
+      ]
+    },
+    { type:'order', title:'Build the Pipeline',
+      body:'Every AI system you\'ll investigate follows the same basic pipeline. Tap the pieces, in order, to build it.',
+      pool:['Model','Training','Output','Data','Input'],
+      correctOrder:['Data','Training','Model','Input','Output'],
+      explain:'Data goes in, the system is <b>Trained</b> on it to find patterns, producing a <b>Model</b>. Later, new <b>Input</b> is fed to that model, which produces an <b>Output</b>. Every file you investigate is really a dispute about one of these five stages — usually "what was actually in the Data."'
+    },
+    { type:'predict', title:'Pattern Hunter',
+      body:'Here\'s a tiny training set an AI model might learn from. Study the pattern, then predict the new case.',
+      table:{ headers:['Fruit','Color','Firmness','Ripe?'],
+        rows:[
+          ['Avocado A','Dark green/black','Soft','Yes'],
+          ['Avocado B','Bright green','Hard','No'],
+          ['Avocado C','Dark green/black','Soft','Yes'],
+          ['Avocado D','Bright green','Hard','No'],
+          ['Avocado E','Dark green/black','Medium','Yes'],
+        ]},
+      question:'New avocado: dark green/black, soft. Ripe or not?',
+      options:[
+        { text:'Ripe', correct:true },
+        { text:'Not ripe', correct:false },
+        { text:'Impossible to tell', correct:false },
+      ],
+      explain:'You just did what a model does: you didn\'t "know" avocados — you matched a pattern (dark + soft → ripe, every time in the data) and predicted forward. That\'s it. This is also exactly how a model can be confidently wrong: if the pattern in its training data was misleading, it repeats the mistake with just as much apparent confidence.'
+    }
+  ],
+  quiz:[
+    {q:'A model sees thousands of examples, learns a recurring pattern, then uses that pattern on a new input. What is it doing?',o:['Understanding the world like a human','Pattern matching from learned data','Checking a database for the exact answer'],a:1,f:'The model uses a learned pattern to make a prediction; it does not need human-like understanding.'},
+    {q:'Which chain matches the AI pipeline you just built?',o:['Data → Training → Model → Input → Output','Input → Output → Training → Data → Model','Model → Data → Output → Training → Input'],a:0,f:'Training uses data to produce a model; new input later goes through the model to produce an output.'},
+    {q:'A model is confidently wrong because its training data contains a misleading pattern. What\'s the lesson?',o:['Confidence guarantees truth','A model can reproduce patterns without understanding them','Models only fail when the code is broken'],a:1,f:'A model can be very consistent and still wrong when the pattern it learned is misleading.'}
+  ]
+},
+
+/* ---------------- FILE 02: PROMPT LAB ---------------- */
+{
+  id:'prompt-lab', tag:'TRAINING FILE 02', title:'Prompt Lab', icon:'🧪',
+  badgeName:'Prompting Badge',
+  stages:[
+    { type:'promptlab', title:'Prompt Remix',
+      body:'Task: get an AI to explain photosynthesis. Flip between three real prompt attempts and watch the output change.',
+      versions:[
+        { label:'V1', prompt:'Explain photosynthesis.',
+          output:'"Photosynthesis is the biological process by which chlorophyll-containing organisms convert light energy into chemical energy, synthesizing carbohydrates from carbon dioxide and water while releasing oxygen as a byproduct, primarily via the light-dependent and light-independent (Calvin cycle) reactions..."' },
+        { label:'V2', prompt:'Explain photosynthesis to a 10-year-old.',
+          output:'"Photosynthesis is how plants make their own food! They take in sunlight, water, and air, and turn it into sugar for energy — kind of like a plant\'s kitchen. As a bonus, they also let out oxygen, which is what we breathe!"' },
+        { label:'V3', prompt:'Explain photosynthesis to a 10-year-old using a simple analogy and no scientific jargon.',
+          output:'"Think of a leaf like a tiny solar-powered kitchen. Sunlight is the power switch, water and air are the ingredients, and sugar is the meal the plant cooks up for itself. The \'exhaust\' from this kitchen happens to be oxygen — which is lucky for us, since that\'s the air we breathe!"' },
+      ],
+      explain:'Same model, same underlying knowledge — three completely different outputs. What changed was the instruction: audience (V2), then audience + format constraint (V3). That\'s the whole trick: <b>context + constraints + audience + format → better outputs.</b>'
+    },
+    { type:'promptown', title:'Prompt Builder',
+      body:'New task: get an AI to explain how compound interest works. Write a prompt below — we\'ll score it against the same four levers you just saw.',
+      criteria:[
+        { key:'audience', label:'Names an audience', test:t=>/kid|child|beginner|10.year|teen|student|grandma|someone who/i.test(t) },
+        { key:'format', label:'Sets a format/length', test:t=>/analog(y|ies)|short|sentence|bullet|no jargon|simple|step.by.step|example/i.test(t) },
+        { key:'goal', label:'States the actual goal', test:t=>/explain|teach|show|help.*understand/i.test(t) },
+        { key:'constraint', label:'Adds a real constraint', test:t=>/without|no (technical|scientific|medical)?\s*jargon|avoid|under \d+|in \d+ (words|sentences|bullets)|keep it (short|simple)/i.test(t) },
+      ]
+    }
+  ],
+  quiz:[
+    {q:'You want an explanation aimed at a 13-year-old. Which instruction adds the most useful context?',o:['Explain this.','Explain this to a 13-year-old using a simple analogy.','Explain this with maximum technical detail.'],a:1,f:'Naming the audience gives the model a target for vocabulary, examples and complexity.'},
+    {q:'Two prompts go to the same model but produce very different answers. What changed?',o:['The model secretly became smarter','The instruction/context changed','The internet changed the model instantly'],a:1,f:'The model responds differently because the prompt changes the context and constraints it\'s given.'},
+    {q:'Which prompt is strongest for a beginner?',o:['Explain photosynthesis.','Explain photosynthesis to a beginner in 5 bullet points using one everyday analogy.','Photosynthesis. Make it good.'],a:1,f:'The second prompt gives an audience, format and concrete constraints instead of leaving the target vague.'}
+  ]
+},
+
+/* ---------------- CASE 01: BIAS ---------------- */
+{
+  id:'hiring', tag:'CASE FILE 01', title:'The Applicant Who Never Gets Called', icon:'⚖️',
+  badgeName:'Bias Badge',
+  render:'scatter',
+  narrative:'A staffing platform\'s screening model has rejected the same well-qualified applicant, Dana R., four times across four different job posts. HR swears the model is "just looking at qualifications." Pull the model\'s actual scoring and find out what it\'s really weighing.',
+  exhibitLabel:'EXHIBIT A — SCORING SAMPLE (12 APPLICANTS)',
+  data:[
+    {name:"Dana R.", exp:7, prestige:2, decision:"reject"},
+    {name:"J. Alvarez", exp:6, prestige:2, decision:"reject"},
+    {name:"P. Okafor", exp:8, prestige:3, decision:"reject"},
+    {name:"S. Kim", exp:3, prestige:9, decision:"hire"},
+    {name:"M. Chen", exp:2, prestige:8, decision:"hire"},
+    {name:"T. Novak", exp:4, prestige:9, decision:"hire"},
+    {name:"L. Fischer", exp:5, prestige:7, decision:"hire"},
+    {name:"R. Osei", exp:9, prestige:2, decision:"reject"},
+    {name:"A. Patel", exp:3, prestige:8, decision:"hire"},
+    {name:"K. Dubois", exp:6, prestige:3, decision:"reject"},
+    {name:"W. Santos", exp:2, prestige:9, decision:"hire"},
+    {name:"E. Haddad", exp:8, prestige:2, decision:"reject"},
+  ],
+  axisX:'Years of relevant experience →', axisY:'↑ School "prestige" score',
+  xrayExplain:'X-RAY — MODEL WEIGHTS<br>Experience ................. weight 0.06<br>School Prestige Score ...... weight 0.81<br>Age bracket ................. weight 0.11<br><br>The model barely uses experience at all. It\'s overwhelmingly driven by a "school prestige" score — which correlates with tuition cost, which correlates with family income. It\'s not evaluating skill. It\'s using prestige as a stand-in (a "proxy") for class background, and rejecting anyone who didn\'t attend an expensive school — regardless of how qualified they are.',
+  verdictQ:'What is actually driving the rejections?',
+  verdictOpts:[
+    {text:'Years of experience — Dana just hasn\'t worked long enough', correct:false, feedback:'Not quite. Look at the weights again — experience barely moves the score at all.'},
+    {text:'A "school prestige" score acting as a proxy for wealth/class background', correct:true, feedback:'That\'s it. This is a classic proxy variable: the model never sees "income" directly, but prestige score encodes it anyway.'},
+    {text:'Random noise in the scoring system', correct:false, feedback:'The pattern is too consistent to be noise — high prestige score reliably predicts "hire" regardless of experience.'},
+  ],
+  clue:{quote:'"The model barely uses experience at all — it\'s overwhelmingly driven by a school-prestige score."', src:'Exhibit A, Model Weights'},
+  diagnosis:'A proxy variable (school prestige) standing in for wealth and class background',
+  quiz:[
+    {q:'The hiring model gives school prestige a weight of 0.81 and experience a weight of 0.06. What\'s driving the result?',o:['Experience is the main signal','School prestige is overwhelmingly influential','The decisions are random'],a:1,f:'The displayed weights show school prestige contributes far more to the score than experience.'},
+    {q:'Why is school prestige called a proxy here?',o:['It\'s a direct measurement of skill','It stands in for another factor, such as wealth/class background','It\'s a random number added to the model'],a:1,f:'The model doesn\'t directly use income, but prestige correlates with it and therefore acts as a stand-in.'},
+    {q:'If a model looks fair on paper but a proxy reproduces a social disadvantage, what should investigators do?',o:['Only inspect the final accuracy number','Trace which features are actually driving decisions','Assume the model is neutral because it\'s automated'],a:1,f:'AI investigation means looking beneath the headline metric to the features actually driving decisions.'}
+  ]
+},
+
+/* ---------------- CASE 02: HALLUCINATION ---------------- */
+{
+  id:'hallucination', tag:'CASE FILE 02', title:'The Citation That Doesn\'t Exist', icon:'🔮',
+  badgeName:'Truth Badge',
+  render:'tokens',
+  narrative:'A law student asked an AI assistant for a precedent supporting a tenant\'s-rights argument. It replied instantly, in full confidence, with a real-sounding case name, year, and court. The case does not exist. Find out how the model produced something so specific while being completely wrong.',
+  exhibitLabel:'EXHIBIT B — GENERATION TRACE ("...ruled in Whitfield v. ")',
+  data:[
+    {word:"Whitfield", pct:91},
+    {word:"v.", pct:97},
+    {word:"Marsden", pct:68},
+    {word:"Housing", pct:54},
+    {word:"Authority", pct:61},
+    {word:"(2014)", pct:47},
+  ],
+  xrayExplain:'X-RAY — WHAT "CONFIDENCE" ACTUALLY MEANS HERE<br>Each bar is not "how true is this" — it\'s "how statistically likely is this next word, given everything before it." The model has read millions of real case citations, so it knows exactly what a *plausible* one sounds like: a surname, "v.", another surname, an institution, a year. It has no database it\'s checking against — it never "looked up" whether Whitfield v. Marsden is real, because that\'s not what it does.',
+  verdictQ:'What does the model\'s high confidence actually indicate?',
+  verdictOpts:[
+    {text:'That the citation is real and was verified', correct:false, feedback:'That\'s the trap. High confidence here never meant "checked and verified" — the model has no way to check.'},
+    {text:'That this is a statistically likely-sounding sequence of words, not a fact-checked answer', correct:true, feedback:'Exactly. Fluency and confidence are about word patterns, not truth. This is the core mechanism behind hallucination.'},
+    {text:'That the model is malfunctioning', correct:false, feedback:'It\'s not broken — it\'s doing exactly what it\'s built to do (predict likely text). That\'s precisely the problem.'},
+  ],
+  clue:{quote:'"91% confidence on the first word, dropping to 47% by the year — a plausible shape, not a checked fact."', src:'Exhibit B, Generation Trace'},
+  diagnosis:'High confidence measuring word-plausibility, not fact-checked truth',
+  quiz:[
+    {q:'The chatbot gives a 91% score to a word in a fake citation. What does that score mean here?',o:['91% chance the citation is legally real','91% likelihood of that next word given the context','91% chance a human checked the source'],a:1,f:'The generation trace is about statistical word prediction, not external fact verification.'},
+    {q:'A citation sounds extremely specific and confident. What\'s the safest move?',o:['Trust it because specificity means accuracy','Verify the citation against a reliable source','Assume all AI citations are fake'],a:1,f:'Specificity and fluency are not proof. Important claims should be checked against a source.'},
+    {q:'Why did the model produce a fake case that sounded real?',o:['It intentionally decided to lie','It generated a plausible pattern without checking whether the fact existed','It searched the court database and found a typo'],a:1,f:'The model generated a sequence that fit learned citation patterns without verifying the fact.'}
+  ]
+},
+
+/* ---------------- CASE 03: PRIVACY / RECOMMENDER ---------------- */
+{
+  id:'recommender', tag:'CASE FILE 03', title:'"It\'s Listening To Me"', icon:'🕸️',
+  badgeName:'Privacy Badge',
+  render:'embedding',
+  narrative:'A user watched three videos about vintage typewriter repair — a genuinely obscure hobby — and the next day their feed recommended a niche typewriter-ribbon shop they swear they never searched for. They\'re convinced their phone\'s microphone is spying on them. Check the actual recommendation engine, not the conspiracy.',
+  exhibitLabel:'EXHIBIT C — EMBEDDING MAP (WHAT THE SYSTEM ACTUALLY SAW)',
+  data:[
+    {name:"Typewriter repair pt.1", x:0.72, y:0.66, watched:true},
+    {name:"Typewriter repair pt.2", x:0.78, y:0.60, watched:true},
+    {name:"Ribbon spool history", x:0.81, y:0.70, watched:true},
+    {name:"Ribbon shop ad", x:0.83, y:0.64, watched:false, recommended:true},
+    {name:"Fountain pen review", x:0.55, y:0.40, watched:false},
+    {name:"Mechanical keyboards", x:0.40, y:0.35, watched:false},
+    {name:"Cooking: pasta night", x:0.10, y:0.85, watched:false},
+    {name:"Travel vlog: Lisbon", x:0.08, y:0.15, watched:false},
+    {name:"Gym routine", x:0.20, y:0.55, watched:false},
+  ],
+  xrayExplain:'X-RAY — EMBEDDING SPACE<br>Every video becomes a point in this space based on its content — words in the title/transcript, who else watched it, what it\'s tagged with. Related videos end up near each other, with no audio, location, or microphone data involved at all.<br><br>The three watched videos cluster tightly. The "ribbon shop" ad sits inside that same cluster — because it shares vocabulary and viewer overlap with obscure typewriter content, not because anything was overheard. Niche interests produce *tiny* clusters, which makes the recommendation feel eerily specific — it\'s precision, not surveillance.',
+  verdictQ:'What actually caused the eerily specific recommendation?',
+  verdictOpts:[
+    {text:'The phone\'s microphone picked up a conversation', correct:false, feedback:'No microphone data is used anywhere in this system — the exhibit is built entirely from watch history.'},
+    {text:'Closeness in embedding space to videos the user already watched', correct:true, feedback:'Right. Niche interests form small, tight clusters — so recommendations from that cluster feel unnervingly precise, even though it\'s just similarity math.'},
+    {text:'Coincidence — the algorithm picked it at random', correct:false, feedback:'Not random — the ad sits measurably closer to the watched cluster than every other video in the exhibit.'},
+  ],
+  clue:{quote:'"The ribbon-shop ad sits inside the same tight cluster as the three watched videos — no audio data anywhere in the pipeline."', src:'Exhibit C, Embedding Map'},
+  diagnosis:'Closeness in embedding space to already-watched content, not surveillance',
+  quiz:[
+    {q:'The ribbon-shop ad sits inside the same tight cluster as the watched typewriter videos. What does that suggest?',o:['The phone microphone must have heard a conversation','The system found similar content in its representation space','The ad was chosen completely at random'],a:1,f:'The exhibit shows the recommendation near the watched-content cluster, a similarity signal.'},
+    {q:'What is an embedding doing in this case?',o:['Turning content into a representation where related items can be near each other','Recording everything the microphone hears','Encrypting a user password'],a:0,f:'Embeddings represent content as points/vectors so similarity between items can be measured.'},
+    {q:'Why can a niche recommendation feel like surveillance even when it isn\'t?',o:['Niche interests can create very tight similarity clusters','Algorithms can always hear private conversations','Specific recommendations are necessarily illegal'],a:0,f:'A small, tight cluster can make a similarity-based recommendation feel eerily specific.'}
+  ]
+},
+
+/* ---------------- CASE 04: THE TRADE-OFF ---------------- */
+{
+  id:'tradeoff', tag:'CASE FILE 04', title:'The Fix That Broke Something Else', icon:'⚗️',
+  badgeName:'Trade-off Badge',
+  render:'slider',
+  narrative:'A platform\'s content-moderation model was flagged for treating one community more harshly than others. The team cranked up a "fairness correction" to close the gap — a week later, complaints spiked that obviously-fine posts were getting removed. Pull the actual lever and see both numbers at once.',
+  exhibitLabel:'EXHIBIT D — LIVE MODERATION MODEL (EXPERIMENTAL)',
+  sliderData:[
+    {t:0,accuracy:94,fairnessGap:38},{t:1,accuracy:93,fairnessGap:34},{t:2,accuracy:92,fairnessGap:29},
+    {t:3,accuracy:90,fairnessGap:25},{t:4,accuracy:88,fairnessGap:21},{t:5,accuracy:85,fairnessGap:17},
+    {t:6,accuracy:81,fairnessGap:13},{t:7,accuracy:77,fairnessGap:10},{t:8,accuracy:71,fairnessGap:6},
+    {t:9,accuracy:65,fairnessGap:4},{t:10,accuracy:58,fairnessGap:2},
+  ],
+  xrayExplain:'X-RAY — WHY THIS HAPPENS<br>The "fairness correction" shifts the model\'s decision threshold differently per group, so both groups get flagged at closer to the same rate. Push that shift harder and the gap really does shrink — that part is real.<br><br>But the threshold shift also pulls the model away from the pattern it learned from the data, so it starts making more plain mistakes on <i>everyone</i> — that\'s the accuracy drop. There is no setting where the gap hits zero AND accuracy stays at 94%. Every fix sits somewhere on this curve.',
+  verdictQ:'What\'s the most accurate way to describe this system\'s fairness problem?',
+  verdictOpts:[
+    {text:'It\'s a bug — a well-built model shouldn\'t have any trade-off at all', correct:false, feedback:'Not a bug. The trade-off shows up precisely because the correction works — a structural feature of this fix, not sloppy code.'},
+    {text:'Fairness and accuracy trade off against each other, so the setting is a judgment call, not a technical one', correct:true, feedback:'Exactly right. The data can tell you the shape of the curve. It can\'t tell you which point on it is the right one — that\'s a values decision.'},
+    {text:'The team should just leave the slider at 0 and ignore the fairness gap', correct:false, feedback:'That\'s also a choice on the curve — one that ignores the harm on the other side. "Do nothing" isn\'t neutral, it\'s picking t=0.'},
+  ],
+  clue:{quote:'"At threshold 10 the fairness gap nearly vanishes — and overall accuracy falls from 94% to 58%."', src:'Exhibit D, Fairness Correction Sweep'},
+  diagnosis:'A genuine trade-off: correcting one metric (fairness) degrades another (accuracy)',
+  quiz:[
+    {q:'At threshold 10, the fairness gap is 2 while accuracy is 58%. What does this show?',o:['The correction fixed everything with no downside','Improving one metric can worsen another','Accuracy and fairness are always identical'],a:1,f:'The sweep shows the fairness gap shrinking while overall accuracy also falls.'},
+    {q:'If leaving the slider at 0 keeps accuracy high but leaves a large fairness gap, is that neutral?',o:['Yes, doing nothing is not a decision','No, it\'s still a choice about which outcome to accept','Yes, because only the algorithm decides'],a:1,f:'Choosing the default setting still chooses a point on the trade-off curve and its consequences.'},
+    {q:'What can the graph tell the team, and what can\'t it decide by itself?',o:['It shows the trade-off; it cannot decide which values are most defensible','It decides the morally correct threshold automatically','It cannot show any useful information'],a:0,f:'The graph describes consequences. Deciding which trade-off is acceptable involves human judgment.'}
+  ]
+},
+
+];
+
+/* case-type levels get an investigate + verdict stage prepended automatically */
+LEVELS.forEach(lv=>{
+  if (lv.render){
+    lv.stages = [
+      { type:'investigate', title:'Investigate', body:lv.narrative, render:lv.render, exhibitLabel:lv.exhibitLabel, data:lv.data, axisX:lv.axisX, axisY:lv.axisY, sliderData:lv.sliderData, xrayExplain:lv.xrayExplain },
+      { type:'verdict', title:'File Your Verdict', body:'Based on what you just pulled, what\'s the real mechanism at work?', question:lv.verdictQ, options:lv.verdictOpts }
+    ];
+  }
+});
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const state = { xp:0, completed:new Set(), stars:{}, matchedClues:new Set() };
+
+function addXP(n){ state.xp += n; renderHud(); }
+function currentRank(){ let r=RANKS[0]; for (const x of RANKS) if (state.xp>=x.min) r=x; return r; }
+function nextRank(){ const cur=currentRank(); const i=RANKS.indexOf(cur); return RANKS[i+1]||null; }
+function renderHud(){
+  const r = currentRank(); const nr = nextRank();
+  document.getElementById('hudRankIcon').textContent = r.icon;
+  document.getElementById('hudRankName').textContent = r.name;
+  const pct = nr ? Math.min(100,((state.xp-r.min)/(nr.min-r.min))*100) : 100;
+  document.getElementById('hudXpFill').style.width = pct+'%';
+}
+
+/* =========================================================
+   CONFETTI
+   ========================================================= */
+function confetti(count){
+  count = count||60;
+  const colors=['#55e6ff','#9b7cff','#63f5a3','#ffd166','#ff657a','#ff6fae'];
+  for (let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='confetti-piece';
+    p.style.left=(Math.random()*100)+'vw';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.borderRadius=Math.random()<0.5?'50%':'2px';
+    const dur=2+Math.random()*1.5;
+    p.style.animationDuration=dur+'s';
+    p.style.animationDelay=(Math.random()*0.3)+'s';
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), (dur+0.5)*1000);
+  }
+}
+function glitchFlash(){
+  document.body.classList.remove('glitching');
+  void document.body.offsetWidth;
+  document.body.classList.add('glitching');
+  setTimeout(()=>document.body.classList.remove('glitching'), 260);
+}
+function popPoints(text, color){
+  const el=document.createElement('div');
+  el.className='quiz-points-pop';
+  el.textContent=text;
+  if (color) el.style.color=color;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('go'));
+  setTimeout(()=>el.remove(),1050);
+}
+
+/* =========================================================
+   MAP SCREEN
+   ========================================================= */
+function levelStatus(idx){
+  const lv = LEVELS[idx];
+  if (state.completed.has(lv.id)) return 'done';
+  if (idx===0) return 'available';
+  const prev = LEVELS[idx-1];
+  return state.completed.has(prev.id) ? 'available' : 'locked';
+}
+function allLevelsDone(){ return LEVELS.every(lv=>state.completed.has(lv.id)); }
+
+function renderMap(){
+  const path = document.getElementById('mapPath');
+  path.innerHTML = '<div class="map-track"></div><div class="map-track-fill" id="mapTrackFill"></div>';
+  let doneCount=0;
+  LEVELS.forEach((lv,idx)=>{
+    const status = levelStatus(idx);
+    if (status==='done') doneCount++;
+    const row = document.createElement('div');
+    row.className = 'node-row '+status;
+    const stars = state.stars[lv.id]||0;
+    row.innerHTML = `
+      <div class="node-dot">${status==='locked'?'🔒':lv.icon}${status==='done'?`<div class="node-stars">${'★'.repeat(stars)}${'☆'.repeat(3-stars)}</div>`:''}</div>
+      <div class="node-body">
+        <div class="node-tag">${lv.tag}</div>
+        <div class="node-title">${lv.title}</div>
+        <div class="node-status">${status==='done'?'CLEARED':status==='available'?'TAP TO START':'LOCKED'}</div>
+      </div>`;
+    if (status!=='locked'){
+      row.querySelector('.node-dot').onclick = ()=>openLevel(lv.id);
+      row.querySelector('.node-body').onclick = ()=>openLevel(lv.id);
+      row.style.cursor='pointer';
+    }
+    path.appendChild(row);
+  });
+  // boss node
+  const bossStatus = allLevelsDone() ? (state.completed.has('__board__')?'done':'available') : 'locked';
+  const bossRow = document.createElement('div');
+  bossRow.className = 'node-row boss '+bossStatus;
+  bossRow.innerHTML = `
+    <div class="node-dot">${bossStatus==='locked'?'🔒':'🧩'}</div>
+    <div class="node-body">
+      <div class="node-tag">FINAL FILE</div>
+      <div class="node-title">The Case Board</div>
+      <div class="node-status">${bossStatus==='done'?'CASE CLOSED':bossStatus==='available'?'TAP TO START':'CLEAR ALL FILES FIRST'}</div>
+    </div>`;
+  if (bossStatus!=='locked'){
+    bossRow.onclick = ()=>openBoard();
+    bossRow.style.cursor='pointer';
+  }
+  path.appendChild(bossRow);
+
+  const fillPct = (doneCount/LEVELS.length)*100;
+  requestAnimationFrame(()=>{ document.getElementById('mapTrackFill').style.height = fillPct+'%'; });
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* =========================================================
+   LEVEL RUNNER
+   ========================================================= */
+let run = null; // {level, stageIdx, quiz:{idx,correct,streak,points}, cleared:false}
+
+function openLevel(id){
+  const level = LEVELS.find(l=>l.id===id);
+  run = { level, stageIdx:0, phase:'stages', quiz:{idx:0,correct:0,streak:0} };
+  showScreen('levelScreen');
+  renderRunDots();
+  renderStage();
+}
+document.getElementById('runExit').onclick = ()=>{ run=null; renderMap(); showScreen('mapScreen'); };
+
+function renderRunDots(){
+  const wrap = document.getElementById('runDots');
+  wrap.innerHTML='';
+  const total = run.level.stages.length + 1; // + quiz
+  for (let i=0;i<total;i++){
+    const d = document.createElement('div');
+    d.className='run-dot';
+    const curIdx = run.phase==='quiz' ? run.level.stages.length : run.stageIdx;
+    if (i<curIdx) d.classList.add('done');
+    else if (i===curIdx) d.classList.add('active');
+    wrap.appendChild(d);
+  }
+  document.getElementById('runHud').textContent = run.level.tag;
+}
+function hideContinue(){ document.getElementById('continueBar').classList.remove('show'); }
+function showContinue(cb){
+  const bar = document.getElementById('continueBar');
+  const btn = document.getElementById('continueBtn');
+  bar.classList.add('show');
+  btn.onclick = cb;
+}
+
+function renderStage(){
+  hideContinue();
+  renderRunDots();
+  const stage = run.level.stages[run.stageIdx];
+  const wrap = document.getElementById('stageWrap');
+  wrap.innerHTML='';
+  wrap.classList.remove('stage-wrap'); void wrap.offsetWidth; wrap.classList.add('stage-wrap');
+
+  const kicker = document.createElement('div');
+  kicker.className='stage-kicker';
+  kicker.textContent = run.level.tag+' · STAGE '+(run.stageIdx+1)+'/'+run.level.stages.length;
+  wrap.appendChild(kicker);
+  const h = document.createElement('div');
+  h.className='stage-title';
+  h.textContent = stage.title;
+  wrap.appendChild(h);
+  if (stage.body){
+    const b=document.createElement('div');
+    b.className='stage-body';
+    b.textContent = stage.body;
+    wrap.appendChild(b);
+  }
+  const host = document.createElement('div');
+  wrap.appendChild(host);
+
+  const renderers = {
+    classify: renderClassify, order: renderOrder, predict: renderPredict,
+    promptlab: renderPromptLab, promptown: renderPromptOwn,
+    investigate: renderInvestigate, verdict: renderVerdict
+  };
+  renderers[stage.type](host, stage);
+}
+
+function nextStage(){
+  run.stageIdx++;
+  if (run.stageIdx >= run.level.stages.length){
+    run.phase='quiz';
+    startQuiz();
+  } else {
+    renderStage();
+  }
+}
+
+/* ---- SORT RUSH ---- */
+function renderClassify(host, stage){
+  let i=0, score=0;
+  const total = stage.items.length;
+  host.innerHTML = `
+    <div class="sr-progress" id="srProg">ITEM 1 / ${total}</div>
+    <div class="sr-stage" id="srStage"></div>
+    <div class="sr-feedback" id="srFb"></div>
+    <div class="sr-bins">
+      <button class="sr-bin human" id="binHuman"><span class="emoji">🧑</span>HUMAN</button>
+      <button class="sr-bin ai" id="binAi"><span class="emoji">🤖</span>AI</button>
+    </div>`;
+  const stageEl = host.querySelector('#srStage');
+  const fb = host.querySelector('#srFb');
+  const prog = host.querySelector('#srProg');
+
+  function showCard(){
+    stageEl.innerHTML='';
+    const card = document.createElement('div');
+    card.className='sr-card enter';
+    card.textContent = stage.items[i].task;
+    stageEl.appendChild(card);
+    fb.textContent=''; fb.className='sr-feedback';
+    prog.textContent = `ITEM ${i+1} / ${total}`;
+  }
+  function pick(choice){
+    const item = stage.items[i];
+    const card = stageEl.querySelector('.sr-card');
+    const correct = choice===item.answer;
+    card.classList.add(choice==='human'?'fly-human':'fly-ai');
+    fb.textContent = (correct?'✓ CORRECT — ':'✗ NOT QUITE — ') + item.explain;
+    fb.className = 'sr-feedback ' + (correct?'correct':'wrong');
+    if (correct) score++;
+    host.querySelector('#binHuman').disabled=true;
+    host.querySelector('#binAi').disabled=true;
+    setTimeout(()=>{
+      i++;
+      host.querySelector('#binHuman').disabled=false;
+      host.querySelector('#binAi').disabled=false;
+      if (i<total) showCard();
+      else finish();
+    }, 1500);
+  }
+  function finish(){
+    host.innerHTML = `<div class="sr-summary"><div class="big">${score}/${total}</div>SORTED CORRECTLY</div>`;
+    showContinue(nextStage);
+  }
+  host.querySelector('#binHuman').onclick=()=>pick('human');
+  host.querySelector('#binAi').onclick=()=>pick('ai');
+  showCard();
+}
+
+/* ---- BUILD THE PIPELINE ---- */
+function renderOrder(host, stage){
+  let filled=0;
+  const total = stage.correctOrder.length;
+  const shuffled = [...stage.pool].sort(()=>Math.random()-0.5);
+  host.innerHTML = `
+    <div class="conveyor"><div class="slots" id="slots"></div></div>
+    <div class="pool" id="pool"></div>
+    <div class="explain-card" id="orderExplain"></div>`;
+  const slotsEl = host.querySelector('#slots');
+  const poolEl = host.querySelector('#pool');
+  for (let s=0;s<total;s++){
+    const slot=document.createElement('div');
+    slot.className='slot'; slot.textContent='?'; slot.dataset.idx=s;
+    slotsEl.appendChild(slot);
+  }
+  shuffled.forEach(word=>{
+    const chip=document.createElement('button');
+    chip.className='pchip'; chip.textContent=word;
+    chip.onclick=()=>{
+      const expected = stage.correctOrder[filled];
+      const slot = slotsEl.children[filled];
+      if (word===expected){
+        slot.textContent=word; slot.classList.add('filled');
+        chip.classList.add('used');
+        filled++;
+        if (filled>=total){
+          const ex = host.querySelector('#orderExplain');
+          ex.innerHTML = stage.explain; ex.classList.add('show');
+          showContinue(nextStage);
+        }
+      } else {
+        chip.classList.add('wrong-pop');
+        slot.classList.add('shake');
+        setTimeout(()=>{ chip.classList.remove('wrong-pop'); slot.classList.remove('shake'); }, 350);
+      }
+    };
+    poolEl.appendChild(chip);
+  });
+}
+
+/* ---- PATTERN HUNTER ---- */
+function renderPredict(host, stage){
+  const t = stage.table;
+  let tableHtml = `<table class="ph-table"><tr>${t.headers.map(h=>`<th>${h}</th>`).join('')}</tr>`;
+  t.rows.forEach(r=>{ tableHtml += `<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`; });
+  tableHtml += `</table>`;
+  host.innerHTML = `${tableHtml}<div class="ph-q">${stage.question}</div>
+    <div class="tiles col1" id="phTiles"></div>
+    <div class="explain-card" id="phExplain"></div>`;
+  const tilesEl = host.querySelector('#phTiles');
+  const colors=['c0','c1','c2','c3'];
+  stage.options.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='tile '+colors[i%4];
+    b.dataset.node = String(i+1).padStart(2,'0');
+    b.textContent=opt.text;
+    b.onclick=()=>{
+      Array.from(tilesEl.children).forEach(c=>c.classList.add('disabled'));
+      b.classList.add(opt.correct?'correct-flash':'wrong-flash');
+      if (!opt.correct) glitchFlash();
+      if (opt.correct) confetti(28);
+      const ex = host.querySelector('#phExplain');
+      ex.innerHTML = stage.explain; ex.classList.add('show');
+      showContinue(nextStage);
+    };
+    tilesEl.appendChild(b);
+  });
+}
+
+/* ---- PROMPT REMIX ---- */
+function renderPromptLab(host, stage){
+  const visited = new Set([0]);
+  host.innerHTML = `<div class="pl-tabs" id="plTabs"></div><div id="plPanel"></div>
+    <div class="explain-card" id="plExplain"></div>`;
+  const tabsEl = host.querySelector('#plTabs');
+  const panelEl = host.querySelector('#plPanel');
+  stage.versions.forEach((v,i)=>{
+    const tab=document.createElement('button');
+    tab.className='pl-tab'+(i===0?' active':'');
+    tab.textContent=v.label;
+    tab.onclick=()=>{
+      visited.add(i);
+      tabsEl.querySelectorAll('.pl-tab').forEach((t,ti)=>{
+        t.classList.toggle('active', ti===i);
+        if (visited.has(ti)) t.classList.add('visited');
+      });
+      showVersion(i);
+      if (visited.size===stage.versions.length) reveal();
+    };
+    tabsEl.appendChild(tab);
+  });
+  function showVersion(i){
+    const v = stage.versions[i];
+    panelEl.innerHTML = `<div class="pl-prompt">PROMPT: "${v.prompt}"</div><div class="pl-output" id="plOut"></div>`;
+    const outEl = panelEl.querySelector('#plOut');
+    const words = v.output.split(' ');
+    let w=0;
+    outEl.innerHTML='<span class="pl-cursor"></span>';
+    const iv = setInterval(()=>{
+      w++;
+      outEl.innerHTML = words.slice(0,w).join(' ') + '<span class="pl-cursor"></span>';
+      if (w>=words.length) clearInterval(iv);
+    }, 18);
+  }
+  function reveal(){
+    const ex = host.querySelector('#plExplain');
+    ex.innerHTML = stage.explain; ex.classList.add('show');
+    showContinue(nextStage);
+  }
+  showVersion(0);
+}
+
+/* ---- PROMPT BUILDER ---- */
+function renderPromptOwn(host, stage){
+  host.innerHTML = `
+    <div class="pb-ring" id="pbRing"><span id="pbRingText">0/${stage.criteria.length}</span></div>
+    <textarea class="pb-textarea" id="pbInput" placeholder="Write a prompt asking an AI to explain compound interest..."></textarea>
+    <div class="pb-crits" id="pbCrits"></div>`;
+  const critsEl = host.querySelector('#pbCrits');
+  stage.criteria.forEach(c=>{
+    const chip=document.createElement('span');
+    chip.className='pb-crit'; chip.id='pbc-'+c.key; chip.textContent=c.label;
+    critsEl.appendChild(chip);
+  });
+  const input = host.querySelector('#pbInput');
+  const ring = host.querySelector('#pbRing');
+  const ringText = host.querySelector('#pbRingText');
+  let fired=false;
+  input.addEventListener('input', ()=>{
+    const text=input.value; let met=0;
+    stage.criteria.forEach(c=>{
+      const chip=document.getElementById('pbc-'+c.key);
+      const ok = text.trim().length>0 && c.test(text);
+      chip.classList.toggle('met', ok);
+      if (ok) met++;
+    });
+    ringText.textContent = met+'/'+stage.criteria.length;
+    ring.style.background = `conic-gradient(var(--cyan) ${(met/stage.criteria.length)*360}deg, var(--line) 0deg)`;
+    if (met>=stage.criteria.length && !fired){
+      fired=true;
+      showContinue(nextStage);
+    }
+  });
+}
+
+/* ---- INVESTIGATE (exhibit) ---- */
+function svgEl(tag, attrs){
+  const e=document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+function renderInvestigate(host, stage){
+  host.innerHTML = `<div class="exhibit"><div class="exhibit-label">${stage.exhibitLabel}</div><div id="exBody"></div></div>
+    <button class="scan-btn" id="scanBtn">▶ RUN X-RAY SCAN</button>
+    <div class="scan-line" id="scanLine"><span></span></div>
+    <div class="explain-card" id="invExplain"></div>`;
+  const body = host.querySelector('#exBody');
+  if (stage.render==='scatter') renderScatter(body, stage);
+  else if (stage.render==='tokens') renderTokens(body, stage);
+  else if (stage.render==='embedding') renderEmbedding(body, stage);
+  else if (stage.render==='slider') renderSliderExhibit(body, stage);
+
+  host.querySelector('#scanBtn').onclick = function(){
+    this.disabled=true; this.textContent='SCANNING...';
+    host.querySelector('#scanLine').classList.add('on');
+    setTimeout(()=>{
+      host.querySelector('#scanLine').classList.remove('on');
+      const ex = host.querySelector('#invExplain');
+      ex.innerHTML = stage.xrayExplain; ex.classList.add('show');
+      showContinue(nextStage);
+    }, 900);
+  };
+}
+function renderScatter(body, stage){
+  const w=280,h=200,pad=28;
+  const svg=svgEl('svg',{viewBox:`0 0 ${w} ${h}`,width:'100%',height:'auto'});
+  svg.appendChild(svgEl('line',{x1:pad,y1:h-pad,x2:w-10,y2:h-pad,stroke:'#27324b','stroke-width':1}));
+  svg.appendChild(svgEl('line',{x1:pad,y1:h-pad,x2:pad,y2:10,stroke:'#27324b','stroke-width':1}));
+  stage.data.forEach(p=>{
+    const cx = pad + (p.exp/10)*(w-pad-20);
+    const cy = (h-pad) - (p.prestige/10)*(h-pad-20);
+    const dot = svgEl('circle',{cx,cy,r:5,fill:p.decision==='hire'?'#63f5a3':'#ff657a','fill-opacity':0.85});
+    svg.appendChild(dot);
+  });
+  body.appendChild(svg);
+  const cap=document.createElement('div');
+  cap.style.cssText='font-family:IBM Plex Mono,monospace;font-size:9.5px;color:var(--muted);margin-top:6px;';
+  cap.textContent = stage.axisX+'   /   '+stage.axisY+'   ·   green = hire, red = reject';
+  body.appendChild(cap);
+}
+function renderTokens(body, stage){
+  stage.data.forEach(d=>{
+    const row=document.createElement('div'); row.className='token-row';
+    row.innerHTML=`<div class="token-word">${d.word}</div><div class="token-bar-track"><div class="token-bar-fill" style="width:0%"></div></div><div class="token-pct">${d.pct}%</div>`;
+    body.appendChild(row);
+  });
+  requestAnimationFrame(()=>{
+    body.querySelectorAll('.token-bar-fill').forEach((f,i)=>{ f.style.width = stage.data[i].pct+'%'; });
+  });
+}
+function renderEmbedding(body, stage){
+  const w=280,h=200;
+  const svg=svgEl('svg',{viewBox:`0 0 ${w} ${h}`,width:'100%',height:'auto'});
+  stage.data.forEach(p=>{
+    const cx=p.x*w, cy=(1-p.y)*h;
+    const color = p.recommended ? '#ffd166' : (p.watched ? '#55e6ff' : '#4a5773');
+    svg.appendChild(svgEl('circle',{cx,cy,r:p.recommended?6:5,fill:color}));
+  });
+  body.appendChild(svg);
+  const cap=document.createElement('div');
+  cap.style.cssText='font-family:IBM Plex Mono,monospace;font-size:9.5px;color:var(--muted);margin-top:6px;';
+  cap.textContent='cyan = watched · amber = recommended · gray = unrelated content';
+  body.appendChild(cap);
+}
+function renderSliderExhibit(body, stage){
+  body.innerHTML = `
+    <div class="meter-row">
+      <div class="meter-box"><div class="meter-label">Accuracy</div><div class="meter-value" id="mvAcc">94%</div><div class="meter-bar-track"><div class="meter-bar-fill" id="mbAcc" style="background:var(--green);width:94%"></div></div></div>
+      <div class="meter-box"><div class="meter-label">Fairness gap</div><div class="meter-value" id="mvFair">38</div><div class="meter-bar-track"><div class="meter-bar-fill" id="mbFair" style="background:var(--red);width:38%"></div></div></div>
+    </div>
+    <div class="meter-hint">Drag to push the fairness correction harder:</div>
+    <input type="range" class="meter-slider" id="mSlider" min="0" max="10" value="0" step="1">
+  `;
+  const sl = body.querySelector('#mSlider');
+  sl.addEventListener('input', ()=>{
+    const d = stage.sliderData[+sl.value];
+    body.querySelector('#mvAcc').textContent = d.accuracy+'%';
+    body.querySelector('#mbAcc').style.width = d.accuracy+'%';
+    body.querySelector('#mvFair').textContent = d.fairnessGap;
+    body.querySelector('#mbFair').style.width = d.fairnessGap+'%';
+  });
+}
+
+/* ---- VERDICT (tile MCQ) ---- */
+function renderVerdict(host, stage){
+  host.innerHTML = `<div class="tiles col1" id="vTiles"></div><div class="explain-card" id="vExplain"></div>`;
+  const tilesEl = host.querySelector('#vTiles');
+  const colors=['c0','c1','c2','c3'];
+  stage.options.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='tile '+colors[i%4];
+    b.dataset.node = String(i+1).padStart(2,'0');
+    b.textContent=opt.text;
+    b.onclick=()=>{
+      Array.from(tilesEl.children).forEach(c=>c.classList.add('disabled'));
+      b.classList.add(opt.correct?'correct-flash':'wrong-flash');
+      if (!opt.correct) glitchFlash();
+      if (opt.correct) confetti(30);
+      const ex = host.querySelector('#vExplain');
+      ex.innerHTML = opt.feedback; ex.classList.add('show');
+      showContinue(nextStage);
+    };
+    tilesEl.appendChild(b);
+  });
+}
+
+/* =========================================================
+   RAPID QUIZ (Blooket-style)
+   ========================================================= */
+let quizTimer = null;
+function startQuiz(){
+  renderRunDots();
+  run.quiz = { idx:0, correct:0, streak:0 };
+  renderQuizQuestion();
+}
+function renderQuizQuestion(){
+  hideContinue();
+  clearInterval(quizTimer);
+  const bank = run.level.quiz;
+  const qd = bank[run.quiz.idx];
+  const wrap = document.getElementById('stageWrap');
+  wrap.innerHTML='';
+  wrap.classList.remove('stage-wrap'); void wrap.offsetWidth; wrap.classList.add('stage-wrap');
+
+  const kicker=document.createElement('div');
+  kicker.className='stage-kicker';
+  kicker.textContent = run.level.tag+' · SYSTEM BREACH';
+  wrap.appendChild(kicker);
+
+  const top=document.createElement('div');
+  top.className='quiz-top';
+  top.innerHTML = `<div class="quiz-streak">⚡ CHAIN ${run.quiz.streak}</div><div class="quiz-qnum">NODE ${run.quiz.idx+1} / ${bank.length}</div>`;
+  wrap.appendChild(top);
+
+  const timerTrack=document.createElement('div');
+  timerTrack.className='timer-track';
+  timerTrack.innerHTML='<div class="timer-fill" id="timerFill"></div>';
+  wrap.appendChild(timerTrack);
+
+  const q=document.createElement('div');
+  q.className='quiz-q';
+  q.textContent = qd.q;
+  wrap.appendChild(q);
+
+  const tiles=document.createElement('div');
+  tiles.className='tiles';
+  const colors=['c0','c1','c2','c3'];
+  qd.o.forEach((optText,i)=>{
+    const b=document.createElement('button');
+    b.className='tile '+colors[i%4];
+    b.dataset.node = String(i+1).padStart(2,'0');
+    b.textContent=optText;
+    b.onclick=()=>answerQuiz(i, qd, tiles);
+    tiles.appendChild(b);
+  });
+  wrap.appendChild(tiles);
+
+  const ex=document.createElement('div');
+  ex.className='explain-card'; ex.id='quizExplain';
+  wrap.appendChild(ex);
+
+  // timer
+  const DURATION = 12000;
+  const start = performance.now();
+  const fill = document.getElementById('timerFill');
+  let timedOut=false;
+  quizTimer = setInterval(()=>{
+    const elapsed = performance.now()-start;
+    const pct = Math.max(0, 100 - (elapsed/DURATION)*100);
+    fill.style.width = pct+'%';
+    if (pct<=0 && !timedOut){
+      timedOut=true;
+      answerQuiz(-1, qd, tiles);
+    }
+  }, 80);
+}
+function answerQuiz(choiceIdx, qd, tilesEl){
+  clearInterval(quizTimer);
+  Array.from(tilesEl.children).forEach(c=>c.classList.add('disabled'));
+  const correct = choiceIdx===qd.a;
+  if (choiceIdx>=0) tilesEl.children[choiceIdx].classList.add(correct?'correct-flash':'wrong-flash');
+  if (!correct) tilesEl.children[qd.a].classList.add('correct-flash');
+  if (correct){
+    run.quiz.correct++;
+    run.quiz.streak++;
+    confetti(24);
+    popPoints('ACCESS +'+(100+run.quiz.streak*20), '#63f5a3');
+  } else {
+    run.quiz.streak=0;
+    glitchFlash();
+    popPoints(choiceIdx===-1?'LOCKED OUT':'DENIED', '#ff657a');
+  }
+  const ex = document.getElementById('quizExplain');
+  ex.innerHTML = qd.f; ex.classList.add('show');
+  setTimeout(()=>{
+    run.quiz.idx++;
+    if (run.quiz.idx>=run.level.quiz.length) finishQuiz();
+    else renderQuizQuestion();
+  }, 1600);
+}
+function finishQuiz(){
+  renderRunDots();
+  const bank = run.level.quiz;
+  const pct = run.quiz.correct/bank.length;
+  const stars = pct>=0.999 ? 3 : pct>=0.65 ? 2 : 1;
+  const wrap = document.getElementById('stageWrap');
+  wrap.innerHTML = `
+    <div class="results-wrap">
+      <div class="results-label">BREACH COMPLETE</div>
+      <div class="results-score">${run.quiz.correct}/${bank.length}</div>
+      <div class="results-label">NODES DECRYPTED</div>
+    </div>`;
+  hideContinue();
+  showContinue(()=>completeLevel(stars));
+}
+
+/* =========================================================
+   LEVEL COMPLETE
+   ========================================================= */
+function completeLevel(stars){
+  const lv = run.level;
+  const already = state.completed.has(lv.id);
+  state.completed.add(lv.id);
+  const prevStars = state.stars[lv.id]||0;
+  state.stars[lv.id] = Math.max(prevStars, stars);
+  const xpGain = already ? 0 : (100 + (stars-1)*30);
+  addXP(xpGain);
+
+  document.getElementById('completeBadge').textContent = lv.icon;
+  document.getElementById('completeTitle').textContent = lv.badgeName+' earned';
+  document.getElementById('completeSub').textContent = lv.title;
+  const starsEl = document.getElementById('completeStars');
+  starsEl.innerHTML = '';
+  for (let i=0;i<3;i++){
+    const s=document.createElement('span');
+    s.textContent = i<stars ? '★' : '☆';
+    starsEl.appendChild(s);
+  }
+  document.getElementById('completeXp').textContent = '+'+xpGain+' XP';
+  showScreen('completeScreen');
+  setTimeout(()=>{
+    Array.from(starsEl.children).forEach((s,i)=>{ setTimeout(()=>s.classList.add('show'), i*180); });
+  }, 150);
+  confetti(70);
+  document.getElementById('completeBtn').onclick = ()=>{ run=null; renderMap(); showScreen('mapScreen'); };
+}
+document.getElementById('continueBtn'); // placeholder wiring lives per-stage
+
+/* =========================================================
+   FINALE: CASE BOARD
+   ========================================================= */
+let selectedClueId = null;
+function caseLevels(){ return LEVELS.filter(l=>l.clue); }
+function openBoard(){
+  selectedClueId=null;
+  showScreen('boardScreen');
+  renderBoard();
+}
+function renderBoard(){
+  const clueCol=document.getElementById('clueCol');
+  const diagCol=document.getElementById('diagCol');
+  clueCol.innerHTML=''; diagCol.innerHTML='';
+  document.getElementById('boardSvg').innerHTML='';
+  const cases = caseLevels();
+  const shuffledDiag = [...cases].sort(()=>Math.random()-0.5);
+
+  cases.forEach(c=>{
+    const matched = state.matchedClues.has(c.id);
+    const card=document.createElement('div');
+    card.className='clue-card'+(matched?' matched':'');
+    card.id='clue-'+c.id;
+    card.innerHTML = `<span>${c.clue.quote}</span><span class="clue-src">${c.clue.src}</span>`;
+    if (!matched) card.onclick=()=>selectClue(c.id);
+    clueCol.appendChild(card);
+  });
+  shuffledDiag.forEach(c=>{
+    const matched = state.matchedClues.has(c.id);
+    const chip=document.createElement('div');
+    chip.className='diag-chip'+(matched?' matched':'');
+    chip.id='diag-'+c.id;
+    chip.textContent = c.diagnosis;
+    if (!matched) chip.onclick=()=>selectDiagnosis(c.id);
+    diagCol.appendChild(chip);
+  });
+  updateBoardProgress();
+}
+function selectClue(id){
+  document.querySelectorAll('.clue-card').forEach(el=>el.classList.remove('selected'));
+  selectedClueId=id;
+  document.getElementById('clue-'+id).classList.add('selected');
+}
+function selectDiagnosis(id){
+  if (!selectedClueId) return;
+  const clueEl=document.getElementById('clue-'+selectedClueId);
+  const diagEl=document.getElementById('diag-'+id);
+  if (selectedClueId===id){
+    clueEl.classList.remove('selected'); clueEl.classList.add('matched'); clueEl.onclick=null;
+    diagEl.classList.add('matched'); diagEl.onclick=null;
+    state.matchedClues.add(id);
+    drawBoardLine(clueEl, diagEl);
+    selectedClueId=null;
+    confetti(20);
+    updateBoardProgress();
+  } else {
+    diagEl.classList.add('wrong-flash');
+    setTimeout(()=>diagEl.classList.remove('wrong-flash'), 400);
+  }
+}
+function drawBoardLine(fromEl, toEl){
+  const svg=document.getElementById('boardSvg');
+  const boardRect=document.getElementById('matchBoard').getBoundingClientRect();
+  const fr=fromEl.getBoundingClientRect(), tr=toEl.getBoundingClientRect();
+  const line=svgEl('line',{
+    x1:fr.right-boardRect.left, y1:fr.top+fr.height/2-boardRect.top,
+    x2:tr.left-boardRect.left, y2:tr.top+tr.height/2-boardRect.top,
+    stroke:'#ffd166','stroke-width':2,'stroke-dasharray':'5,4'
+  });
+  svg.appendChild(line);
+}
+function updateBoardProgress(){
+  const n = state.matchedClues.size;
+  const total = caseLevels().length;
+  document.getElementById('boardProgress').textContent = `${n} / ${total} connected`;
+  if (n===total && !state.completed.has('__board__')){
+    state.completed.add('__board__');
+    addXP(150);
+    setTimeout(()=>{
+      document.getElementById('completeBadge').textContent='🏆';
+      document.getElementById('completeTitle').textContent='CASE CLOSED';
+      document.getElementById('completeSub').textContent='Every clue traces back to a mechanism, not a mystery.';
+      const starsEl=document.getElementById('completeStars');
+      starsEl.innerHTML='<span class="show">★</span><span class="show">★</span><span class="show">★</span>';
+      document.getElementById('completeXp').textContent='+150 XP';
+      showScreen('completeScreen');
+      confetti(120);
+      document.getElementById('completeBtn').onclick=()=>{ renderMap(); showScreen('mapScreen'); };
+    }, 900);
+  }
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+/* =========================================================
+   MATRIX RAIN (ambient background)
+   ========================================================= */
+function startMatrixRain(){
+  const canvas = document.getElementById('matrixRain');
+  const ctx = canvas.getContext('2d');
+  const chars = 'アイウエオカキクケコサシスセソ01アイウエオ<>/{}[]#'.split('');
+  let cols, drops, w, h;
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    cols = Math.floor(w/16);
+    drops = new Array(cols).fill(0).map(()=>Math.random()*-40);
+  }
+  resize();
+  window.addEventListener('resize', resize, {passive:true});
+  function draw(){
+    ctx.fillStyle = 'rgba(7,9,18,.13)';
+    ctx.fillRect(0,0,w,h);
+    ctx.font = '13px IBM Plex Mono, monospace';
+    for (let i=0;i<cols;i++){
+      const text = chars[Math.floor(Math.random()*chars.length)];
+      const x = i*16;
+      const y = drops[i]*16;
+      ctx.fillStyle = Math.random()<0.05 ? 'rgba(255,255,255,.8)' : 'rgba(85,230,255,.35)';
+      ctx.fillText(text, x, y);
+      if (y>h && Math.random()>0.975) drops[i]=0;
+      drops[i]++;
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
+
+/* =========================================================
+   ROBOT RUN — persistent fidget minigame
+   ========================================================= */
+let robotState = {score:0, best:0};
+function enableRobotDrag(root, handle){
+  let dragging=false, sx=0, sy=0, ox=0, oy=0;
+  handle.addEventListener('pointerdown', e=>{
+    if (e.target.closest('.robot-min-btn')) return;
+    if (e.pointerType==='mouse' && e.button!==0) return;
+    dragging=true; handle.setPointerCapture?.(e.pointerId);
+    const r=root.getBoundingClientRect(); sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    root.classList.add('dragging');
+    e.preventDefault();
+  });
+  handle.addEventListener('pointermove', e=>{
+    if (!dragging) return;
+    const w=root.offsetWidth, h=root.offsetHeight;
+    let x=ox+e.clientX-sx, y=oy+e.clientY-sy;
+    x=Math.max(6,Math.min(window.innerWidth-w-6,x));
+    y=Math.max(6,Math.min(window.innerHeight-h-6,y));
+    root.style.left=x+'px'; root.style.top=y+'px'; root.style.right='auto'; root.style.bottom='auto';
+  });
+  const stop=()=>{dragging=false; root.classList.remove('dragging');};
+  handle.addEventListener('pointerup', stop);
+  handle.addEventListener('pointercancel', stop);
+}
+function startRobotRun(){
+  const canvas = document.getElementById('robotCanvas');
+  const arena = document.getElementById('robotArena');
+  const startLabel = document.getElementById('robotStart');
+  const scoreVal = document.getElementById('robotScoreVal');
+  const bestVal = document.getElementById('robotBestVal');
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  let w=0,h=0,started=false,dead=false;
+  let robot={x:50,y:60,vy:0};
+  let gates=[],spawnTimer=0;
+  const gravity=0.42, boost=-7.0, speed=2.4;
+
+  function resize(){
+    w=arena.clientWidth; h=arena.clientHeight;
+    canvas.width=w*dpr; canvas.height=h*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    robot.x=Math.max(38,Math.min(60,w*.22));
+    if (!started) robot.y=h*.48;
+  }
+  resize();
+  window.addEventListener('resize', resize, {passive:true});
+
+  function reset(){
+    robot.y=h*.48; robot.vy=0; gates=[]; spawnTimer=0;
+    robotState.score=0; scoreVal.textContent='0';
+    startLabel.textContent='TAP TO FLY'; startLabel.style.opacity='1';
+    started=false; dead=false;
+  }
+  function flap(){
+    if (dead){ reset(); return; }
+    started=true; robot.vy=boost;
+    startLabel.style.opacity='0';
+  }
+  function spawnGate(){
+    const gap=Math.max(62,Math.min(90,h*.5));
+    const top=14+Math.random()*Math.max(10,h-gap-30);
+    gates.push({x:w+20, top, gap, passed:false});
+  }
+  function drawRobot(){
+    ctx.save();
+    ctx.translate(robot.x, robot.y);
+    ctx.rotate(Math.max(-.35,Math.min(.5,robot.vy*.035)));
+    ctx.strokeStyle='#63f5a3'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(3,-15); ctx.stroke();
+    ctx.fillStyle='#63f5a3'; ctx.beginPath(); ctx.arc(3,-16,2.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#b9c7da'; ctx.strokeStyle='#55e6ff'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(-11,-8,22,17,4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#07111e'; ctx.beginPath(); ctx.roundRect(-7,-4,14,9,3); ctx.fill();
+    ctx.fillStyle='#55e6ff';
+    ctx.beginPath(); ctx.arc(-3.5,0,1.8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3.5,0,1.8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ffcf5a';
+    ctx.beginPath(); ctx.moveTo(-11,3); ctx.lineTo(-17,7); ctx.lineTo(-11,7); ctx.fill();
+    ctx.restore();
+  }
+  function draw(t){
+    ctx.clearRect(0,0,w,h);
+    const grad=ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,'#081323'); grad.addColorStop(1,'#0b1020');
+    ctx.fillStyle=grad; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='rgba(85,230,255,.06)'; ctx.lineWidth=1;
+    const off=(t*.025)%22;
+    for (let x=-22+off;x<w;x+=22){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+
+    if (started && !dead){
+      robot.vy+=gravity; robot.y+=robot.vy;
+      spawnTimer+=16;
+      if (spawnTimer>150){ spawnGate(); spawnTimer=0; }
+      gates.forEach(g=>g.x-=speed);
+      gates=gates.filter(g=>g.x>-40);
+      gates.forEach(g=>{
+        if (!g.passed && g.x+30<robot.x){
+          g.passed=true; robotState.score++;
+          robotState.best=Math.max(robotState.best, robotState.score);
+          scoreVal.textContent=robotState.score; bestVal.textContent=robotState.best;
+        }
+      });
+      const hitWall = robot.y-10<0 || robot.y+10>h;
+      const hitGate = gates.some(g=> robot.x+9>g.x && robot.x-9<g.x+30 && (robot.y-9<g.top || robot.y+9>g.top+g.gap));
+      if (hitWall||hitGate){
+        dead=true;
+        startLabel.textContent='CRASH — TAP TO RETRY';
+        startLabel.style.opacity='1';
+        glitchFlash();
+      }
+    }
+    gates.forEach(g=>{
+      const pipe=(px,py,pw,ph)=>{
+        ctx.fillStyle='#182b42'; ctx.strokeStyle='#55e6ff'; ctx.lineWidth=2;
+        ctx.fillRect(px,py,pw,ph); ctx.strokeRect(px,py,pw,ph);
+        ctx.fillStyle='rgba(85,230,255,.12)'; ctx.fillRect(px+3,py+3,pw-6,ph-6);
+      };
+      pipe(g.x,0,26,g.top);
+      pipe(g.x,g.top+g.gap,26,h-g.top-g.gap);
+      ctx.fillStyle='#63f5a3';
+      ctx.fillRect(g.x-3,g.top-4,32,4);
+      ctx.fillRect(g.x-3,g.top+g.gap,32,4);
+    });
+    drawRobot();
+    requestAnimationFrame(draw);
+  }
+  canvas.addEventListener('pointerdown', e=>{ e.preventDefault(); flap(); }, {passive:false});
+  window.addEventListener('keydown', e=>{
+    if (e.code==='Space' && document.activeElement?.tagName!=='TEXTAREA'){ e.preventDefault(); flap(); }
+  });
+  requestAnimationFrame(draw);
+}
+function initRobotDock(){
+  const dock = document.getElementById('robotDock');
+  const handle = document.getElementById('robotHandle');
+  const bubble = document.getElementById('robotBubble');
+  enableRobotDrag(dock, handle);
+  startRobotRun();
+  document.getElementById('robotMinBtn').onclick = ()=>{
+    dock.classList.add('hidden');
+    bubble.style.display='flex';
+    bubble.style.alignItems='center';
+    bubble.style.justifyContent='center';
+  };
+  bubble.onclick = ()=>{
+    dock.classList.remove('hidden');
+    bubble.style.display='none';
+  };
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+renderHud();
+renderMap();
+startMatrixRain();
+initRobotDock();
+</script>
+</body>
+</html>
