@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>GLITCH — AI Investigation Game</title>
+<title>GLITCH.EXE — AI Investigation Game</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -551,7 +551,7 @@ input[type=range].meter-slider{width:100%;accent-color:var(--violet);margin:10px
 <div class="app">
   <div class="hud">
     <div class="hud-brand">
-      <div class="t">GLITCH</div>
+      <div class="t">GLITCH<span>.EXE</span></div>
       <div class="s">AI INVESTIGATION LAB</div>
     </div>
     <div class="hud-rank">
@@ -595,6 +595,9 @@ input[type=range].meter-slider{width:100%;accent-color:var(--violet);margin:10px
 
   <!-- FINALE: EVIDENCE BOARD -->
   <div class="screen" id="boardScreen">
+    <div class="run-top">
+      <button class="run-exit" id="boardExit">✕ CLOSE</button>
+    </div>
     <div class="stage-kicker">FINAL FILE — CASE BOARD</div>
     <div class="stage-title">Connect Every Clue</div>
     <div class="board-sub">Tap a clue, then tap the diagnosis it belongs to. All four clues came from the files you already cracked.</div>
@@ -1002,7 +1005,7 @@ function openLevel(id){
   renderRunDots();
   renderStage();
 }
-document.getElementById('runExit').onclick = ()=>{ run=null; renderMap(); showScreen('mapScreen'); };
+document.getElementById('runExit').onclick = ()=>{ clearInterval(quizTimer); clearTimeout(quizAdvanceTimer); run=null; renderMap(); showScreen('mapScreen'); };
 
 function renderRunDots(){
   const wrap = document.getElementById('runDots');
@@ -1382,6 +1385,7 @@ function renderVerdict(host, stage){
    RAPID QUIZ (Blooket-style)
    ========================================================= */
 let quizTimer = null;
+let quizAdvanceTimer = null;
 function startQuiz(){
   renderRunDots();
   run.quiz = { idx:0, correct:0, streak:0 };
@@ -1390,6 +1394,7 @@ function startQuiz(){
 function renderQuizQuestion(){
   hideContinue();
   clearInterval(quizTimer);
+  clearTimeout(quizAdvanceTimer);
   const bank = run.level.quiz;
   const qd = bank[run.quiz.idx];
   const wrap = document.getElementById('stageWrap');
@@ -1439,6 +1444,7 @@ function renderQuizQuestion(){
   const fill = document.getElementById('timerFill');
   let timedOut=false;
   quizTimer = setInterval(()=>{
+    if (!run){ clearInterval(quizTimer); return; }
     const elapsed = performance.now()-start;
     const pct = Math.max(0, 100 - (elapsed/DURATION)*100);
     fill.style.width = pct+'%';
@@ -1450,6 +1456,7 @@ function renderQuizQuestion(){
 }
 function answerQuiz(choiceIdx, qd, tilesEl){
   clearInterval(quizTimer);
+  if (!run) return;
   Array.from(tilesEl.children).forEach(c=>c.classList.add('disabled'));
   const correct = choiceIdx===qd.a;
   if (choiceIdx>=0) tilesEl.children[choiceIdx].classList.add(correct?'correct-flash':'wrong-flash');
@@ -1466,7 +1473,8 @@ function answerQuiz(choiceIdx, qd, tilesEl){
   }
   const ex = document.getElementById('quizExplain');
   ex.innerHTML = qd.f; ex.classList.add('show');
-  setTimeout(()=>{
+  quizAdvanceTimer = setTimeout(()=>{
+    if (!run) return;
     run.quiz.idx++;
     if (run.quiz.idx>=run.level.quiz.length) finishQuiz();
     else renderQuizQuestion();
@@ -1524,6 +1532,7 @@ document.getElementById('continueBtn'); // placeholder wiring lives per-stage
    FINALE: CASE BOARD
    ========================================================= */
 let selectedClueId = null;
+document.getElementById('boardExit').onclick = ()=>{ renderMap(); showScreen('mapScreen'); };
 function caseLevels(){ return LEVELS.filter(l=>l.clue); }
 function openBoard(){
   selectedClueId=null;
