@@ -9,6 +9,7 @@ import { AppEffects } from '@/screens/AppEffects';
 import { goFlow } from '@/screens/nav';
 import { setReducedMotionOverride } from '@/a11y/useReducedMotion';
 import { useGlitchStore } from '@/state/store';
+import { resetToasts } from '@/ui/toast';
 import { renderWithProviders } from '@/testing/renderWithProviders';
 
 jest.mock('expo-router', () => ({
@@ -86,3 +87,5 @@ describe('nav.goFlow', () => {
     expect(router.navigate).toHaveBeenLastCalledWith('/module/3/complete');
   });
 });
+
+afterEach(() => resetToasts()); // no toast timer outlives a test

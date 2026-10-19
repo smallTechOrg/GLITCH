@@ -7,7 +7,7 @@ import type { PersistedState } from '@/contracts/state';
 import { HeroSelectScreen } from '@/screens/HeroSelectScreen';
 import { setReducedMotionOverride } from '@/a11y/useReducedMotion';
 import { useGlitchStore } from '@/state/store';
-import { useToastStore } from '@/ui/toast';
+import { useToastStore, resetToasts } from '@/ui/toast';
 import { renderWithProviders } from '@/testing/renderWithProviders';
 
 jest.mock('expo-router', () => ({
@@ -89,3 +89,5 @@ describe('HeroSelectScreen', () => {
     expect(router.navigate).toHaveBeenCalledWith('/');
   });
 });
+
+afterEach(() => resetToasts()); // no toast timer outlives a test

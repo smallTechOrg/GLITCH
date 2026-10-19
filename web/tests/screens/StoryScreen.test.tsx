@@ -9,7 +9,7 @@ import { STORY } from '@/content/story';
 import { StoryScreen } from '@/screens/StoryScreen';
 import { setReducedMotionOverride } from '@/a11y/useReducedMotion';
 import { useGlitchStore } from '@/state/store';
-import { useToastStore } from '@/ui/toast';
+import { useToastStore, resetToasts } from '@/ui/toast';
 import { renderWithProviders } from '@/testing/renderWithProviders';
 
 jest.mock('expo-router', () => ({
@@ -134,3 +134,5 @@ describe('StoryScreen typing (motion on)', () => {
     expect(screen.getByTestId('story-text')).toHaveTextContent(full);
   });
 });
+
+afterEach(() => resetToasts()); // no toast timer outlives a test

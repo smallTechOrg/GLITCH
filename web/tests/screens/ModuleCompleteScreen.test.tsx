@@ -8,6 +8,7 @@ import { STEP_IDS } from '@/contracts/ids';
 import { ModuleCompleteScreen, CONFETTI_COUNT } from '@/screens/ModuleCompleteScreen';
 import { setReducedMotionOverride } from '@/a11y/useReducedMotion';
 import { useGlitchStore } from '@/state/store';
+import { resetToasts } from '@/ui/toast';
 import { renderWithProviders } from '@/testing/renderWithProviders';
 
 jest.mock('expo-router', () => ({
@@ -73,3 +74,5 @@ describe('ModuleCompleteScreen', () => {
     expect(useGlitchStore.getState().onceBonuses.mod1).toBeUndefined();
   });
 });
+
+afterEach(() => resetToasts()); // no toast timer outlives a test

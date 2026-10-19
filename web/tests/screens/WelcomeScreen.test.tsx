@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { WelcomeScreen } from '@/screens/WelcomeScreen';
 import { setReducedMotionOverride } from '@/a11y/useReducedMotion';
 import { useGlitchStore } from '@/state/store';
+import { resetToasts } from '@/ui/toast';
 import { renderWithProviders } from '@/testing/renderWithProviders';
 
 jest.mock('expo-router', () => ({
@@ -56,3 +57,5 @@ describe('WelcomeScreen', () => {
     expect(router.replace).toHaveBeenCalledWith('/');
   });
 });
+
+afterEach(() => resetToasts()); // no toast timer outlives a test

@@ -55,8 +55,11 @@ async def test_cors_origins_are_configurable(make_settings) -> None:
     assert "access-control-allow-origin" not in default_now_blocked.headers
 
 
-async def test_cors_headers_present_on_error_envelopes(client: httpx.AsyncClient, device_id: str) -> None:
-    resp = await client.get("/v1/energy", headers={"Origin": "http://127.0.0.1:8090", "X-Glitch-Device": device_id})
+async def test_cors_headers_present_on_error_envelopes(client: httpx.AsyncClient) -> None:
+    resp = await client.get("/v1/energy", headers={"Origin": "http://127.0.0.1:8090", "X-Glitch-Device": "not-a-uuid"})
 
-    assert resp.status_code == 502
+    assert resp.status_code == 400
+    body = resp.json()
+    assert body["ok"] is False
+    assert body["error"]["code"] == "BAD_DEVICE"
     assert resp.headers["access-control-allow-origin"] == "http://127.0.0.1:8090"

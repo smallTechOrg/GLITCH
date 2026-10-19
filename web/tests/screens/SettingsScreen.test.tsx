@@ -5,6 +5,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import type { PersistedState } from '@/contracts/state';
 import { SettingsScreen } from '@/screens/SettingsScreen';
 import { useGlitchStore } from '@/state/store';
+import { resetToasts } from '@/ui/toast';
 import { renderWithProviders } from '@/testing/renderWithProviders';
 
 jest.mock('expo-router', () => ({
@@ -91,3 +92,5 @@ describe('SettingsScreen', () => {
     expect(screen.getByTestId('settings-reset')).toHaveTextContent('Reset progress');
   });
 });
+
+afterEach(() => resetToasts()); // no toast timer outlives a test

@@ -8,7 +8,7 @@ import { STEP_IDS } from '@/contracts/ids';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { setReducedMotionOverride } from '@/a11y/useReducedMotion';
 import { useGlitchStore } from '@/state/store';
-import { useToastStore } from '@/ui/toast';
+import { useToastStore, resetToasts } from '@/ui/toast';
 import { renderWithProviders } from '@/testing/renderWithProviders';
 
 jest.mock('expo-router', () => ({
@@ -112,3 +112,5 @@ describe('HomeScreen · in progress and complete', () => {
     expect(router.navigate).toHaveBeenCalledWith('/module/1/story');
   });
 });
+
+afterEach(() => resetToasts()); // no toast timer outlives a test

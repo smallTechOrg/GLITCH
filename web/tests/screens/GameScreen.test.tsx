@@ -10,7 +10,7 @@ import { GameScreen } from '@/screens/GameScreen';
 import { GAME } from '@/screens/copy';
 import { setReducedMotionOverride } from '@/a11y/useReducedMotion';
 import { useGlitchStore } from '@/state/store';
-import { useToastStore } from '@/ui/toast';
+import { useToastStore, resetToasts } from '@/ui/toast';
 import { renderWithProviders } from '@/testing/renderWithProviders';
 
 jest.mock('expo-router', () => ({
@@ -347,3 +347,5 @@ describe('GameScreen · stale callbacks', () => {
     expect(mockCtl.api!.over).toBe(false);
   });
 });
+
+afterEach(() => resetToasts()); // no toast timer outlives a test

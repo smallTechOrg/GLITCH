@@ -53,20 +53,3 @@ async def test_metrics_returns_counter_snapshot(client: httpx.AsyncClient) -> No
                 "cache_hits", "cache_misses"):
         assert key in data
 
-
-async def test_stub_energy_and_freewrite_return_ai_unavailable_envelope(
-    client: httpx.AsyncClient, device_id: str
-) -> None:
-    headers = {"X-Glitch-Device": device_id}
-    energy = await client.get("/v1/energy", headers=headers)
-    evaluate = await client.post(
-        "/v1/freewrite/evaluate", headers=headers, json={"goalId": "fw1", "goal": "g", "prompt": "p"}
-    )
-
-    for resp in (energy, evaluate):
-        assert resp.status_code == 502
-        body = resp.json()
-        assert body["ok"] is False
-        assert body["error"]["code"] == "AI_UNAVAILABLE"
-        assert body["error"]["retryable"] is True
-        assert body["error"]["message"]

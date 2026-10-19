@@ -12,17 +12,26 @@ const PROXIES = [2, 3, 4, 5, 6] as const; // v3 lines 3–7
 const REAL = [7, 8, 9, 10] as const; // v3 lines 8–11
 const PROXY_TOGGLES = ['col', 'cap', 'brk', 'pc'] as const;
 
-/** Seed a device that has finished Modules 1–2 and picked a Module 3 hero (once per context). */
-async function seedModule3(page: Page, hero: HeroId = 'scout'): Promise<void> {
+type Module3Game = 'm3g1' | 'm3g2';
+
+/**
+ * Seed a device that has finished Modules 1–2 and picked a Module 3 hero (once per context).
+ * A step is startable only when every earlier step is done, so opening m3g2 also marks m3g1 done.
+ */
+async function seedModule3(page: Page, game: Module3Game, hero: HeroId = 'scout'): Promise<void> {
   const now = new Date().toISOString();
+  const steps: Record<string, true> = {};
+  const extra = game === 'm3g2' ? ['m3g1'] : [];
+  for (const s of ['m1h', 'm1s', 'm1g1', 'm1g2', 'm2h', 'm2s', 'm2g1', 'm2g2', 'm3h', 'm3s', ...extra]) steps[s] = true;
+  const stars: Record<string, number> = game === 'm3g2' ? { m3g1: 3 } : {};
   const state = {
     version: 1,
     profile: { nickname: 'E2E', onboarded: true, createdAt: now },
     settings: { readableFont: false },
     xp: 0,
     streak: { current: 0, best: 0, lastPlayDay: null },
-    steps: { m1h: true, m1s: true, m1g1: true, m1g2: true, m2h: true, m2s: true, m2g1: true, m2g2: true, m3h: true, m3s: true },
-    stars: {},
+    steps,
+    stars,
     heroByModule: { 1: hero, 2: hero, 3: hero },
     lastHero: hero,
     heroesPlayed: {},
@@ -39,8 +48,8 @@ async function seedModule3(page: Page, hero: HeroId = 'scout'): Promise<void> {
   );
 }
 
-async function openGame(page: Page, game: 'm3g1' | 'm3g2', hero: HeroId = 'scout'): Promise<void> {
-  await seedModule3(page, hero);
+async function openGame(page: Page, game: Module3Game, hero: HeroId = 'scout'): Promise<void> {
+  await seedModule3(page, game, hero);
   await page.goto(`./module/3/game/${game}`);
   await waitForApp(page);
   await expect(page.getByTestId('game-body')).toBeVisible();

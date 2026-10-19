@@ -55,8 +55,8 @@ async def test_request_log_never_contains_bodies_or_raw_device_id(
         assert device_id not in text
     line = [entry for entry in _lines(log_file) if entry["event"] == "request"][0]
     assert line["route"] == "/v1/freewrite/evaluate"
-    assert line["status"] == 502
-    assert line["outcome"] == "AI_UNAVAILABLE"
+    assert line["status"] == 200
+    assert line["outcome"] == "ok"
     assert line["device_hash"] and len(line["device_hash"]) == 12
 
 
