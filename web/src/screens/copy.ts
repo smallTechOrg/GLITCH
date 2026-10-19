@@ -35,6 +35,12 @@ export const HERO_SELECT = {
   sub: 'Each hero has one power. You get 2 uses per game.',
   enter: (title: string) => `▶ Enter the ${title}`,
   back: '← HOME',
+  eyebrow: (mod: number, title: string) => `MODULE ${mod} · ${title.toUpperCase()}`,
+} as const;
+
+export const STORYTIME = {
+  progress: (k: number, n: number) => `Slide ${k} of ${n}`,
+  rootLabel: 'Storytime. Tap or press Space to continue.',
 } as const;
 
 export const GAME = {
@@ -53,6 +59,9 @@ export const GAME = {
   soonStrip: 'COMING SOON: Fresh case files on replay · Mistake recap',
   winAnnounce: (n: number) => `Level clear, ${n} ${n === 1 ? 'star' : 'stars'}`,
   failAnnounce: 'Out of hearts',
+  heroAlt: 'Use hero power',
+  stars: (n: number) => `${n} stars`, // spec/ui.md: win-stars label "n stars"
+  tagLine: (mod: number, title: string) => `MODULE ${mod} · ${title.toUpperCase()}`,
 } as const;
 
 export const COMPLETE = {
@@ -80,6 +89,10 @@ export const SETTINGS = {
   reset: 'Reset progress',
   resetConfirm: 'Tap again to erase XP, badges and progress',
   resetHelp: 'Keeps your streak, nickname and settings.',
+  resetDone: 'PROGRESS RESET',
+  nicknameSaved: 'NICKNAME SAVED',
+  on: 'ON',
+  off: 'OFF',
 } as const;
 
 export const LOCKED = {

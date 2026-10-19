@@ -6,7 +6,7 @@ import type { HeroId } from '@/contracts/ids';
 import { FactOrFib } from '@/games/m1g2/Game';
 import { FOCUS_LINE, TRUE_MISS, WIN_SUMMARY } from '@/games/m1g2/data';
 import { createTestGameApi, renderWithProviders } from '@/testing/renderWithProviders';
-import { NOTHING_TO_USE, type TestGameApi } from '@/testing/testGameApi';
+import { NOTHING_TO_USE, REWIND_LINE, type TestGameApi } from '@/testing/testGameApi';
 
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
@@ -180,5 +180,33 @@ describe('<FactOrFib>', () => {
     expect(api.hearts).toBe(3);
     expect(api.lost).toBe(1);
     expect(line(0)).toHaveTextContent(/TRUE/);
+  });
+
+  // v3 line 479: REWIND is frame-owned (+1 heart iff hearts < 3, then g.undo if any). v3 m1g2 `run`
+  // returns only {scan, hint} — no undo — so the TRUE mark stays and nothing is counted as found.
+  it('REWIND after a true tap is spent, says the v3 line, and does not count as a find or re-open the line', async () => {
+    const api = await setup({ hero: 'chrono' });
+    await tapLine(0);
+    expect(api.hearts).toBe(2);
+    expect(await power(api)).toBe(true);
+    expect(api.powerUses).toBe(1);
+    expect(api.hearts).toBe(3);
+    expect(api.lastSay()).toEqual({ text: REWIND_LINE, mood: 'good' });
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 0/3');
+    expect(line(0).props.accessibilityState).toMatchObject({ disabled: true });
+    await tapLine(0);
+    expect(api.calls.miss).toHaveLength(1);
+    await tick(1000);
+    expect(api.calls.win).toHaveLength(0);
+  });
+
+  it('REWIND with no mistakes yet (full hearts) is not spent and toasts NOTHING TO USE IT ON YET', async () => {
+    const api = await setup({ hero: 'chrono' });
+    await tapLine(1); // a correct catch is not a mistake
+    expect(await power(api)).toBe(false);
+    expect(api.powerUses).toBe(2);
+    expect(api.hearts).toBe(3);
+    expect(api.calls.toast).toEqual([NOTHING_TO_USE]);
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 1/3');
   });
 });

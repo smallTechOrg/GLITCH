@@ -120,13 +120,17 @@ export const LEVER_ICON: Record<LeverId, IconId> = {
   limit: 'clock',
 };
 
-/** Canned tip for the first missed lever (order task, context, role, format, limit). */
+/**
+ * Canned tip for the first missed lever (order task, context, role, format, limit).
+ * Verbatim copies of the backend's CANNED_TIPS (api heuristics/levers.py) so the demo
+ * provider and the offline check give the same tip for the same prompt.
+ */
 export const LEVER_TIP: Record<LeverId, string> = {
-  task: "Start with a clear job: an action word plus a subject, like 'Explain photosynthesis'.",
-  context: "Add context: who it's for or why you need it, like 'for my 10-year-old brother'.",
+  task: "Start with a clear action, like 'Explain…' or 'Write…', so NOVA knows exactly what to make.",
+  context: 'Add some context: who is it for, or why do you need it?',
   role: "Give NOVA a role, like 'Act as a friendly science teacher'.",
-  format: 'Pick a format: a list, a table, steps or an email.',
-  limit: "Set a limit: a word count, a number of points, or 'keep it short'.",
+  format: 'Name the shape you want: a list, a table, steps or an email.',
+  limit: "Set a limit, like 'under 80 words' or '3 bullet points'.",
 };
 export const ALL_LEVERS_TIP = "All five levers. That's a prompt NOVA can't misread.";
 

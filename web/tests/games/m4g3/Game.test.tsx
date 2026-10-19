@@ -158,7 +158,7 @@ describe('m4g3 Design the Companion', () => {
       api.usePower();
     });
     await fireEvent.press(screen.getByTestId('m4g3-ship'));
-    screen.unmount();
+    await screen.unmount();
     await flush(600);
     expect(api.calls.win).toHaveLength(0);
   });

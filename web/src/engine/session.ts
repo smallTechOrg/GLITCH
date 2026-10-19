@@ -122,3 +122,19 @@ export function heartsLabel(s: Pick<GameSession, 'hearts' | 'shield'>): string {
 export function powerLabel(s: Pick<GameSession, 'hero' | 'powerUses'>): string {
   return `${HEROES[s.hero].powerName} power, ${s.powerUses} ${s.powerUses === 1 ? 'use' : 'uses'} left`;
 }
+
+/**
+ * Commit a consumed power onto the LATEST session. X-RAY/FOCUS handlers may themselves end
+ * the round (e.g. the last line found → win) while the power runs, so only the frame-owned
+ * fields the power changed are taken from the result: uses always, hearts for REWIND,
+ * shield for SHIELD. Never revives a session that ended meanwhile.
+ */
+export function commitPower(latest: GameSession, r: PowerResult, kind: PowerKind): GameSession {
+  if (!r.consumed) return latest;
+  return {
+    ...latest,
+    powerUses: Math.max(0, latest.powerUses - 1),
+    hearts: kind === 'rewind' && !isOver(latest) ? Math.min(START_HEARTS, latest.hearts + 1) : latest.hearts,
+    shield: kind === 'shield' ? true : latest.shield,
+  };
+}

@@ -1,17 +1,24 @@
 // Lever cue rules — the OFFLINE check. These MUST stay identical to the backend's demo
 // provider rules (api heuristics/levers.py; spec/capabilities/freewrite-forge.md → Lever cue
-// rules): case-insensitive, matched on the trimmed prompt, patterns copied verbatim.
+// rules): case-insensitive, matched on the trimmed prompt, same alternatives and boundaries.
 import { LEVER_IDS, type LeverId } from '../../contracts/ids';
 import type { LeverMap } from '../../contracts/state';
 import { ALL_LEVERS_TIP, LEVER_TIP } from './data';
 
-export const TASK_RE = /(explain|write|make|plan|create|list|summari[sz]e|describe|give|draft|suggest|compare|teach|tell me|help me)/i;
+// Python's `re` on `str` is Unicode-aware (\w, \d, \b), JS regexes are ASCII by default, so
+// boundaries are spelled out with Unicode classes (no lookbehind: older Safari lacks it).
+const W = '[\\p{L}\\p{N}_]';
+const bounded = (body: string): RegExp => new RegExp(`(?:^|[^\\p{L}\\p{N}_])(?:${body})(?!${W})`, 'iu');
+
+export const TASK_RE = bounded('explain|write|make|plan|create|list|summari[sz]e|describe|give|draft|suggest|compare|teach|tell me|help me');
 export const TASK_MIN_WORDS = 5;
-export const CONTEXT_RE = /\b(i am|i'm|i have|my|because|since|so that|who|years? old|year-old|grade|class)\b/i;
-export const ROLE_RE = /\b(act as|you are|pretend (to be|you are)|imagine you are|as an? (\w+ )?(teacher|tutor|expert|coach|scientist|writer|guide|librarian|historian|friend))\b/i;
-export const FORMAT_RE = /\b(list|bullets?|bullet points|table|steps|numbered|paragraphs?|email|poem|headings?|outline|timetable|chart|q&a)\b/i;
-export const LIMIT_WORD_RE = /\b(under|max|maximum|at most|no more than|less than|fewer than|only|within|short|brief)\b/i;
-export const LIMIT_COUNT_RE = /\b\d+\s*(words?|sentences?|lines?|points?|bullets?|minutes?|paragraphs?|days?)\b/i;
+export const CONTEXT_RE = bounded("i am|i'm|i have|my|because|since|so that|who|years? old|year-old|grade|class");
+export const ROLE_RE = bounded(
+  `act as|you are|pretend (?:to be|you are)|imagine you are|as an? (?:${W}+ )?(?:teacher|tutor|expert|coach|scientist|writer|guide|librarian|historian|friend)`,
+);
+export const FORMAT_RE = bounded('list|bullets?|bullet points|table|steps|numbered|paragraphs?|email|poem|headings?|outline|timetable|chart|q&a');
+export const LIMIT_WORD_RE = bounded('under|max|maximum|at most|no more than|less than|fewer than|only|within|short|brief');
+export const LIMIT_COUNT_RE = bounded('\\p{Nd}+\\s*(?:words?|sentences?|lines?|points?|bullets?|minutes?|paragraphs?|days?)');
 
 export function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
