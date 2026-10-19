@@ -1,14 +1,13 @@
-// SCAFFOLD STUB — the slice that owns games/m2g2/** replaces this folder (data.ts, logic.ts,
-// Game.tsx, index.ts). Until then the game renders "UNDER CONSTRUCTION" and nothing else.
+// m2g2 · Prompt Forge (v3 lines 541–548 + FORGE 3 · FREE WRITE) — GameDefinition.
 import type { GameDefinition } from '../../contracts/game';
 import { GAME_META } from '../../content/modules';
-import { UnderConstructionGame } from '../../ui/UnderConstruction';
+import { PromptForgeGame } from './Game';
 
 const game: GameDefinition = {
   id: 'm2g2',
   module: 2,
   ...GAME_META.m2g2,
-  Component: UnderConstructionGame,
+  Component: PromptForgeGame,
 };
 
 export default game;

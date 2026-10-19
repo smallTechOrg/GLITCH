@@ -212,6 +212,8 @@ GLITCH/                                  # repo root — config, spec, docs only
 
 ## Contracts (frozen for Phase 1 — scaffold implements; slices consume, never edit)
 
+- `web/src/contracts/routes.ts` (the `*_HREF` route constants, `stepHref`, `gameHref` and sibling `*Href` helpers) is also a frozen scaffold contract — screens never hand-build paths.
+
 ### `web/src/contracts/ids.ts`
 ```ts
 export type HeroId = 'scout' | 'chrono' | 'guard' | 'oracle';

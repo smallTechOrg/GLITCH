@@ -1,27 +1,19 @@
-// SCAFFOLD STUB — slice E replaces src/features/freewrite/** with the real FORGE 3 · FREE WRITE
-// round (spec/capabilities/freewrite-forge.md). Contract (frozen):
+// FORGE 3 · FREE WRITE — frozen Phase-1 contract (spec/architecture.md → Contracts):
 //   export interface FreeWriteRoundProps { api: GameApi; onPassed: () => void }
 //   export function FreeWriteRound(props: FreeWriteRoundProps): JSX.Element;
+// m2g2 renders it after forge 2; onPassed → m2g2 calls api.win(<v3 summary>).
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { evaluateFreewrite, getEnergy } from '../../api/client';
 import type { GameApi } from '../../contracts/game';
-import { colors, fontSize } from '../../theme/tokens';
-import { PixelText } from '../../ui/PixelText';
-import { UnderConstruction } from '../../ui/UnderConstruction';
+import { FreeWriteForge, type FreewriteClient } from './FreeWriteForge';
 
 export interface FreeWriteRoundProps {
   api: GameApi;
   onPassed: () => void;
 }
 
-export function FreeWriteRound(props: FreeWriteRoundProps): React.JSX.Element {
-  void props;
-  return (
-    <View testID="fw-stub" style={styles.wrap}>
-      <PixelText size={fontSize.h3} color={colors.ac}>FORGE 3 · FREE WRITE</PixelText>
-      <UnderConstruction />
-    </View>
-  );
-}
+const defaultClient: FreewriteClient = { getEnergy, evaluateFreewrite };
 
-const styles = StyleSheet.create({ wrap: { gap: 8 } });
+export function FreeWriteRound(props: FreeWriteRoundProps): React.JSX.Element {
+  return <FreeWriteForge api={props.api} onPassed={props.onPassed} client={defaultClient} />;
+}

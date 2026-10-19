@@ -1,14 +1,15 @@
-// SCAFFOLD STUB — the slice that owns games/m3g1/** replaces this folder (data.ts, logic.ts,
-// Game.tsx, index.ts). Until then the game renders "UNDER CONSTRUCTION" and nothing else.
+// m3g1 · Proxy Hunt — GameDefinition (v3 GM.m3g1, lines 550–557).
 import type { GameDefinition } from '../../contracts/game';
-import { GAME_META } from '../../content/modules';
-import { UnderConstructionGame } from '../../ui/UnderConstruction';
+import { GOAL, INTRO, TITLE } from './data';
+import { ProxyHuntGame } from './Game';
 
 const game: GameDefinition = {
   id: 'm3g1',
   module: 3,
-  ...GAME_META.m3g1,
-  Component: UnderConstructionGame,
+  title: TITLE,
+  goal: GOAL,
+  intro: INTRO,
+  Component: ProxyHuntGame,
 };
 
 export default game;

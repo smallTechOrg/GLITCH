@@ -1,14 +1,13 @@
-// SCAFFOLD STUB — the slice that owns games/m4g1/** replaces this folder (data.ts, logic.ts,
-// Game.tsx, index.ts). Until then the game renders "UNDER CONSTRUCTION" and nothing else.
+// m4g1 · Source Detective (v3 lines 570–577).
 import type { GameDefinition } from '../../contracts/game';
 import { GAME_META } from '../../content/modules';
-import { UnderConstructionGame } from '../../ui/UnderConstruction';
+import { SourceDetectiveGame } from './Game';
 
 const game: GameDefinition = {
   id: 'm4g1',
   module: 4,
   ...GAME_META.m4g1,
-  Component: UnderConstructionGame,
+  Component: SourceDetectiveGame,
 };
 
 export default game;
