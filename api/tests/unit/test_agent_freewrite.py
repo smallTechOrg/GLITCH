@@ -193,3 +193,68 @@ def test_extract_json_raises_when_no_object() -> None:
 def test_parse_output_rejects_json_array() -> None:
     with pytest.raises(ValueError):
         parse_output("[1, 2]")
+
+
+class _ExplodingPrompts:
+    """A prompt library with a bug: raises with learner text in the exception message."""
+
+    def __init__(self) -> None:
+        self.inner = PromptLibrary()
+
+    def freewrite_messages(self, goal: str, prompt: str):  # noqa: ANN201
+        raise RuntimeError(f"bug while formatting {prompt!r}")
+
+
+async def test_internal_error_logs_type_and_request_id_only_and_refunds_energy(frozen_clock, capsys) -> None:
+    from glitch_api.logging import configure_logging
+
+    configure_logging()
+    secret = "Explain the purple-walrus sentinel to my class"
+    energy = EnergyService(MemoryCounterStore(), device_cap=10, global_cap=500, clock=frozen_clock)
+    provider = Scripted(_out())
+    state = await run_freewrite(
+        _req(prompt=secret), DEV, provider=provider, energy=energy, prompts=_ExplodingPrompts(),
+        clock=frozen_clock, request_id="req-123",
+    )
+    assert state.error is not None and state.error.code == "INTERNAL"
+    assert state.error.energy is not None and state.error.energy.remaining == 10
+    assert provider.requests == []
+
+    out = capsys.readouterr().out
+    assert "purple-walrus" not in out and "bug while formatting" not in out
+    lines = [json.loads(line) for line in out.splitlines() if line.strip().startswith("{")]
+    errors = [line for line in lines if line["event"] == "freewrite_internal_error"]
+    assert len(errors) == 1
+    line = errors[0]
+    assert line["request_id"] == "req-123"
+    assert line["error_type"] == "RuntimeError"
+    assert line["severity"] == "ERROR"
+    assert line["device_hash"] == DEV
+
+
+async def test_device_energy_is_reserved_during_the_provider_call(frozen_clock) -> None:
+    seen: list[int] = []
+    energy = EnergyService(MemoryCounterStore(), device_cap=10, global_cap=500, clock=frozen_clock)
+
+    class Peeking(Scripted):
+        async def complete(self, request: LLMRequest) -> LLMResult:
+            seen.append((await energy.energy(DEV)).remaining)
+            return await super().complete(request)
+
+    state = await run_freewrite(
+        _req(), DEV, provider=Peeking(_out()), energy=energy, prompts=PromptLibrary(), clock=frozen_clock
+    )
+    assert seen == [9]
+    assert state.energy is not None and state.energy.remaining == 9
+
+
+async def test_cancelled_request_refunds_reserved_energy(frozen_clock) -> None:
+    import asyncio
+
+    energy = EnergyService(MemoryCounterStore(), device_cap=1, global_cap=500, clock=frozen_clock)
+    with pytest.raises(asyncio.CancelledError):
+        await run_freewrite(
+            _req(), DEV, provider=Scripted(exc=asyncio.CancelledError()), energy=energy,
+            prompts=PromptLibrary(), clock=frozen_clock,
+        )
+    assert (await energy.energy(DEV)).remaining == 1

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 
 import pytest
@@ -224,3 +225,35 @@ async def test_cap_log_line_has_scope_remaining_limit(fake_app, client_for, devi
     caps = [e for e in read_log(log_path) if e["event"] == "cap"]
     assert caps == [caps[0]]
     assert {k: caps[0][k] for k in ("scope", "remaining", "limit")} == {"scope": "device", "remaining": 0, "limit": 0}
+
+
+async def test_concurrent_burst_with_one_energy_makes_at_most_one_call(fake_app, client_for, device_id) -> None:
+    # The demo provider sleeps 200 ms, so every request is in flight at the same time.
+    app = fake_app(device_daily_cap=1, fake_latency_ms=200)
+    async with client_for(app) as c:
+        results = await asyncio.gather(*(c.post(EVAL, headers=_h(device_id), json=body()) for _ in range(8)))
+        energy = (await c.get("/v1/energy", headers=_h(device_id))).json()["energy"]
+        metrics = (await c.get("/v1/metrics")).json()["data"]
+
+    statuses = sorted(r.status_code for r in results)
+    assert statuses == [200] + [429] * 7
+    assert app.state.provider.calls == 1
+    for r in results:
+        assert r.json()["energy"]["remaining"] == 0
+        if r.status_code == 429:
+            assert r.json()["error"]["code"] == "CAP_DEVICE"
+    assert energy["remaining"] == 0
+    assert metrics["cap_rejections"]["device"] == 7
+
+
+async def test_concurrent_burst_where_calls_fail_refunds_every_reservation(fake_app, client_for, device_id) -> None:
+    # Every call times out: only the in-flight one ran, nothing is charged afterwards.
+    app = fake_app(device_daily_cap=1, fake_latency_ms=500, llm_timeout_s=0.1)
+    async with client_for(app) as c:
+        results = await asyncio.gather(*(c.post(EVAL, headers=_h(device_id), json=body()) for _ in range(4)))
+        energy = (await c.get("/v1/energy", headers=_h(device_id))).json()["energy"]
+
+    codes = sorted(r.json()["error"]["code"] for r in results)
+    assert codes == ["AI_TIMEOUT"] + ["CAP_DEVICE"] * 3
+    assert app.state.provider.calls == 1
+    assert energy["remaining"] == 1

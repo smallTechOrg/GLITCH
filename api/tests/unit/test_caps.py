@@ -87,3 +87,39 @@ async def test_concurrent_global_charges_never_exceed_cap(frozen_clock) -> None:
     results = await asyncio.gather(*(service.charge_global() for _ in range(50)))
     assert sum(results) == 10
     assert await service.global_remaining() == 0
+
+
+async def test_reserve_device_is_atomic_under_concurrency(frozen_clock) -> None:
+    service = _service(frozen_clock, device_cap=1)
+    results = await asyncio.gather(*(service.reserve_device(DEV) for _ in range(20)))
+    assert sum(r is not None for r in results) == 1
+    assert (await service.energy(DEV)).remaining == 0
+
+
+async def test_refund_device_returns_reserved_energy_and_never_goes_negative(frozen_clock) -> None:
+    service = _service(frozen_clock, device_cap=2)
+    day = await service.reserve_device(DEV)
+    assert day == "2026-10-19"
+    assert (await service.energy(DEV)).remaining == 1
+    await service.refund_device(DEV, day)
+    assert (await service.energy(DEV)).remaining == 2
+    await service.refund_device(DEV, day)  # extra refund: floor at zero used
+    assert (await service.energy(DEV)).remaining == 2
+
+
+async def test_refund_for_a_past_day_does_not_touch_today(frozen_clock) -> None:
+    service = _service(frozen_clock, device_cap=1)
+    day = await service.reserve_device(DEV)
+    frozen_clock.advance(24 * 3600)
+    assert await service.reserve_device(DEV) == "2026-10-20"
+    await service.refund_device(DEV, day)
+    assert (await service.energy(DEV)).remaining == 0
+
+
+async def test_store_decr_floors_at_zero() -> None:
+    store = MemoryCounterStore()
+    await store.incr_if_below("k:1", 5)
+    assert await store.decr("k:1") == 0
+    assert await store.decr("k:1") == 0
+    assert await store.decr("missing:1") == 0
+    assert len(store) == 0

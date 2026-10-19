@@ -2,7 +2,12 @@
 
 check_budget → build_messages → call_llm → parse_validate → moderate → finalize;
 any step may set ``state.error``, which jumps to handle_error. ONE provider call per
-request, zero app-level retries. Learner text (goal, prompt) and the reply are never
+request, zero app-level retries.
+
+Device energy: ``check_budget`` atomically RESERVES one unit before the provider call (so a
+burst of concurrent requests cannot all pass a 1-energy check); ``finalize`` keeps it, and
+every other exit (error, fallback, unexpected bug, cancellation) refunds it — energy is
+used only by a successful AI evaluation. The global budget is charged before each call. Learner text (goal, prompt) and the reply are never
 logged — only ``prompt_chars``.
 """
 
@@ -67,6 +72,7 @@ class FreewriteState:
     call_latency_ms: float = 0.0
     model_requested: str | None = None
     provider_name: str | None = None
+    reserved_day: str | None = None  # UTC day of an outstanding device-energy reservation
 
 
 @dataclass(frozen=True)
@@ -82,9 +88,18 @@ class Step(Protocol):
 
 # ---- steps --------------------------------------------------------------------------
 async def check_budget(s: FreewriteState, *, energy: EnergyService, **_: Any) -> None:
-    scope = await energy.check(s.device_hash)
-    if scope is not None:
-        s.error = ApiError("CAP_DEVICE" if scope == "device" else "CAP_GLOBAL")
+    s.reserved_day = await energy.reserve_device(s.device_hash)
+    if s.reserved_day is None:
+        s.error = ApiError("CAP_DEVICE")
+    elif not await energy.ensure_global():
+        s.error = ApiError("CAP_GLOBAL")
+
+
+async def release_reservation(s: FreewriteState, energy: EnergyService) -> None:
+    """Refund an outstanding device-energy reservation (idempotent)."""
+    day, s.reserved_day = s.reserved_day, None
+    if day is not None:
+        await energy.refund_device(s.device_hash, day)
 
 
 async def build_messages(s: FreewriteState, *, prompts: PromptLibrary, **_: Any) -> None:
@@ -201,7 +216,6 @@ async def finalize(s: FreewriteState, *, energy: EnergyService, **_: Any) -> Non
     assert s.parsed is not None and s.llm is not None
     levers = s.parsed.levers
     hit = levers.hit_count()
-    s.energy = await energy.charge_device(s.device_hash)
     s.result = EvaluateData(
         reply=s.parsed.reply,
         levers=levers,
@@ -211,6 +225,8 @@ async def finalize(s: FreewriteState, *, energy: EnergyService, **_: Any) -> Non
         provider=s.llm.provider,
         model=s.llm.model_used,
     )
+    s.reserved_day = None  # success: the reserved unit is spent
+    s.energy = await energy.energy(s.device_hash)
     s.outcome = "ok"
     _record_llm_call(s)
 
@@ -218,6 +234,7 @@ async def finalize(s: FreewriteState, *, energy: EnergyService, **_: Any) -> Non
 async def handle_error(s: FreewriteState, *, energy: EnergyService, **_: Any) -> None:
     if s.called:
         _record_llm_call(s)
+    await release_reservation(s, energy)
     s.energy = await energy.energy(s.device_hash)
     assert s.error is not None
     s.error.energy = s.energy
@@ -290,9 +307,21 @@ async def run_freewrite(
             if s.error:
                 await handle_error(s, **deps)
                 break
-    except Exception:  # noqa: BLE001 — unexpected bug: INTERNAL envelope, still with energy
+    except Exception as exc:  # noqa: BLE001 — unexpected bug: INTERNAL envelope, still with energy
+        # Type name only: the message of an arbitrary exception may embed learner text.
+        get_logger().error(
+            "freewrite_internal_error",
+            request_id=s.request_id,
+            device_hash=device_hash,
+            error_type=type(exc).__name__,
+        )
         s.result = None
         s.error = ApiError("INTERNAL")
+        await release_reservation(s, energy)
         s.energy = await energy.energy(device_hash)
         s.error.energy = s.energy
+    finally:
+        # Cancellation (client gone) or a failure above must never leak reserved energy.
+        if s.reserved_day is not None:
+            await release_reservation(s, energy)
     return s

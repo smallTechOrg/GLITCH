@@ -1,6 +1,8 @@
 """EnergyService — device energy (10 / UTC day) and the global ceiling (500 / UTC day).
 
-- Device energy is charged only after a successful AI evaluation (``charge_device``).
+- Device energy is RESERVED atomically before the provider call (``reserve_device``) so a
+  burst of concurrent requests cannot overspend it, and REFUNDED (``refund_device``) on every
+  path that is not a successful AI evaluation — net effect: only successes use energy.
 - The global budget is charged before every provider call (``charge_global``), so failed
   calls still count toward spend.
 - Days are UTC calendar days; ``resetsAt`` is the next UTC midnight.
@@ -95,6 +97,33 @@ class EnergyService:
         return None
 
     # ---- writes --------------------------------------------------------------------
+    async def reserve_device(self, device_hash: str) -> str | None:
+        """Atomically take one unit of device energy for an in-flight evaluation.
+
+        Returns the UTC day the unit was taken from (pass it to ``refund_device``), or None
+        when the device is out of energy (rejection logged + counted).
+        """
+        day = self._day()
+        await self._roll(day)
+        reserved, _ = await self.store.incr_if_below(self._device_key(device_hash, day), self.device_cap)
+        if not reserved:
+            self._reject("device", 0, self.device_cap)
+            return None
+        return day
+
+    async def refund_device(self, device_hash: str, day: str) -> None:
+        """Give back a reservation. A reservation from an already-pruned day is a no-op."""
+        if day != self._day():
+            return
+        await self.store.decr(self._device_key(device_hash, day))
+
+    async def ensure_global(self) -> bool:
+        """False (rejection logged + counted) when today's global ceiling is spent."""
+        if await self.global_remaining() <= 0:
+            self._reject("global", 0, self.global_cap)
+            return False
+        return True
+
     async def charge_global(self) -> bool:
         """Count one provider call. False when the ceiling was reached concurrently."""
         day = self._day()
@@ -105,6 +134,7 @@ class EnergyService:
         return charged
 
     async def charge_device(self, device_hash: str) -> Energy:
+        """Unconditionally use one unit (no reservation). Kept for tests/tools."""
         day = self._day()
         await self._roll(day)
         await self.store.incr_if_below(self._device_key(device_hash, day), self.device_cap)

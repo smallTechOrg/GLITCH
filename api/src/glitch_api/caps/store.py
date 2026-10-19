@@ -19,6 +19,10 @@ class CounterStore(Protocol):
         """Atomically add 1 when the value is below ``limit``. Returns (incremented, value)."""
         ...
 
+    async def decr(self, key: str) -> int:
+        """Atomically subtract 1, never below 0 (a refund). Returns the new value."""
+        ...
+
     async def prune(self, keep_suffix: str) -> None:
         """Drop keys that do not end with ``keep_suffix`` (old UTC days)."""
         ...
@@ -41,6 +45,15 @@ class MemoryCounterStore:
             value += 1
             self._values[key] = value
             return True, value
+
+    async def decr(self, key: str) -> int:
+        async with self._lock:
+            value = max(0, self._values.get(key, 0) - 1)
+            if value:
+                self._values[key] = value
+            else:
+                self._values.pop(key, None)
+            return value
 
     async def prune(self, keep_suffix: str) -> None:
         async with self._lock:
