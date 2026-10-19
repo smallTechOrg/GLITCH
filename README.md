@@ -15,6 +15,24 @@ gets wrong and make the call*. It is a rebuild of the single-file prototype
 
 The full spec is in `spec/`: start with `spec/roadmap.md`, then `spec/architecture.md`.
 
+## What's in this version (Phase 1)
+
+- **All of v3:** 4 modules and 9 mini-games, at parity with the v3 prototype rules.
+- **Heroes and powers:** pick a pixel-art hero; each brings a power you can use in games.
+- **Progress:** hearts, stars, XP and levels, a daily streak and 12 badges.
+- **On-device save:** all progress lives on the device. A nickname is optional; there are
+  no accounts.
+- **New: Prompt Forge FREE WRITE round.** The learner writes their own prompt. NOVA (a
+  real AI) answers it, and the learner gets a verdict on 5 levers plus one tip.
+  - Pass = 4 of 5 levers. A weak prompt costs a heart.
+  - AI energy: 10 calls per device per day; the whole server allows 500 calls per day.
+  - If the AI takes more than 8 s, or the API is out of energy or unreachable, the round
+    switches to an in-world offline checklist so the game never stalls.
+- **Labelled stubs (not bugs):** the yellow "SOON" "Ask NOVA why" button after a wrong
+  answer, and the "Coming soon" strip on the win screen. Both are disabled on purpose.
+- **Known v3 parity quirk:** in Tune the Sorter (module 2) the sliders' starting values
+  already pass both rounds. v3 behaves the same way, so Phase 1 keeps it.
+
 ## Prerequisites
 
 | Tool | Version | Used for |
@@ -49,17 +67,33 @@ which directory it is started from. The important ones:
 | `GLITCH_LLM_PROVIDER` | `auto` | `auto` = `openrouter` when the key is set, else `fake` |
 | `GLITCH_OPENROUTER_MODEL` | `google/gemini-2.5-flash-lite` | Primary model slug |
 | `GLITCH_OPENROUTER_FALLBACK_MODELS` | `openai/gpt-4o-mini` | Comma-separated |
+| `GLITCH_HOST` | `127.0.0.1` | API bind address; `0.0.0.0` to reach it from other devices on the LAN |
 | `GLITCH_PORT` | `8787` | If unset and `PORT` is set (Cloud Run), `PORT` wins |
 | `GLITCH_CORS_ORIGINS` | GH Pages + `127.0.0.1`/`localhost` on 8090 and 8092 | Exact origins, comma-separated |
 | `GLITCH_DEVICE_DAILY_CAP` / `GLITCH_GLOBAL_DAILY_CAP` | `10` / `500` | Daily AI budgets (UTC day) |
 | `GLITCH_LOG_FILE` | empty | Also append JSON log lines to this file |
 | `EXPO_PUBLIC_GLITCH_API_URL` | `http://127.0.0.1:8787` | Web build-time: the API base URL baked into the export |
 
-> **PENDING-KEY.** Until `GLITCH_OPENROUTER_API_KEY` is in the root `.env`, every step
-> marked `[live]` below is **PENDING-KEY**, not passed. Everything else works without a
-> key: the API serves the deterministic demo provider and the game falls back to the
-> offline checklist. `uv run pytest -m live` fails loudly (it does not skip) when the key
-> is missing.
+**Which AI answers.** The OpenRouter key is configured in the local root `.env`. With
+`GLITCH_LLM_PROVIDER=auto` (the default) the API picks its provider at startup:
+
+- **key present** → OpenRouter, model `google/gemini-2.5-flash-lite`, falling back to
+  `openai/gpt-4o-mini`. `/healthz` reports `"provider":"openrouter"`.
+- **no key** → the deterministic demo provider. Free-write replies carry a "DEMO NOVA"
+  tag and `/healthz` reports `"provider":"fake"`. The game still works end to end.
+
+To force the demo provider even when a key is present (offline work, no spend), set
+`GLITCH_LLM_PROVIDER=fake` in `.env` or for one run:
+
+```bash
+# from the repo root
+cd api && GLITCH_LLM_PROVIDER=fake uv run python -m glitch_api
+```
+
+`GLITCH_LLM_PROVIDER=openrouter` without a key refuses to start, and so does
+`GLITCH_ENV=prod` with the demo provider. Steps marked `[live]` below need the key and
+spend real (small) credits. `uv run pytest -m live` fails loudly (it does not skip) when
+the key is missing.
 
 Never commit `.env` or paste a key into code, tests, issues or chat.
 
@@ -76,7 +110,8 @@ cd api && uv run python -m glitch_api
 
 # check it (from any directory, while the API is running)
 curl -sf http://127.0.0.1:8787/healthz
-# → {"ok":true,"data":{"status":"ok","provider":"fake","model":"glitch/demo-nova","env":"dev","version":"0.1.0"}}
+# with the key:  {"ok":true,"data":{"status":"ok","provider":"openrouter","model":"google/gemini-2.5-flash-lite","env":"dev","version":"0.1.0"}}
+# without a key: {"ok":true,"data":{"status":"ok","provider":"fake","model":"glitch/demo-nova","env":"dev","version":"0.1.0"}}
 
 # tests (unit + integration; no key, no network)
 cd api && uv run pytest -q
@@ -89,6 +124,12 @@ cd api && uv run python -m glitch_api.tools.check_model
 # → MODEL OK google/gemini-2.5-flash-lite
 #   MODEL OK openai/gpt-4o-mini
 # Without a key it prints "GLITCH_OPENROUTER_API_KEY missing — add it to .env" and exits non-zero.
+
+# observability + privacy check of the API log written by the E2E run
+# (Playwright starts the API with GLITCH_LOG_FILE=web/test-results/api.log;
+#  run the web E2E tests below first)
+cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log
+# → LOGS OK …   (exits 1 and lists each failure otherwise)
 ```
 
 Endpoints (`spec/api.md`): `GET /healthz`, `GET /v1/energy`,
@@ -132,12 +173,39 @@ cd web && GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/freewrit
 
 ## Running the whole thing locally
 
-1. Terminal 1: `cd api && uv run python -m glitch_api`
-2. Terminal 2: `cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8787 npx expo export --platform web && node scripts/serve-export.mjs`
-3. Open `http://127.0.0.1:8090/GLITCH/`.
+Start the API first, then build the export and serve it. Both commands start from the
+repo root, after `cd api && uv sync` and `cd web && npm ci` have been run once.
 
-Without a key the free-write round answers as "DEMO NOVA". With the API stopped, the game
-still plays end to end and the free-write round uses the offline checklist.
+```bash
+# Terminal 1, from the repo root: API on http://127.0.0.1:8787
+cd api && uv run python -m glitch_api
+
+# Terminal 2, from the repo root: export pointed at the local API, then serve on 8090
+cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8787 npx expo export --platform web && node scripts/serve-export.mjs
+```
+
+Open `http://127.0.0.1:8090/GLITCH/`.
+
+With the key in `.env`, NOVA's free-write replies come from OpenRouter. Without a key
+they are tagged "DEMO NOVA". With the API stopped, the game still plays end to end and
+the free-write round uses the offline checklist.
+
+**Phones on the same Wi-Fi.** `127.0.0.1` only works on this machine. Find the machine's
+LAN IP (e.g. `192.168.1.20`), then bake it into the export **and** allow it in CORS. Both
+servers must also listen on all interfaces:
+
+```bash
+# Terminal 1, from the repo root (GLITCH_CORS_ORIGINS = exact origins, comma-separated;
+# it replaces the default list, so keep the 127.0.0.1 origin if you still use it)
+cd api && GLITCH_HOST=0.0.0.0 GLITCH_CORS_ORIGINS=http://192.168.1.20:8090,http://127.0.0.1:8090 uv run python -m glitch_api
+
+# Terminal 2, from the repo root
+cd web && EXPO_PUBLIC_GLITCH_API_URL=http://192.168.1.20:8787 npx expo export --platform web && GLITCH_WEB_HOST=0.0.0.0 node scripts/serve-export.mjs
+```
+
+Then open `http://192.168.1.20:8090/GLITCH/` on the phone. You can put `GLITCH_HOST` and
+`GLITCH_CORS_ORIGINS` in `.env` instead. `EXPO_PUBLIC_GLITCH_API_URL` is read when the
+export is built, so rebuild the export whenever it changes.
 
 ## Deploy
 
