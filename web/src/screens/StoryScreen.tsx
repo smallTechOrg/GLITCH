@@ -12,7 +12,7 @@ import { Sprite } from '../art/Sprite';
 import { characterColor, characterName } from '../content/heroes';
 import { getModule, type ModuleDef } from '../content/modules';
 import { STORY, STORY_COPY, slideText, type Slide } from '../content/story';
-import { advanceTarget, heroOf, isModuleOpen } from '../engine/progression';
+import { advanceTarget, heroOf, isStepDone, isStepStartable } from '../engine/progression';
 import { ANIM } from '../a11y/stepped';
 import { useStepAnimation } from '../a11y/useStepAnimation';
 import { useTypewriter } from '../a11y/useTypewriter';
@@ -52,7 +52,9 @@ export function storyHint(k: number, touch: boolean): string {
 }
 
 export function StoryScreen({ mod }: { mod: ModuleId }): React.JSX.Element {
-  const open = useGlitchStore((s) => isModuleOpen(s, mod));
+  // Storytime (m<n>s) is startable once its module is open and the hero step is done; replay stays allowed.
+  const step = `m${mod}s` as const;
+  const open = useGlitchStore((s) => isStepDone(s, step) || isStepStartable(s, step));
   if (!open) return <LockedScreen />;
   return <StoryPlayer mod={mod} />;
 }

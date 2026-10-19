@@ -121,6 +121,41 @@ describe('GameScreen · session start', () => {
     expect(screen.getByTestId('locked-screen')).toBeTruthy();
     expect(screen.queryByTestId('game-body')).toBeNull();
   });
+
+  it('deep link to a game whose earlier steps are not done shows the step-locked copy (course-shell: step startable)', async () => {
+    // Module 1 is open, but m1g2 needs m1g1 done first.
+    await open('scout', {}, 'm1g2');
+    expect(screen.getByTestId('locked-screen')).toHaveTextContent(/This step is locked\. Finish the earlier steps first\./);
+    expect(screen.queryByTestId('game-body')).toBeNull();
+    expect(screen.getByTestId('locked-home')).toBeTruthy();
+  });
+
+  it('deep link to a module-1 game before storytime is done is locked', async () => {
+    await open('scout', { steps: { m1h: true } }, 'm1g1');
+    expect(screen.getByTestId('locked-screen')).toBeTruthy();
+    expect(screen.queryByTestId('game-body')).toBeNull();
+  });
+
+  it('a later game of an open module is locked until the games before it are done', async () => {
+    const m3open = { m1h: true, m1s: true, m1g1: true, m1g2: true, m2h: true, m2s: true, m2g1: true, m2g2: true } as const;
+    await renderWithProviders(<GameScreen mod={4} gameId="m4g3" />, {
+      state: { ...M1_READY, steps: { ...m3open, m3h: true, m3s: true, m3g1: true, m3g2: true, m4h: true, m4s: true, m4g1: true } },
+      now: NOW,
+    });
+    expect(screen.getByTestId('locked-screen')).toBeTruthy();
+    expect(screen.queryByTestId('game-body')).toBeNull();
+  });
+
+  it('an already-done step stays replayable even when an earlier step is (somehow) not done', async () => {
+    await open('scout', { steps: { m1h: true, m1s: true, m1g1: true, m1g2: true } }, 'm1g2');
+    expect(screen.getByTestId('game-body')).toBeTruthy();
+    expect(screen.queryByTestId('locked-screen')).toBeNull();
+  });
+
+  it('replaying a done step with all earlier steps done opens the game', async () => {
+    await open('scout', { steps: { m1h: true, m1s: true, m1g1: true } }, 'm1g1');
+    expect(screen.getByTestId('game-body')).toBeTruthy();
+  });
 });
 
 describe('GameScreen · mistakes', () => {

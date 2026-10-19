@@ -12,7 +12,7 @@ import { Sprite } from '../art/Sprite';
 import { HEROES, POWER_ICON } from '../content/heroes';
 import { getModule } from '../content/modules';
 import { GAMES } from '../games/registry';
-import { advanceTarget, heroOf, isLastOpenStep, isModuleOpen } from '../engine/progression';
+import { advanceTarget, heroOf, isLastOpenStep, isStepDone, isStepStartable } from '../engine/progression';
 import type { WinRewards } from '../engine/rewards';
 import {
   WIN_LINE, applyMiss, applyPower, applyWin, canUsePower, commitPower, createSession, heartsLabel, isOver, powerLabel,
@@ -37,7 +37,9 @@ import { LockedScreen } from './LockedScreen';
 import { goFlow, goHome } from './nav';
 
 export function GameScreen({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JSX.Element {
-  const open = useGlitchStore((s) => isModuleOpen(s, mod));
+  // course-shell.md: a step is startable when every earlier step of its module is done;
+  // done steps stay replayable. Deep links to anything else get the locked screen.
+  const open = useGlitchStore((s) => isStepDone(s, gameId) || isStepStartable(s, gameId));
   if (!open) return <LockedScreen />;
   return <GameFrame mod={mod} gameId={gameId} />;
 }

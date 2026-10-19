@@ -98,6 +98,12 @@ describe('StoryScreen (reduced motion: text appears at once)', () => {
     await renderWithProviders(<StoryScreen mod={3} />, { state: READY, now: NOW });
     expect(screen.getByTestId('locked-screen')).toBeTruthy();
   });
+
+  it('deep link to storytime before the module hero is chosen shows the step-locked copy', async () => {
+    await renderWithProviders(<StoryScreen mod={1} />, { state: { ...READY, steps: {} }, now: NOW });
+    expect(screen.getByTestId('locked-screen')).toHaveTextContent(/This step is locked\. Finish the earlier steps first\./);
+    expect(screen.queryByTestId('story-root')).toBeNull();
+  });
 });
 
 describe('StoryScreen typing (motion on)', () => {
