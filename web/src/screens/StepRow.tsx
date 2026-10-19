@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   go: { borderColor: colors.ac },
   done: {},
   disabled: { opacity: 0.55 },
-  kind: { paddingVertical: 3, paddingHorizontal: 5, backgroundColor: colors.ln, minWidth: 56, alignItems: 'center' },
-  label: { flex: 1 },
+  kind: { flexShrink: 0, paddingVertical: 3, paddingHorizontal: 5, backgroundColor: colors.ln, minWidth: 56, alignItems: 'center' },
+  label: { flex: 1, minWidth: 0 },
   stars: { flexDirection: 'row', gap: 2 },
 });

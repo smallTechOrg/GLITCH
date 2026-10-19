@@ -118,7 +118,7 @@ export function FairnessLabGame({ api }: { api: GameApi }): React.JSX.Element {
 function GroupBar({ testID, label, pct, color }: { testID: string; label: string; pct: number; color: string }): React.JSX.Element {
   return (
     <View testID={testID} accessible accessibilityLabel={`${label} ${pct}%`} style={styles.col}>
-      <PixelText size={fontSize.tiny} color={colors.mu}>{label}</PixelText>
+      <PixelText size={fontSize.tiny} color={colors.mu} style={styles.colLabel}>{label}</PixelText>
       <View style={styles.track}>
         <View style={[styles.fill, { height: Math.max(0, pct) * BAR_PX_PER_PCT, backgroundColor: color }]} />
       </View>
@@ -131,8 +131,10 @@ const styles = StyleSheet.create({
   root: { gap: space.md },
   toggles: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   toggle: { flexGrow: 1, flexBasis: 220 },
-  chart: { flexDirection: 'row', justifyContent: 'center', gap: space.xxl, paddingVertical: space.md },
-  col: { alignItems: 'center', gap: space.xs },
+  chart: { flexDirection: 'row', justifyContent: 'center', columnGap: space.xxl, rowGap: space.md, paddingVertical: space.md },
+  // Columns shrink (labels wrap) so the chart fits a 320 px screen.
+  col: { alignItems: 'center', gap: space.xs, flexShrink: 1, minWidth: 0 },
+  colLabel: { textAlign: 'center' },
   track: { width: 56, height: MEN_SHORTLISTED * BAR_PX_PER_PCT, justifyContent: 'flex-end', borderBottomWidth: border.thin, borderColor: colors.ln },
   fill: { width: '100%' },
 });

@@ -4,7 +4,7 @@
 // Enter is already handled by Pressable; this adds Space. No-op props on native.
 import { Platform } from 'react-native';
 
-type KeyEvt = { nativeEvent: { key: string }; preventDefault?: () => void };
+type KeyEvt = { nativeEvent: { key: string; repeat?: boolean }; preventDefault?: () => void };
 
 export function spaceActivates(onActivate: (() => void) | undefined, disabled = false): object {
   if (Platform.OS !== 'web') return {};
@@ -13,6 +13,7 @@ export function spaceActivates(onActivate: (() => void) | undefined, disabled = 
       const k = e.nativeEvent.key;
       if (k !== ' ' && k !== 'Spacebar') return;
       e.preventDefault?.(); // no page scroll
+      if (e.nativeEvent.repeat) return; // holding Space must not re-toggle (auto-repeat keydowns)
       if (!disabled && onActivate) onActivate();
     },
   };

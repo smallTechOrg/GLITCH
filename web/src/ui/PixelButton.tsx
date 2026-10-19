@@ -23,11 +23,13 @@ export interface PixelButtonProps {
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
   children?: React.ReactNode; // extra content after the label (e.g. "x2")
+  /** Icon-only rendering (narrow screens): the label stays as the accessibility label. */
+  iconOnly?: boolean;
 }
 
 export function PixelButton({
   label, onPress, variant = 'secondary', disabled = false, icon, iconScale = 2, testID,
-  accessibilityLabel, accessibilityHint, color, fullWidth, style, children,
+  accessibilityLabel, accessibilityHint, color, fullWidth, style, children, iconOnly = false,
 }: PixelButtonProps): React.JSX.Element {
   const f = useFocusRing();
   const v = VARIANTS[variant];
@@ -56,9 +58,11 @@ export function PixelButton({
     >
       <View style={styles.row}>
         {icon ? <Icon name={icon} scale={iconScale} /> : null}
-        <PixelText size={v.size} color={v.text} style={variant === 'link' ? styles.underline : null}>
-          {label}
-        </PixelText>
+        {iconOnly && icon ? null : (
+          <PixelText size={v.size} color={v.text} style={variant === 'link' ? styles.underline : null}>
+            {label}
+          </PixelText>
+        )}
         {children}
       </View>
     </Pressable>

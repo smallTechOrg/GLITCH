@@ -1,7 +1,7 @@
 // One module on the Home course path (v3 `.mod`, line 356): number/check/lock, scene banner
 // (greyscale when locked), chosen hero's head, status, title, subtitle, tags, progress bar, steps.
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ModuleDef } from '../content/modules';
 import { stepsOf } from '../content/modules';
 import type { PersistedState } from '../contracts/state';
@@ -29,8 +29,10 @@ export function ModuleCard({ mod, state }: ModuleCardProps): React.JSX.Element {
   const dc = stepsDoneIn(state, mod.id);
   const hero = state.heroByModule[mod.id];
   const status = open ? `${dc}/${steps.length} STEPS` : HOME.locked;
+  // Phones: the number badge sits above the card so step rows keep enough width (no sideways scroll at 320 px).
+  const stacked = useWindowDimensions().width < STACK_BELOW;
   return (
-    <View testID={`module-card-${mod.id}`} style={[styles.mod, !open ? styles.locked : null]}>
+    <View testID={`module-card-${mod.id}`} style={[styles.mod, stacked ? styles.modStacked : null, !open ? styles.locked : null]}>
       <View
         style={[styles.num, { borderColor: mod.color }, done ? { backgroundColor: mod.color } : null]}
         accessible
@@ -46,7 +48,7 @@ export function ModuleCard({ mod, state }: ModuleCardProps): React.JSX.Element {
             {hero ? <Sprite id={hero} crop="head" scale={3} /> : null}
           </View>
         </View>
-        <View style={styles.inner}>
+        <View style={[styles.inner, stacked ? styles.innerStacked : null]}>
           <View style={styles.statusRow}>
             <PixelText size={fontSize.tiny} color={colors.mu}>{`MODULE ${mod.id} · `}</PixelText>
             <PixelText testID={`module-status-${mod.id}`} size={fontSize.tiny} color={colors.mu}>{status}</PixelText>
@@ -85,17 +87,21 @@ export function ModuleCard({ mod, state }: ModuleCardProps): React.JSX.Element {
   );
 }
 
+const STACK_BELOW = 480;
+
 const styles = StyleSheet.create({
   mod: { flexDirection: 'row', gap: 14 },
+  modStacked: { flexDirection: 'column', gap: 8 },
   locked: { opacity: 0.8 },
   num: { width: 46, height: 46, backgroundColor: colors.cd, borderWidth: border.width, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, minWidth: 0, backgroundColor: colors.cd, borderWidth: border.width, borderColor: colors.ln, overflow: 'hidden' },
   banner: { height: 120, overflow: 'hidden', borderBottomWidth: border.width, borderBottomColor: colors.ln },
   overlay: { position: 'absolute', left: 0, right: 0, bottom: 0, top: 0, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingVertical: 8, paddingHorizontal: 12 },
   inner: { padding: 14 },
+  innerStacked: { padding: 10 },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap' },
   title: { marginVertical: 4 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 10 },
-  tag: { paddingVertical: 4, paddingHorizontal: 6, borderWidth: border.thin, borderColor: colors.ln },
+  tag: { paddingVertical: 4, paddingHorizontal: 6, borderWidth: border.thin, borderColor: colors.ln, maxWidth: '100%' },
   steps: { gap: 6, marginTop: 10 },
 });

@@ -1,7 +1,7 @@
 // Welcome / nickname (replaces v3 login, lines 338–346): v3 title banner with ZARA, KABIR,
 // MS. D'SOUZA and NOVA bobbing (staggered 0.25 s), optional nickname, Start / Skip → Home.
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { HOME_HREF } from '../contracts/routes';
 import { NICKNAME_MAX } from '../contracts/state';
@@ -10,6 +10,7 @@ import { Scene } from '../art/Scene';
 import { Sprite } from '../art/Sprite';
 import { completeOnboarding } from '../state/actions';
 import { pixelText } from '../theme/fonts';
+import { castScale } from '../theme/responsive';
 import { border, colors, fontSize } from '../theme/tokens';
 import { Card } from '../ui/Card';
 import { Page } from '../ui/Page';
@@ -22,6 +23,7 @@ const CAST: readonly NpcId[] = ['z', 'k', 'd', 'n'];
 export function WelcomeScreen(): React.JSX.Element {
   const [name, setName] = useState('');
   const [focused, setFocused] = useState(false);
+  const scale = castScale(useWindowDimensions().width);
   const finish = (n: string | null): void => {
     completeOnboarding(n);
     router.replace(HOME_HREF);
@@ -34,9 +36,9 @@ export function WelcomeScreen(): React.JSX.Element {
           <PixelText size={fontSize.h1} color={colors.ac} style={styles.title} accessibilityRole="header">{WELCOME.title}</PixelText>
           <PixelText size={fontSize.small} color={colors.white}>{WELCOME.subtitle}</PixelText>
         </View>
-        <View style={styles.cast}>
+        <View style={[styles.cast, scale < 4 ? styles.castNarrow : null]}>
           {CAST.map((id, i) => (
-            <Sprite key={id} id={id} scale={4} animate="bob" delayMs={i * 250} />
+            <Sprite key={id} id={id} scale={scale} animate="bob" delayMs={i * 250} />
           ))}
         </View>
       </View>
@@ -72,6 +74,7 @@ const styles = StyleSheet.create({
   titleWrap: { position: 'absolute', top: 26, left: 0, right: 0, alignItems: 'center', gap: 8, paddingHorizontal: 8 },
   title: { textShadowColor: colors.logoShadow, textShadowOffset: { width: 4, height: 4 }, textShadowRadius: 0 },
   cast: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 20 },
+  castNarrow: { gap: 12 },
   card: { marginVertical: 20, alignSelf: 'center', width: '100%', maxWidth: 440, gap: 6 },
   tag: { marginBottom: 14 },
   input: { color: colors.tx, backgroundColor: colors.deep, borderWidth: border.width, borderColor: colors.ln, padding: 12, marginVertical: 6, minHeight: 44 },

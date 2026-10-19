@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
@@ -15,6 +15,13 @@ const provider = process.env.GLITCH_E2E_EXPECT_PROVIDER ?? 'fake';
 const webPort = Number(process.env.GLITCH_WEB_PORT ?? 8090);
 const apiLog = resolve(__dirname, 'test-results', 'api.log');
 mkdirSync(resolve(__dirname, 'test-results'), { recursive: true });
+// Fresh api.log per run so check_logs judges only the latest run. The config is evaluated by
+// the runner BEFORE the webServers start (globalSetup runs after them, too late), and again in
+// every worker process — the env flag (inherited by workers) makes only the first load truncate.
+if (!process.env.GLITCH_E2E_LOG_TRUNCATED) {
+  writeFileSync(apiLog, '');
+  process.env.GLITCH_E2E_LOG_TRUNCATED = '1';
+}
 
 export default defineConfig({
   testDir: './e2e',
@@ -34,7 +41,20 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', testIgnore: '**/mobile.spec.ts', use: { ...devices['Desktop Chrome'] } },
+    // spec/ui.md → Responsive: no horizontal scroll at 320 px; mobile-first, touch.
+    {
+      name: 'mobile-320',
+      testMatch: '**/mobile.spec.ts',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 320, height: 640 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 },
+    },
+    {
+      name: 'mobile-360',
+      testMatch: '**/mobile.spec.ts',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 },
+    },
+  ],
   webServer: [
     {
       command: 'cd ../api && uv run python -m glitch_api',

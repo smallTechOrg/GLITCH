@@ -338,6 +338,7 @@ function DraggableItem({ id, label, selected, dimmed, flashing, wrong, disabled,
     <Animated.View
       {...d.panHandlers}
       style={[
+        styles.itemWrap,
         d.dragging ? styles.dragging : null,
         { transform: [{ translateX: Animated.add(d.offset.x, shakeX) }, { translateY: d.offset.y }, { rotate: d.dragging ? '-3deg' : '0deg' }] },
       ]}
@@ -416,6 +417,9 @@ const styles = StyleSheet.create({
   board: { gap: 4 },
   pool: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginVertical: 14, padding: 12, borderWidth: border.width, borderStyle: 'dashed', borderColor: colors.ln, minHeight: 70 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 12, minHeight: L.minTouch, backgroundColor: colors.cd, borderWidth: border.width, borderColor: colors.ln, boxShadow: shadows.item, maxWidth: '100%' },
+  // The drag wrapper must not grow past its row, or the item's maxWidth:'100%' is measured
+  // against an unbounded box and long items overflow the screen instead of wrapping.
+  itemWrap: { maxWidth: '100%', flexShrink: 1, minWidth: 0 },
   grab: { cursor: 'grab' },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
   itemText: { flexShrink: 1 },
