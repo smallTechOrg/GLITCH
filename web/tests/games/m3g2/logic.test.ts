@@ -2,7 +2,7 @@
 // spec/capabilities/v3-games.md → m3g2).
 import { GAME_META } from '@/content/modules';
 import {
-  ACCURACY_BASE, ACCURACY_GOAL, AUDIT_LABEL, FEATURES, GAP_BASE, GAP_GOAL, GOAL, HEADING, INTRO,
+  ACCURACY_BASE, ACCURACY_GOAL, AUDIT_A11Y_LABEL, AUDIT_LABEL, FEATURES, GAP_BASE, GAP_GOAL, GOAL, HEADING, INTRO,
   MEN_LABEL, MEN_SHORTLISTED, PASS_LINE, PROXY_ACCURACY_BONUS, RULE_LINE, TITLE, WIN_DELAY_MS,
   WIN_SUMMARY, WOMEN_LABEL, accuracyFailMessage, focusLine, gapFailMessage, xrayLine,
 } from '@/games/m3g2/data';
@@ -63,6 +63,7 @@ describe('m3g2 data (v3 verbatim)', () => {
     expect(HEADING).toBe('THE SCREENER · FEATURES');
     expect(RULE_LINE).toBe('Which inputs does the AI use? Skill features measure ability. The rest may be proxies.');
     expect(AUDIT_LABEL).toBe('RUN AUDIT ▶');
+    expect(AUDIT_A11Y_LABEL).toBe('RUN AUDIT');
     expect(MEN_LABEL).toBe('MEN SHORTLISTED');
     expect(WOMEN_LABEL).toBe('WOMEN SHORTLISTED');
     expect(PASS_LINE).toBe('Audit passed. Fair and accurate.');

@@ -2,7 +2,8 @@
 // Companion walked to LEVEL CLEAR with the expected star count, one Out-of-hearts run per
 // game, a keyboard-only game, hero powers, and the full Module 4 run → COURSE COMPLETE →
 // Graduate badge. Runs at the Phase 1 gate. Each test is a fresh browser context (= fresh
-// device), seeded with Modules 1–3 finished and the Module 4 hero chosen + story seen.
+// device), seeded with Modules 1–3 finished, the Module 4 hero chosen + story seen, and every
+// earlier Module 4 game done (a step is startable only when all earlier steps are done).
 import type { Page } from '@playwright/test';
 import { STATE_STORAGE_KEY } from '../src/contracts/state';
 import type { HeroId } from '../src/contracts/ids';
@@ -20,17 +21,29 @@ const DONE_1_TO_3 = {
   m3h: true, m3s: true, m3g1: true, m3g2: true,
 };
 
-/** Seed a device that has finished Modules 1–3 and entered Module 4 (once per context). */
-async function seedModule4(page: Page, hero: HeroId = 'scout'): Promise<void> {
+type Module4Game = 'm4g1' | 'm4g2' | 'm4g3';
+
+/** Earlier Module 4 games that must be done before `game` is startable (course-shell: step gating). */
+const EARLIER_M4: Record<Module4Game, readonly Module4Game[]> = { m4g1: [], m4g2: ['m4g1'], m4g3: ['m4g1', 'm4g2'] };
+
+/**
+ * Seed a device that has finished Modules 1–3 and entered Module 4 (once per context).
+ * A step is startable only when every earlier step is done, so opening m4g2 also marks m4g1
+ * done (with stars), and m4g3 marks m4g1 + m4g2 done.
+ */
+async function seedModule4(page: Page, game: Module4Game, hero: HeroId = 'scout'): Promise<void> {
   const now = new Date().toISOString();
+  const earlier = EARLIER_M4[game];
+  const extraSteps = Object.fromEntries(earlier.map((g) => [g, true] as const));
+  const extraStars = Object.fromEntries(earlier.map((g) => [g, 3] as const));
   const state = {
     version: 1,
     profile: { nickname: 'E2E', onboarded: true, createdAt: now },
     settings: { readableFont: false },
     xp: 0,
     streak: { current: 0, best: 0, lastPlayDay: null },
-    steps: { ...DONE_1_TO_3, m4h: true, m4s: true },
-    stars: { m1g1: 3, m1g2: 3, m2g1: 3, m2g2: 3, m3g1: 3, m3g2: 3 },
+    steps: { ...DONE_1_TO_3, m4h: true, m4s: true, ...extraSteps },
+    stars: { m1g1: 3, m1g2: 3, m2g1: 3, m2g2: 3, m3g1: 3, m3g2: 3, ...extraStars },
     heroByModule: { 1: hero, 2: hero, 3: hero, 4: hero },
     lastHero: hero,
     heroesPlayed: {},
@@ -47,8 +60,8 @@ async function seedModule4(page: Page, hero: HeroId = 'scout'): Promise<void> {
   );
 }
 
-async function openGame(page: Page, game: 'm4g1' | 'm4g2' | 'm4g3', hero: HeroId = 'scout'): Promise<void> {
-  await seedModule4(page, hero);
+async function openGame(page: Page, game: Module4Game, hero: HeroId = 'scout'): Promise<void> {
+  await seedModule4(page, game, hero);
   await page.goto(`./module/4/game/${game}`);
   await waitForApp(page);
   await expect(page.getByTestId('game-body')).toBeVisible();

@@ -21,7 +21,8 @@ async function seedModule2(page: Page, hero: Hero, extraSteps: string[] = []): P
     xp: 0,
     streak: { current: 0, best: 0, lastPlayDay: null },
     steps,
-    stars: { m1g1: 3, m1g2: 3 },
+    // Every seeded-done game carries stars too (a done game always has a star record).
+    stars: { m1g1: 3, m1g2: 3, ...Object.fromEntries(extraSteps.filter((x) => /^m\dg\d$/.test(x)).map((x) => [x, 3])) },
     heroByModule: { 1: hero, 2: hero },
     lastHero: hero,
     heroesPlayed: {},

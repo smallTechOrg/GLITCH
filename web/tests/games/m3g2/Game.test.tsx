@@ -207,5 +207,6 @@ describe('<Fairness Lab>', () => {
     const b = screen.getByTestId('m3g2-audit');
     expect(b.props.accessibilityRole).toBe('button');
     expect(b).toHaveTextContent(/RUN AUDIT ▶/);
+    expect(b.props.accessibilityLabel).toBe('RUN AUDIT');
   });
 });

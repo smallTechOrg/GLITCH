@@ -122,4 +122,13 @@ describe('m4g2 Confidence Court', () => {
     expect(within(screen.getByTestId('dnd-zone-trust')).getByTestId('dnd-item-a4').props.accessibilityLabel).toMatch(/, placed in TRUST$/);
     expect(screen.getByTestId('dnd-zone-trust').props.accessibilityLabel).toBe('TRUST zone, 1 placed');
   });
+
+  it('unmounting before the win delay cancels the win (no stale timer fires)', async () => {
+    const api = await setup();
+    for (const [item, zone] of ANSWER_KEY) await place(item, zone);
+    await flush(100);
+    await screen.unmount();
+    await flush(1000);
+    expect(api.calls.win).toHaveLength(0);
+  });
 });

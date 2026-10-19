@@ -213,4 +213,13 @@ describe('m4g1 Source Detective', () => {
     expect(screen.getByTestId('dnd-item-c5').props.accessibilityLabel).toBe(ITEMS[4]!.text);
     expect(screen.getByTestId('dnd-zone-keep').props.accessibilityLabel).toBe('KEEP zone, 0 placed');
   });
+
+  it('unmounting before the win delay cancels the win (no stale timer fires)', async () => {
+    const api = await setup();
+    await solveAll();
+    await flush(100);
+    await screen.unmount();
+    await flush(1000);
+    expect(api.calls.win).toHaveLength(0);
+  });
 });

@@ -42,6 +42,8 @@ export const WOMEN_LABEL = 'WOMEN SHORTLISTED';
 export const GAP_LABEL = 'GAP';
 export const ACCURACY_LABEL = 'ACCURACY';
 export const AUDIT_LABEL = 'RUN AUDIT ▶';
+/** Screen-reader name of the audit button: the ▶ glyph is decoration, not part of the name. */
+export const AUDIT_A11Y_LABEL = 'RUN AUDIT';
 export const PASS_LINE = 'Audit passed. Fair and accurate.';
 export const gapFailMessage = (gap: number): string => `The gap is still ${gap} points. Some proxies are still switched on.`;
 export const accuracyFailMessage = (acc: number): string => `Accuracy fell to ${acc}%. Keep the skill features on.`;

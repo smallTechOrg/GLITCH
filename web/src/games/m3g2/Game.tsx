@@ -9,7 +9,7 @@ import { PixelButton } from '../../ui/PixelButton';
 import { PixelText } from '../../ui/PixelText';
 import { ToggleTile } from '../../ui/ToggleTile';
 import {
-  ACCURACY_GOAL, ACCURACY_LABEL, AUDIT_LABEL, BAR_PX_PER_PCT, FEATURES, FLASH_MS, GAP_GOAL, GAP_LABEL,
+  ACCURACY_GOAL, ACCURACY_LABEL, AUDIT_A11Y_LABEL, AUDIT_LABEL, BAR_PX_PER_PCT, FEATURES, FLASH_MS, GAP_GOAL, GAP_LABEL,
   HEADING, MEN_LABEL, MEN_SHORTLISTED, RULE_LINE, WIN_DELAY_MS, WIN_SUMMARY, WOMEN_LABEL, focusLine,
   xrayLine, type FeatureId,
 } from './data';
@@ -110,7 +110,7 @@ export function FairnessLabGame({ api }: { api: GameApi }): React.JSX.Element {
       </View>
       <MetricBar id="gap" label={GAP_LABEL} value={m.gap} target={GAP_GOAL} direction={-1} icon="scales" />
       <MetricBar id="accuracy" label={ACCURACY_LABEL} value={m.accuracy} target={ACCURACY_GOAL} direction={1} icon="target" />
-      <PixelButton testID="m3g2-audit" label={AUDIT_LABEL} variant="primary" onPress={onAudit} disabled={disabled} accessibilityLabel={AUDIT_LABEL} />
+      <PixelButton testID="m3g2-audit" label={AUDIT_LABEL} variant="primary" onPress={onAudit} disabled={disabled} accessibilityLabel={AUDIT_A11Y_LABEL} />
     </View>
   );
 }
