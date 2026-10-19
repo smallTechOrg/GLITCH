@@ -142,6 +142,12 @@ test.describe('settings', () => {
     await page.getByTestId('settings-save').click();
     await page.getByTestId('settings-readable-font').click();
     await expect(page.getByTestId('settings-readable-font')).toHaveAttribute('aria-checked', 'true');
+    // spec/ui.md: toggles work with Enter and Space.
+    await page.getByTestId('settings-readable-font').focus();
+    await page.keyboard.press('Space');
+    await expect(page.getByTestId('settings-readable-font')).toHaveAttribute('aria-checked', 'false');
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('settings-readable-font')).toHaveAttribute('aria-checked', 'true');
     await page.getByTestId('settings-reset').click();
     await expect(page.getByTestId('settings-reset')).toContainText('Tap again to erase XP, badges and progress');
     await page.getByTestId('settings-reset').click();

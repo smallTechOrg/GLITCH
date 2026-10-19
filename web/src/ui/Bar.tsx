@@ -24,6 +24,9 @@ export function Bar({ value, color = colors.ok, height = 10, marker, accessibili
       accessibilityRole={accessibilityLabel ? 'progressbar' : undefined}
       accessibilityLabel={accessibilityLabel}
       accessibilityValue={accessibilityLabel ? { min: 0, max: 100, now: Math.round(pct) } : undefined}
+      aria-valuemin={accessibilityLabel ? 0 : undefined}
+      aria-valuemax={accessibilityLabel ? 100 : undefined}
+      aria-valuenow={accessibilityLabel ? Math.round(pct) : undefined}
       style={[styles.trough, { height: height + border.thin * 2 }, style]}
     >
       <View style={[styles.fill, { width: `${pct}%`, backgroundColor: color }]} />

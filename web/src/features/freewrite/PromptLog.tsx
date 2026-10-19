@@ -23,6 +23,7 @@ function Entry({ e, index }: { e: PromptHistoryEntry; index: number }): React.JS
       accessibilityLabel={`${e.goal} ${e.leversHit} of 5 levers, ${SOURCE_TAG[e.source]}`}
       accessibilityHint={open ? 'Hide the prompt' : 'Show the prompt'}
       accessibilityState={{ expanded: open }}
+      aria-expanded={open}
       style={[styles.entry, f.ring]}
     >
       <View style={styles.entryHead}>
@@ -52,6 +53,7 @@ export function PromptLog(): React.JSX.Element {
         accessibilityRole="button"
         accessibilityLabel={`${COPY.logTitle}, ${history.length} ${history.length === 1 ? 'entry' : 'entries'}`}
         accessibilityState={{ expanded: open }}
+        aria-expanded={open}
         style={[styles.toggle, f.ring]}
       >
         <PixelText size={fontSize.tiny} color={colors.ac}>{`${open ? '▼' : '▶'} ${COPY.logTitle} (${history.length})`}</PixelText>

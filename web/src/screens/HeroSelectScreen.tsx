@@ -2,6 +2,7 @@
 // name, power chip, description), "▶ Enter the <Module>" and "← HOME".
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { spaceActivates } from '../a11y/spaceActivates';
 import { HERO_IDS, type HeroId, type ModuleId } from '../contracts/ids';
 import { Icon } from '../art/Icon';
 import { Scene } from '../art/Scene';
@@ -64,6 +65,8 @@ function HeroCard({ id, selected, onPress }: { id: HeroId; selected: boolean; on
       accessibilityRole="radio"
       accessibilityLabel={`${h.name}, ${h.powerName} power. ${h.description}`}
       accessibilityState={{ checked: selected, selected }}
+      aria-checked={selected}
+      {...spaceActivates(onPress)}
       style={[styles.card, { borderColor: selected ? h.color : colors.ln }, selected ? styles.sel : null, f.ring]}
     >
       <Sprite id={id} scale={5} animate={selected ? 'bob' : 'none'} />

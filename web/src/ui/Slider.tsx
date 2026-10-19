@@ -102,6 +102,10 @@ export function Slider({ id, label, value, min, max, step = 1, disabled = false,
           accessibilityLabel={label}
           accessibilityState={{ disabled }}
           accessibilityValue={{ min, max, now: value }}
+          aria-disabled={disabled}
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={value}
           accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
           onAccessibilityAction={(e) => set(e.nativeEvent.actionName === 'increment' ? value + step : value - step)}
           onFocus={f.onFocus}

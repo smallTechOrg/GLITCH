@@ -352,6 +352,8 @@ function DraggableItem({ id, label, selected, dimmed, flashing, wrong, disabled,
         accessibilityLabel={`${label}${selected ? ', selected' : ''}${dimmed ? ', not an answer' : ''}`}
         accessibilityHint="Select, then choose a zone"
         accessibilityState={{ selected, disabled }}
+        aria-selected={selected}
+        aria-disabled={disabled}
         style={[styles.item, selected ? styles.selected : null, dimmed ? styles.dimmed : null, wrong ? styles.wrong : null, f.ring, styles.grab]}
       >
         {children}

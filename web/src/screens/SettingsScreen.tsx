@@ -2,6 +2,7 @@
 // privacy note, and a two-tap "Reset progress" (keeps streak, nickname, settings, device id).
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { spaceActivates } from '../a11y/spaceActivates';
 import { NICKNAME_MAX } from '../contracts/state';
 import { resetProgress } from '../state/actions';
 import { useGlitchStore } from '../state/store';
@@ -83,6 +84,8 @@ export function SettingsScreen(): React.JSX.Element {
           accessibilityLabel={SETTINGS.readable}
           accessibilityHint={SETTINGS.readableHelp}
           accessibilityState={{ checked: readable }}
+          aria-checked={readable}
+          {...spaceActivates(toggleReadable)}
           style={[styles.toggle, readable ? styles.toggleOn : null, toggleFocus.ring]}
         >
           <PixelText size={fontSize.small} style={styles.flex}>{SETTINGS.readable}</PixelText>

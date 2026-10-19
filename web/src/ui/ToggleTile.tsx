@@ -4,6 +4,7 @@ import { Animated, Pressable, StyleSheet, View, type StyleProp, type ViewStyle }
 import type { IconId } from '../contracts/art';
 import { Icon } from '../art/Icon';
 import { ANIM } from '../a11y/stepped';
+import { spaceActivates } from '../a11y/spaceActivates';
 import { useStepAnimation } from '../a11y/useStepAnimation';
 import { border, colors, fontSize, layout } from '../theme/tokens';
 import { PixelText } from './PixelText';
@@ -33,6 +34,9 @@ export function ToggleTile({ id, label, on, onToggle, icon, flash = false, disab
       accessibilityRole="switch"
       accessibilityLabel={label}
       accessibilityState={{ checked: on, disabled }}
+      aria-checked={on}
+      aria-disabled={disabled}
+      {...spaceActivates(onToggle, disabled)}
       style={[styles.tile, on ? styles.on : null, f.ring, style]}
     >
       {icon ? <Icon name={icon} scale={3} /> : null}

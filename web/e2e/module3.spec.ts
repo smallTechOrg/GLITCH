@@ -106,9 +106,10 @@ test.describe('m3g2 · Fairness Lab', () => {
     await expect(page.getByTestId('game-title')).toContainText('Fairness Lab');
     await expect(page.getByTestId('metric-gap')).toHaveAttribute('aria-label', 'GAP 31%, goal ≤6, not met');
     await expect(page.getByTestId('metric-accuracy')).toHaveAttribute('aria-label', 'ACCURACY 94%, goal ≥80, met');
-    for (const id of PROXY_TOGGLES) {
+    for (const [i, id] of PROXY_TOGGLES.entries()) {
       await page.getByTestId(`toggle-${id}`).focus();
-      await page.keyboard.press('Enter');
+      // spec/ui.md: toggles work with Enter and Space — exercise both.
+      await page.keyboard.press(i % 2 === 0 ? 'Enter' : 'Space');
       await expect(page.getByTestId(`toggle-${id}`)).toHaveAttribute('aria-checked', 'false');
     }
     await expect(page.getByTestId('metric-gap')).toHaveAttribute('aria-label', 'GAP 2%, goal ≤6, met');

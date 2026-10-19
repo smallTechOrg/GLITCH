@@ -153,6 +153,7 @@ function Line({ index, line, mark, targetTag, safeTag, showSafeNote, disabled, o
       accessibilityRole="button"
       accessibilityLabel={`${index + 1}. ${line.text}${marked ? `, ${tag}` : ''}`}
       accessibilityState={{ disabled: disabled || marked }}
+      aria-disabled={disabled || marked}
       style={[styles.line, mark === 'target' ? styles.target : mark === 'safe' ? styles.safe : null, f.ring]}
     >
       <PixelText size={fontSize.small} color={colors.paperNum}>{String(index + 1)}</PixelText>

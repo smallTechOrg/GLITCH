@@ -42,6 +42,7 @@ export function PixelButton({
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
+      aria-disabled={disabled}
       style={({ pressed }) => [
         styles.base,
         v.box,

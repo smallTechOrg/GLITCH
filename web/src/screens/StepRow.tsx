@@ -32,6 +32,7 @@ export function StepRow({ step, done, open, stars, onPress }: StepRowProps): Rea
       accessibilityRole="button"
       accessibilityLabel={`${step.kind} ${step.label}, ${statusLabel}`}
       accessibilityState={{ disabled: !open }}
+      aria-disabled={!open}
       style={[styles.row, done ? styles.done : null, open && !done ? styles.go : null, !open ? styles.disabled : null, f.ring]}
     >
       <View style={styles.kind}>
