@@ -1,0 +1,37 @@
+[project]
+name = "glitch-api"
+version = "0.1.0"
+description = "GLITCH backend: guards the OpenRouter key, evaluates free-write prompts, enforces daily AI budgets."
+requires-python = "==3.12.*"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "httpx>=0.28",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "structlog>=24.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "respx>=0.21",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/glitch_api"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = '-m "not live and not gcs"'
+markers = [
+    "live: real OpenRouter call; needs GLITCH_OPENROUTER_API_KEY in the repo-root .env (fails loudly when missing)",
+    "gcs: real Google Cloud Storage round-trip (Phase 2+); needs GLITCH_GCS_BUCKET + ADC",
+]
