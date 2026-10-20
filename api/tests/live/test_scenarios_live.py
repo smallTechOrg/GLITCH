@@ -2,10 +2,11 @@
 moderation → store, then a second device re-requests it: a cache hit that costs no energy
 and no provider call.
 
-Budget: exactly ONE real OpenRouter call per game (5 total) — the regeneration is turned
-off here (``max_attempts=1``) so a run can never exceed 5 calls; the regeneration path is
-covered offline (unit + MockTransport tests). The cache lives in a temp directory, so the
-developer's ``api/.cache`` is never touched.
+Budget: one or two real OpenRouter calls per game — the first try plus at most one
+validator-fed regeneration (the pipeline's normal ``MAX_ATTEMPTS``) — so at most 10
+scenario calls, which with the 5 free-write calls stays inside the conftest
+``MAX_LIVE_CALLS`` guard. The cache lives in a temp directory, so the developer's
+``api/.cache`` is never touched.
 """
 
 from __future__ import annotations
@@ -21,20 +22,23 @@ from glitch_api.llm.factory import build_provider
 from glitch_api.main import create_app
 from glitch_api.moderation.filter import check as moderation_check
 from glitch_api.moderation.filter import strip_links
-from glitch_api.scenarios.pipeline import ScenarioOptions
+from glitch_api.scenarios.pipeline import MAX_ATTEMPTS, ScenarioOptions
 from glitch_api.scenarios.schemas import GAME_IDS, GAMES, validate_data
 from glitch_api.tools.check_logs import check as check_log_lines
-from tests.live.conftest import CountingProvider, live_calls, live_settings
+from tests.live.conftest import MAX_LIVE_CALLS, CountingProvider, live_calls, live_settings
 
 pytestmark = pytest.mark.live
 
 DEVICE_A = "5d0c8e1a-7b3f-4c2d-9e6a-0f1b2c3d4e5f"
 DEVICE_B = "6e1d9f2b-8c4a-4d3e-af7b-1a2b3c4d5e6f"
 ROUTE = "/v1/scenarios/{game_id}/next"
+FREEWRITE_LIVE_CALLS = 5  # one call per test in test_freewrite_live.py
 
 
 @pytest.fixture
 async def live_scenario_app(tmp_path: Path, live_log: Path) -> AsyncIterator[tuple[httpx.AsyncClient, Any, Path]]:
+    assert MAX_ATTEMPTS == 2, "budget assumes first try + one validator-fed regeneration"
+    assert FREEWRITE_LIVE_CALLS + len(GAME_IDS) * MAX_ATTEMPTS <= MAX_LIVE_CALLS, "worst case must fit the live guard"
     settings = live_settings(tmp_path, log_file=str(live_log))
     assert settings.cache_path == tmp_path / "cache", "live tests must never use the repo's api/.cache"
     assert settings.resolved_provider == "openrouter", "live tests need the OpenRouter provider"
@@ -45,7 +49,7 @@ async def live_scenario_app(tmp_path: Path, live_log: Path) -> AsyncIterator[tup
         max_tokens=settings.llm_max_output_tokens,
         timeout_s=settings.llm_timeout_s,
         deadline_s=settings.llm_timeout_s,
-        max_attempts=1,  # budget: one real call per game
+        max_attempts=MAX_ATTEMPTS,  # first try + at most one validator-fed regeneration
     )
     try:
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://127.0.0.1:8787") as c:
@@ -62,7 +66,8 @@ async def test_live_generation_validated_cached_then_free_hit(game_id: str, live
     first = await client.get(f"/v1/scenarios/{game_id}/next", headers={"X-Glitch-Device": DEVICE_A})
     payload = first.json()
     assert first.status_code == 200, f"{game_id}: live generation failed: {payload.get('error')}"
-    assert live_calls() == calls_before + 1  # exactly ONE provider call for the whole scenario
+    used = live_calls() - calls_before
+    assert 1 <= used <= MAX_ATTEMPTS, f"{game_id}: {used} provider calls (expected 1, or 2 with one regeneration)"
     data = payload["data"]
     assert data["cached"] is False and data["gameId"] == game_id and data["schemaVersion"] == 1
     assert validate_data(game_id, data["data"]) == data["data"]  # schema + domain, re-checked here
@@ -78,7 +83,7 @@ async def test_live_generation_validated_cached_then_free_hit(game_id: str, live
     assert second.status_code == 200 and hit["data"]["cached"] is True
     assert hit["data"]["variationId"] == data["variationId"] and hit["data"]["data"] == data["data"]
     assert hit["energy"]["remaining"] == 10  # a cache hit costs no energy
-    assert live_calls() == calls_before + 1  # ... and no provider call
+    assert live_calls() == calls_before + used  # ... and no provider call
 
     metrics = (await client.get("/v1/metrics")).json()["data"]
     assert metrics["cache_hits"] >= 1 and metrics["cache_misses"] >= 1
