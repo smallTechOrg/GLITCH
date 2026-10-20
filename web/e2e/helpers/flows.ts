@@ -46,6 +46,25 @@ export async function dragTo(page: Page, itemId: string, zoneId: string): Promis
   await page.mouse.up();
 }
 
+/**
+ * A quick, human-speed flick: only `moves` pointer moves, 16 ms apart, so the first move
+ * already leaves the item (regression: such drags used to be silently ignored).
+ */
+export async function quickDragTo(page: Page, itemId: string, zoneId: string, moves = 3): Promise<void> {
+  await page.getByTestId(`dnd-item-${itemId}`).scrollIntoViewIfNeeded();
+  const a = await page.getByTestId(`dnd-item-${itemId}`).boundingBox();
+  const b = await page.getByTestId(`dnd-zone-${zoneId}`).boundingBox();
+  if (!a || !b) throw new Error(`quickDragTo: ${itemId} or ${zoneId} not visible`);
+  const [sx, sy, tx, ty] = [a.x + a.width / 2, a.y + a.height / 2, b.x + b.width / 2, b.y + b.height / 2];
+  await page.mouse.move(sx, sy);
+  await page.mouse.down();
+  for (let i = 1; i <= moves; i++) {
+    await page.mouse.move(sx + ((tx - sx) * i) / moves, sy + ((ty - sy) * i) / moves);
+    await page.waitForTimeout(16);
+  }
+  await page.mouse.up();
+}
+
 /** Keyboard-only sort: focus the item, Enter selects; focus the zone, Enter drops. */
 export async function sortByKeyboard(page: Page, pairs: ReadonlyArray<readonly [string, string]>): Promise<void> {
   for (const [item, zone] of pairs) {

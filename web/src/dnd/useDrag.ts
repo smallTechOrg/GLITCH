@@ -82,41 +82,69 @@ export interface DragCallbacks {
   onCancel(): void;
 }
 
+/** How long after a drag the browser's trailing `click` is ignored (v3 used 60 ms). */
+export const CLICK_AFTER_DRAG_MS = 60;
+
+/**
+ * Web claims the gesture at press time. The responder system only offers a *move* to views
+ * under the pointer, so on a quick drag whose first mousemove had already left the item the
+ * item was never asked, and the drag silently did nothing. Taps still work: on web,
+ * Pressable's onPress comes from the DOM `click`, not from the responder.
+ */
+const CLAIM_ON_PRESS = Platform.OS === 'web';
+
 /** One draggable item: pan handlers + the translation to apply while dragging. */
-export function useDragItem(cb: DragCallbacks): { panHandlers: object; offset: Animated.ValueXY; dragging: boolean } {
+export function useDragItem(cb: DragCallbacks): { panHandlers: object; offset: Animated.ValueXY; dragging: boolean; justDragged: () => boolean } {
   const live = useRef(cb);
   live.current = cb;
   const offset = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const [dragging, setDragging] = useState(false);
-  const pan = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_e, g) => live.current.enabled() && !live.current.suppressed?.() && exceedsThreshold(g.dx, g.dy),
-        onMoveShouldSetPanResponderCapture: (_e, g) => live.current.enabled() && !live.current.suppressed?.() && exceedsThreshold(g.dx, g.dy),
-        onPanResponderGrant: () => {
-          setDragging(true);
-          live.current.onStart();
-        },
-        onPanResponderMove: (e, g) => {
-          offset.setValue({ x: g.dx, y: g.dy });
-          const p = pointerInWindow(e);
-          live.current.onMove(p.x, p.y);
-        },
-        onPanResponderRelease: (e) => {
-          const p = pointerInWindow(e);
-          offset.setValue({ x: 0, y: 0 });
-          setDragging(false);
-          live.current.onEnd(p.x, p.y);
-        },
-        onPanResponderTerminate: () => {
-          offset.setValue({ x: 0, y: 0 });
-          setDragging(false);
-          live.current.onCancel();
-        },
-        onPanResponderTerminationRequest: () => false,
-      }),
-    [offset],
-  );
-  return { panHandlers: pan.panHandlers, offset, dragging };
+  const started = useRef(false);
+  const lastDragEnd = useRef(0);
+  const pan = useMemo(() => {
+    const canDrag = (): boolean => live.current.enabled() && !live.current.suppressed?.();
+    const begin = (): void => {
+      started.current = true;
+      setDragging(true);
+      live.current.onStart();
+    };
+    const stop = (): boolean => {
+      const was = started.current;
+      started.current = false;
+      offset.setValue({ x: 0, y: 0 });
+      setDragging(false);
+      if (was) lastDragEnd.current = Date.now();
+      return was;
+    };
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => CLAIM_ON_PRESS && live.current.enabled(),
+      onMoveShouldSetPanResponder: (_e, g) => canDrag() && exceedsThreshold(g.dx, g.dy),
+      onMoveShouldSetPanResponderCapture: (_e, g) => canDrag() && exceedsThreshold(g.dx, g.dy),
+      onPanResponderGrant: () => {
+        started.current = false;
+        // Move-negotiated grants (native) only happen past the threshold: the drag is on.
+        if (!CLAIM_ON_PRESS) begin();
+      },
+      onPanResponderMove: (e, g) => {
+        if (!started.current) {
+          if (!canDrag() || !exceedsThreshold(g.dx, g.dy)) return;
+          begin();
+        }
+        offset.setValue({ x: g.dx, y: g.dy });
+        const p = pointerInWindow(e);
+        live.current.onMove(p.x, p.y);
+      },
+      onPanResponderRelease: (e) => {
+        const p = pointerInWindow(e);
+        if (stop()) live.current.onEnd(p.x, p.y);
+      },
+      onPanResponderTerminate: () => {
+        if (stop()) live.current.onCancel();
+      },
+      onPanResponderTerminationRequest: () => false,
+    });
+  }, [offset]);
+  const justDragged = useMemo(() => () => Date.now() - lastDragEnd.current < CLICK_AFTER_DRAG_MS, []);
+  return { panHandlers: pan.panHandlers, offset, dragging, justDragged };
 }

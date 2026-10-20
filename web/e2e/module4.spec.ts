@@ -8,7 +8,7 @@ import type { Page } from '@playwright/test';
 import { STATE_STORAGE_KEY } from '../src/contracts/state';
 import type { HeroId } from '../src/contracts/ids';
 import { test, expect, waitForApp } from './helpers/fixtures';
-import { expectWin, sortByKeyboard, sortByTap } from './helpers/flows';
+import { expectWin, quickDragTo, sortByKeyboard, sortByTap } from './helpers/flows';
 
 type Pair = readonly [string, string];
 const M4G1: readonly Pair[] = [['c1', 'keep'], ['c2', 'cut'], ['c3', 'keep'], ['c4', 'cut'], ['c5', 'keep']];
@@ -99,6 +99,19 @@ test.describe('m4g1 · Source Detective', () => {
     await page.getByTestId('m4g1-check-c4').click();
     await expect(page.getByTestId('say-bubble')).toContainText('No lookups left. Use the clues instead.');
     await expect(page.getByTestId('hearts')).toHaveAttribute('aria-label', /Hearts 3 of 3/);
+  });
+
+  test('a CHECK press released off the button does not block dragging afterwards', async ({ page }) => {
+    await openGame(page, 'm4g1');
+    const check = page.getByTestId('m4g1-check-c2');
+    await check.scrollIntoViewIfNeeded();
+    const c = (await check.boundingBox())!;
+    await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(c.x + c.width + 40, c.y + c.height + 30, { steps: 5 });
+    await page.mouse.up();
+    await quickDragTo(page, 'c1', 'keep', 8);
+    await expect(page.getByTestId('dnd-zone-keep').getByTestId('dnd-item-c1')).toBeVisible();
   });
 
   test('Ask NOVA costs exactly one heart, disables itself, and the win has 2 stars', async ({ page }) => {

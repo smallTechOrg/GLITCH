@@ -51,11 +51,23 @@ export interface SortBoardProps<I extends SortItem> {
 
 const SuppressCtx = createContext<{ current: boolean } | null>(null);
 
+const RELEASE_EVENTS = ['pointerup', 'pointercancel', 'mouseup', 'touchend', 'touchcancel'] as const;
+
 /** Wrap controls inside an item (e.g. m4g1 CHECK) so pressing them never starts a drag. */
 export function NoDrag({ children }: { children: React.ReactNode }): React.JSX.Element {
   const ref = useContext(SuppressCtx);
   const on = (): void => {
-    if (ref) ref.current = true;
+    if (!ref) return;
+    ref.current = true;
+    // A press that slips off the control is released elsewhere, so the control's own
+    // onPointerUp never fires; without a document-level release, every drag stayed blocked.
+    const doc = Platform.OS === 'web' ? (globalThis as { document?: Document }).document : undefined;
+    if (!doc) return;
+    const release = (): void => {
+      for (const t of RELEASE_EVENTS) doc.removeEventListener(t, release, true);
+      setTimeout(() => (ref.current = false), 0);
+    };
+    for (const t of RELEASE_EVENTS) doc.addEventListener(t, release, true);
   };
   const off = (): void => {
     if (ref) setTimeout(() => (ref.current = false), 0);
@@ -207,8 +219,13 @@ export function SortBoard<I extends SortItem>({
       },
       end: (itemId, x, y) => {
         setHover(null);
-        const z = hitTest(rects.current, x, y);
-        if (z) dropItem(itemId, z);
+        // Re-measure at the drop: the start-of-drag measure is async, so a quick drag can be
+        // released before it resolves (rects empty or stale → the drop was silently missed).
+        void zones.measure().then((r) => {
+          rects.current = r;
+          const z = hitTest(r, x, y);
+          if (z) dropItem(itemId, z);
+        });
       },
       cancel: () => setHover(null),
     }),
@@ -345,7 +362,10 @@ function DraggableItem({ id, label, selected, dimmed, flashing, wrong, disabled,
     >
       <Pressable
         testID={`dnd-item-${id}`}
-        onPress={() => onPress(id)}
+        onPress={() => {
+          // The browser's click after a drag release would otherwise also select the item.
+          if (!d.justDragged()) onPress(id);
+        }}
         disabled={disabled}
         onFocus={f.onFocus}
         onBlur={f.onBlur}

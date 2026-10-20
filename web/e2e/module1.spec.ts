@@ -3,7 +3,7 @@
 // power, and Out of hearts via three wrong moves (spec/capabilities/v3-games.md → Success).
 import type { Page } from '@playwright/test';
 import { test, expect } from './helpers/fixtures';
-import { dragTo, expectWin, onboard, pickLines, skipStory, sortByKeyboard, sortByTap } from './helpers/flows';
+import { dragTo, expectWin, onboard, pickLines, quickDragTo, skipStory, sortByKeyboard, sortByTap } from './helpers/flows';
 
 type Pair = readonly [string, string];
 const STEP1: readonly Pair[] = [['e1', 'spam'], ['e2', 'ok'], ['e3', 'spam'], ['e4', 'ok'], ['e5', 'spam'], ['e6', 'ok']];
@@ -89,6 +89,27 @@ test.describe('Module 1 games', () => {
     await expectResult(page);
     await page.getByTestId('m1g1-finish').click();
     await expectWin(page, 3);
+  });
+
+  test('Train the Model by quick flicks (first move already leaves the item)', async ({ page }) => {
+    await startModule1(page);
+    for (const [item, zone] of STEP1) {
+      await quickDragTo(page, item, zone);
+      await expect(page.getByTestId(`dnd-zone-${zone}`).getByTestId(`dnd-item-${item}`)).toBeVisible();
+    }
+    await expectStep2(page);
+  });
+
+  test('a drag dropped on empty space leaves the item in the pool, not selected', async ({ page }) => {
+    await startModule1(page);
+    const item = page.getByTestId('dnd-item-e1');
+    const a = (await item.boundingBox())!;
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(a.x + a.width / 2 + 30, a.y + a.height / 2 + 20, { steps: 6 });
+    await page.mouse.up();
+    await expect(page.getByTestId('dnd-zone-spam').getByTestId('dnd-item-e1')).toHaveCount(0);
+    await expect(item).not.toHaveAttribute('aria-selected', 'true');
   });
 
   test('Train the Model keyboard-only (Tab/Enter), with a wrong drop → 2 stars', async ({ page }) => {
