@@ -1,4 +1,4 @@
-// m4g2 · Confidence Court — v3 data + rules (spec/GLITCH v3.html lines 578–580).
+// m4g2 · Confidence Court — v3 data + rules (spec/idea/GLITCH v3.html lines 578–580).
 import { createSort, drop, focus, isDone, xray } from '@/dnd/sortEngine';
 import game from '@/games/m4g2';
 import { ANSWERS, HEADING, ITEMS, SUBHEAD, SUMMARY, WRONG, ZONES, verdictLine } from '@/games/m4g2/data';

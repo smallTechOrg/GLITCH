@@ -1,4 +1,4 @@
-// m4g1 · Source Detective — v3 data verbatim (spec/GLITCH v3.html lines 570–577, `GM.m4g1`).
+// m4g1 · Source Detective — v3 data verbatim (spec/idea/GLITCH v3.html lines 570–577, `GM.m4g1`).
 import type { IconId } from '../../contracts/art';
 import type { Mood } from '../../contracts/ids';
 import type { SortItem, SortZone } from '../../dnd/sortEngine';

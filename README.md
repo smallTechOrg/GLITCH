@@ -3,7 +3,7 @@
 GLITCH is a gamified AI-literacy game for 13–18 year olds. Learners pick a pixel-art
 hero, watch a short story cutscene and play mini-games that teach them to *spot what AI
 gets wrong and make the call*. It is a rebuild of the single-file prototype
-(`spec/GLITCH v3.html`) as:
+(`spec/idea/GLITCH v3.html`) as:
 
 - **`web/`** — one Expo / React Native Web codebase, exported as a static site to GitHub
   Pages at `https://smalltechorg.github.io/GLITCH/` (and to iOS/Android later). The
@@ -384,7 +384,7 @@ then publish `web/dist`, including `dist/.nojekyll`.
 
 ```
 README.md  .env.example  .gitignore  .nvmrc  .github/workflows/pages.yml
-spec/      product + technical spec, v3 prototype source (GLITCH v3.html, GLITCH v0.1.docx)
+spec/      product + technical spec; spec/idea/ holds the source idea (GLITCH v3.html prototype, GLITCH v0.1.docx)
 api/       FastAPI service — src/glitch_api/ (one package), tests/{unit,integration,live}
 web/       Expo app — app/ (routes), src/ (game), tests/ (Jest), e2e/ (Playwright)
 ```

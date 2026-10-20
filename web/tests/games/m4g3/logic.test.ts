@@ -1,4 +1,4 @@
-// m4g3 · Design the Companion — v3 maths, targets, ordered failures (spec/GLITCH v3.html lines 581–592).
+// m4g3 · Design the Companion — v3 maths, targets, ordered failures (spec/idea/GLITCH v3.html lines 581–592).
 import game from '@/games/m4g3';
 import {
   FOCUS_ALL_MET, METRICS, SHIPPED_LINE, START_DESIGN, SUMMARY, TOGGLES, XRAY_DESIGN, XRAY_LINE, type Design,

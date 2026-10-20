@@ -1,4 +1,4 @@
-// Heroes and NPCs — verbatim from v3 `HERO` / `NPC` (spec/GLITCH v3.html lines 209–222).
+// Heroes and NPCs — verbatim from v3 `HERO` / `NPC` (spec/idea/GLITCH v3.html lines 209–222).
 import type { CharacterId, HeroId, NpcId, PowerKind } from '../contracts/ids';
 import type { IconId } from '../contracts/art';
 

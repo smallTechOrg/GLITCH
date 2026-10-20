@@ -1,4 +1,4 @@
-// Storytime cutscenes — verbatim from v3 `STORY` (spec/GLITCH v3.html lines 382–428):
+// Storytime cutscenes — verbatim from v3 `STORY` (spec/idea/GLITCH v3.html lines 382–428):
 // 41 slides (11/10/10/10), same order, same text, same kinds (T/Pt/Ic/Sn/Ky helpers).
 import type { CharacterId, ModuleId, NpcId } from '../contracts/ids';
 import type { IconId } from '../contracts/art';

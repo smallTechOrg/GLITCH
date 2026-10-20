@@ -1,4 +1,4 @@
-// Characters — faithful port of v3 `drawChar` / `drawNova` (spec/GLITCH v3.html lines 224–245)
+// Characters — faithful port of v3 `drawChar` / `drawNova` (spec/idea/GLITCH v3.html lines 224–245)
 // onto the scaffold framebuffer, plus the fidelity-upgrade frames (spec/ui.md → Pixel art):
 //   idle  — v3 geometry exactly
 //   blink — eyes closed to 1 row (SCOUT: goggle lenses shutter, eyes are behind them)

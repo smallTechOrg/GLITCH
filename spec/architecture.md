@@ -143,7 +143,7 @@ GLITCH/                                  # repo root — config, spec, docs only
 ├── .gitignore                           # .env, api/.venv, api/.cache, web/node_modules, web/dist, web/test-results, web/playwright-report
 ├── .nvmrc                               # 22
 ├── .github/workflows/pages.yml          # npm ci → expo export (EXPO_PUBLIC_GLITCH_API_URL=${{ vars.GLITCH_API_URL }}) → deploy-pages
-├── spec/                                # this spec + v3 source material (GLITCH v3.html, GLITCH v0.1.docx — never moved)
+├── spec/                                # this spec; spec/idea/ = v3 source material (GLITCH v3.html, GLITCH v0.1.docx)
 ├── api/
 │   ├── .python-version                  # 3.12
 │   ├── pyproject.toml                   # requires-python ==3.12.*; hatchling; [tool.pytest] markers live,gcs; addopts -m "not live and not gcs"

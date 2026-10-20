@@ -1,4 +1,4 @@
-// Storytime content is v3 verbatim (spec/GLITCH v3.html lines 382–428): 41 slides in
+// Storytime content is v3 verbatim (spec/idea/GLITCH v3.html lines 382–428): 41 slides in
 // 11/10/10/10, every text, heading, title line and icon caption present in the source.
 import fs from 'fs';
 import path from 'path';
@@ -7,7 +7,7 @@ import { storyHint, storyKeyAction, storyKeyForTarget } from '@/screens/StoryScr
 
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn(), replace: jest.fn() } }));
 
-const V3 = fs.readFileSync(path.join(__dirname, '../../../spec/GLITCH v3.html'), 'utf8').replace(/\\'/g, "'");
+const V3 = fs.readFileSync(path.join(__dirname, '../../../spec/idea/GLITCH v3.html'), 'utf8').replace(/\\'/g, "'");
 
 describe('STORY content', () => {
   it('has 41 slides split 11/10/10/10', () => {

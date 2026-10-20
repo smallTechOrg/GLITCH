@@ -1,4 +1,4 @@
-// Pure sort-into-bins engine — semantics of v3 `sortGame` (spec/GLITCH v3.html lines 488–500;
+// Pure sort-into-bins engine — semantics of v3 `sortGame` (spec/idea/GLITCH v3.html lines 488–500;
 // spec/capabilities/game-runtime.md → Sort engine). No React, no timers.
 import type { IconId } from '../contracts/art';
 import type { Mistake } from '../contracts/game';

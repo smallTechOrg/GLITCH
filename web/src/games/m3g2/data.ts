@@ -1,4 +1,4 @@
-// m3g2 · Fairness Lab — v3 data, constants and copy, verbatim from spec/GLITCH v3.html
+// m3g2 · Fairness Lab — v3 data, constants and copy, verbatim from spec/idea/GLITCH v3.html
 // lines 558–568 (GM.m3g2). Feature tuple shape kept from v3: [id, name, kind, weight],
 // kind 's' = skill (adds weight to accuracy), 'p' = proxy (adds weight to the gap, +2 accuracy).
 

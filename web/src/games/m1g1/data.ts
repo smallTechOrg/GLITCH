@@ -1,4 +1,4 @@
-// m1g1 · Train the Model — v3 data verbatim from `GM.m1g1` (spec/GLITCH v3.html lines 504–511).
+// m1g1 · Train the Model — v3 data verbatim from `GM.m1g1` (spec/idea/GLITCH v3.html lines 504–511).
 // Every learner-facing string lives here so tests can import the exact copy.
 import type { IconId } from '../../contracts/art';
 import { colors } from '../../theme/tokens';

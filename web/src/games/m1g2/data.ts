@@ -1,4 +1,4 @@
-// m1g2 · Fact or Fib — v3 data verbatim from `GM.m1g2` (spec/GLITCH v3.html lines 512–519).
+// m1g2 · Fact or Fib — v3 data verbatim from `GM.m1g2` (spec/idea/GLITCH v3.html lines 512–519).
 // Every learner-facing string lives here so tests can import the exact copy.
 
 /** v3 `S`: [sentence, 1 = fib | 0 = true, explanation (fibs only)]. */

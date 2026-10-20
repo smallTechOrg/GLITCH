@@ -1,4 +1,4 @@
-// v3 colour tokens (spec/GLITCH v3.html line 4 `:root`) plus the literal colours v3's CSS
+// v3 colour tokens (spec/idea/GLITCH v3.html line 4 `:root`) plus the literal colours v3's CSS
 // uses (lines 5–135). The ONLY place UI colours are defined (with pixel/palette.ts).
 export const colors = {
   bg: '#0d0a24',

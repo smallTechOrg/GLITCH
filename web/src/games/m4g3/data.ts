@@ -1,4 +1,4 @@
-// m4g3 · Design the Companion — v3 data verbatim (spec/GLITCH v3.html lines 581–592, `GM.m4g3`).
+// m4g3 · Design the Companion — v3 data verbatim (spec/idea/GLITCH v3.html lines 581–592, `GM.m4g3`).
 import type { IconId } from '../../contracts/art';
 import type { MetricDirection } from '../../ui/MetricBar';
 

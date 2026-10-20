@@ -1,4 +1,4 @@
-// m3g1 · Proxy Hunt — v3 data and copy, verbatim from spec/GLITCH v3.html lines 550–557
+// m3g1 · Proxy Hunt — v3 data and copy, verbatim from spec/idea/GLITCH v3.html lines 550–557
 // (GM.m3g1). Tuple shape kept from v3: [text, isProxy (1/0, null = redacted), note].
 
 export const TITLE = 'Proxy Hunt';

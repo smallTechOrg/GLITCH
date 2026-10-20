@@ -1,4 +1,4 @@
-// m4g1 · Source Detective — v3 data + rules (spec/GLITCH v3.html lines 570–577).
+// m4g1 · Source Detective — v3 data + rules (spec/idea/GLITCH v3.html lines 570–577).
 import { createSort, drop, isDone, xray } from '@/dnd/sortEngine';
 import { GAME_META } from '@/content/modules';
 import game from '@/games/m4g1';

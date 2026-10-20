@@ -1,4 +1,4 @@
-// Faithful ports of v3's canvas primitives (spec/GLITCH v3.html lines 150–158). Identical
+// Faithful ports of v3's canvas primitives (spec/idea/GLITCH v3.html lines 150–158). Identical
 // maths; the target framebuffer is the first argument instead of v3's global `X`.
 import type { PixelBuffer } from './framebuffer';
 import { FONT3 } from './font3';

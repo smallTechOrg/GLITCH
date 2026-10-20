@@ -1,4 +1,4 @@
-// v3 12×12 pixel icons — copied verbatim from spec/GLITCH v3.html lines 163–204 (`IC`),
+// v3 12×12 pixel icons — copied verbatim from spec/idea/GLITCH v3.html lines 163–204 (`IC`),
 // plus heart0/star0 derived exactly as v3 lines 205–206. Generated; do not hand-edit grids.
 const BASE = {
   heart: ['............', '..kk....kk..', '.krrk..krrrk', 'krwrrkkrrrrk', 'krwrrrrrrrrk', 'krrrrrrrrrRk', '.krrrrrrrRk.', '..krrrrrRk..', '...krrrRk...', '....krRk....', '.....kk.....', '............'],

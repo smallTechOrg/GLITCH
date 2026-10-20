@@ -1,4 +1,4 @@
-// m2g2 · Prompt Forge — v3 data verbatim from spec/GLITCH v3.html lines 541–548
+// m2g2 · Prompt Forge — v3 data verbatim from spec/idea/GLITCH v3.html lines 541–548
 // (`promptTask`, `GM.m2g2`), plus the hand-off to FORGE 3 · FREE WRITE
 // (spec/capabilities/freewrite-forge.md, rendered by features/freewrite/FreeWriteRound).
 import type { IconId } from '../../contracts/art';

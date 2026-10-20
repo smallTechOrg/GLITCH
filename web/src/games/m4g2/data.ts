@@ -1,4 +1,4 @@
-// m4g2 · Confidence Court — v3 data verbatim (spec/GLITCH v3.html lines 578–580, `GM.m4g2`).
+// m4g2 · Confidence Court — v3 data verbatim (spec/idea/GLITCH v3.html lines 578–580, `GM.m4g2`).
 import type { IconId } from '../../contracts/art';
 import type { SortItem, SortZone } from '../../dnd/sortEngine';
 import { colors } from '../../theme/tokens';

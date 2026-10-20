@@ -1,4 +1,4 @@
-// Scenes — faithful port of v3 `tree`, `cloud` and `SC.*` (spec/GLITCH v3.html lines 247–278)
+// Scenes — faithful port of v3 `tree`, `cloud` and `SC.*` (spec/idea/GLITCH v3.html lines 247–278)
 // onto the scaffold framebuffer. Default size 192×80; any size works (v3 parity: the
 // compositions are drawn in absolute pixels and clipped). `frame` 1 paints the ambient
 // variation (art/ambient.ts); frame 0 is v3 exactly.

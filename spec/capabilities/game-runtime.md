@@ -5,7 +5,7 @@ Hosts any of the nine games in a shared frame that owns hearts, the hero power, 
 shield, the speech bubble, mistakes, winning, failing, stars and game XP, plus the shared
 sort-into-bins and tap-the-line interaction engines, exactly as v3 does.
 
-v3 source: game frame `spec/GLITCH v3.html` lines 467–487 (`hearts`, `hud`, `say`,
+v3 source: game frame `spec/idea/GLITCH v3.html` lines 467–487 (`hearts`, `hud`, `say`,
 `gameStart`, `usePower`, `miss`, `fail`, `win`); sort engine lines 488–500 (`sortGame`);
 drag-and-drop lines 452–466; pick buttons line 501; metric bar line 502.
 

@@ -1,4 +1,4 @@
-// Course data — verbatim from v3 `MODS` + `stepsOf` (spec/GLITCH v3.html lines 303–307)
+// Course data — verbatim from v3 `MODS` + `stepsOf` (spec/idea/GLITCH v3.html lines 303–307)
 // and the game titles/goals/intros of v3 `GM.*` (lines 504–592).
 import type { GameId, ModuleId, NpcId, StepId } from '../contracts/ids';
 import type { IconId, SceneId } from '../contracts/art';

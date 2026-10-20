@@ -1,4 +1,4 @@
-// m2g1 · Tune the Sorter — pure scoring (v3 `tuneRound`, spec/GLITCH v3.html lines 521–540).
+// m2g1 · Tune the Sorter — pure scoring (v3 `tuneRound`, spec/idea/GLITCH v3.html lines 521–540).
 import type { Mistake } from '../../contracts/game';
 import { buildMistake } from '../mistake';
 import { BASE_SCORE, BOTH_GOALS_MET_LABEL, FOCUS_ALL_MET_LINE, FOCUS_PREFIX, OVER_GOAL_SUFFIX, type TuneMessage, type TuneRoundConfig } from './data';

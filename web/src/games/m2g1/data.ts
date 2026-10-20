@@ -1,4 +1,4 @@
-// m2g1 · Tune the Sorter — v3 data verbatim from spec/GLITCH v3.html lines 521–540
+// m2g1 · Tune the Sorter — v3 data verbatim from spec/idea/GLITCH v3.html lines 521–540
 // (`tuneRound`, `GM.m2g1`). spec/capabilities/v3-games.md → m2g1.
 
 /** v3 message tuple `[text, f1, caps, f3, truth]` (truth 1 = should be flagged). */

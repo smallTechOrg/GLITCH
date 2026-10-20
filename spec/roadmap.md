@@ -4,7 +4,7 @@
 
 GLITCH is a gamified AI-literacy game. Learners pick a pixel-art hero, watch a short
 story cutscene, and play mini-games that make them *spot what AI gets wrong and make the
-call*. It is being rebuilt from a single-file prototype (`spec/GLITCH v3.html`, "v3")
+call*. It is being rebuilt from a single-file prototype (`spec/idea/GLITCH v3.html`, "v3")
 into a real product: one codebase that ships to the web now (static site on GitHub Pages
 under `/GLITCH/`) and becomes the iOS/Android app later, plus a small server whose only
 jobs are guarding the AI key, calling the AI model, filtering its output, enforcing daily
@@ -66,7 +66,7 @@ and full accessibility.
 > **Assumed:** guest profile is nickname-only (optional, max 20 characters, device-local); no name+PIN, no accounts.
 > **Assumed:** live-AI cap is 10 actions per device per UTC day, and a server-wide global ceiling of 500 AI calls per UTC day.
 > **Assumed:** reflections are deferred to the roadmap section (not in any scheduled phase).
-> **Source note:** `spec/GLITCH v0.1.docx` (problem statement, 10-module curriculum, investigator progression, review notes with dev plan of 27 Aug and 23 Sept 2026) has been read in full. It is **roadmap context only**. Phases 1–4 follow the intake brief and v3. Where the document and the brief disagree, the brief wins. The document's content is mapped in `## Beyond` below.
+> **Source note:** `spec/idea/GLITCH v0.1.docx` (problem statement, 10-module curriculum, investigator progression, review notes with dev plan of 27 Aug and 23 Sept 2026) has been read in full. It is **roadmap context only**. Phases 1–4 follow the intake brief and v3. Where the document and the brief disagree, the brief wins. The document's content is mapped in `## Beyond` below.
 
 ---
 
@@ -423,7 +423,7 @@ X-RAY to see the solver's answer; replay a story → new dialogue with the same 
   the confidence behind a NOVA answer — Modules 1 and 4, natural fit with the X-RAY
   power).
 
-### The 10-module curriculum (from `spec/GLITCH v0.1.docx`)
+### The 10-module curriculum (from `spec/idea/GLITCH v0.1.docx`)
 
 The document's teaching loop is **Situation → Interaction → Experiment → Observation →
 Explanation → Reflection** (it replaces "Lesson → Quiz → Correct Answer"). Each module has

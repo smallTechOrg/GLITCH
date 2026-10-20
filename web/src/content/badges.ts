@@ -1,4 +1,4 @@
-// The 12 badges — verbatim from v3 `BD` (spec/GLITCH v3.html lines 323–335): id, icon,
+// The 12 badges — verbatim from v3 `BD` (spec/idea/GLITCH v3.html lines 323–335): id, icon,
 // name and how-to description. The unlock rules live in engine/badges.ts.
 import type { BadgeId } from '../contracts/ids';
 import type { IconId } from '../contracts/art';

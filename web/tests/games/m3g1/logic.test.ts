@@ -1,4 +1,4 @@
-// m3g1 · Proxy Hunt — v3 data + logic invariants (spec/GLITCH v3.html lines 550–557,
+// m3g1 · Proxy Hunt — v3 data + logic invariants (spec/idea/GLITCH v3.html lines 550–557,
 // spec/capabilities/v3-games.md → m3g1).
 import { GAME_META } from '@/content/modules';
 import { createPick, focus, isComplete, tap, targetCount, xray } from '@/dnd/pickEngine';

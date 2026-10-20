@@ -1,4 +1,4 @@
-// m3g2 · Fairness Lab — v3 data + maths invariants (spec/GLITCH v3.html lines 558–568,
+// m3g2 · Fairness Lab — v3 data + maths invariants (spec/idea/GLITCH v3.html lines 558–568,
 // spec/capabilities/v3-games.md → m3g2).
 import { GAME_META } from '@/content/modules';
 import {
