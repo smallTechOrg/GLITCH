@@ -1,4 +1,8 @@
-"""``GET /healthz`` — liveness + which provider/model is configured. Never touches the provider."""
+"""``GET /health`` (alias ``/healthz``) — liveness + which provider/model is configured.
+
+Never touches the provider. ``/health`` is the canonical path: Cloud Run's front end
+reserves ``/healthz`` and answers it with its own 404, so it never reaches the app there.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +17,7 @@ from glitch_api.llm.base import FAKE_MODEL_SLUG
 router = APIRouter()
 
 
+@router.get("/health")
 @router.get("/healthz")
 async def healthz(settings: Settings = Depends(app_settings)) -> JSONResponse:
     provider = settings.resolved_provider

@@ -161,7 +161,7 @@ export function createApiClient(o: ApiClientOptions = {}): ApiClient {
   }
 
   return {
-    getHealth: (opts = {}) => call('GET', '/healthz', isHealth, { ...opts }),
+    getHealth: (opts = {}) => call('GET', '/health', isHealth, { ...opts }),
     getEnergy: (signal) => call('GET', '/v1/energy', isEmptyObj, { signal, withDevice: true }),
     evaluateFreewrite: (req, opts = {}) => call('POST', '/v1/freewrite/evaluate', isFreewriteData, { ...opts, body: req, withDevice: true }),
     getNextScenario: (gameId, seen, opts = {}) =>
@@ -196,7 +196,7 @@ export function explainMistake(req: ExplainRequest, opts?: RequestOptions): Prom
   return defaultClient.explainMistake(req, opts);
 }
 
-/** GET /healthz — provider/model info (demo tag, E2E checks). */
+/** GET /health — provider/model info (demo tag, E2E checks). */
 export function getHealth(opts?: RequestOptions): Promise<ApiResult<HealthDTO>> {
   return defaultClient.getHealth(opts);
 }

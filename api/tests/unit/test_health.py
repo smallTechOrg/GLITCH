@@ -17,6 +17,14 @@ async def test_healthz_returns_ok_envelope_with_fake_provider_when_no_key(client
     assert isinstance(data["model"], str) and data["model"]
 
 
+async def test_health_alias_serves_the_same_payload(client: httpx.AsyncClient) -> None:
+    # /health is the canonical path: Cloud Run's front end swallows /healthz.
+    health, healthz = (await client.get("/health")), (await client.get("/healthz"))
+
+    assert health.status_code == 200
+    assert health.json() == healthz.json()
+
+
 async def test_healthz_reports_openrouter_and_configured_model_when_key_set(make_settings) -> None:
     from glitch_api.main import create_app
 

@@ -363,7 +363,7 @@ gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member "serviceAc
 cd api && gcloud run deploy glitch-api --source . --region us-central1 --allow-unauthenticated --max-instances 1 --set-env-vars GLITCH_ENV=prod,GLITCH_LLM_PROVIDER=openrouter,GLITCH_BLOB_BACKEND=gcs,GLITCH_GCS_BUCKET=$BUCKET,GLITCH_CORS_ORIGINS=https://smalltechorg.github.io --set-secrets GLITCH_OPENROUTER_API_KEY=glitch-openrouter-key:latest
 
 # verify
-curl -sf https://<service-url>/healthz
+curl -sf https://<service-url>/health   # not /healthz: Cloud Run reserves it
 ```
 
 Also set a credit limit on the OpenRouter key. It is the hard spend backstop on top of

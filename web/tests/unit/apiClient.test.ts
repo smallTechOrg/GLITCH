@@ -88,10 +88,11 @@ describe('api client', () => {
     expect(await client(shape.f).evaluateFreewrite({ goalId: 'a', goal: 'b', prompt: 'c' })).toMatchObject({ ok: false, error: { code: 'NETWORK' } });
   });
 
-  it('reads provider info from /healthz without a device header', async () => {
+  it('reads provider info from /health without a device header', async () => {
     const { f, calls } = fakeFetch(() => jsonResponse(200, { ok: true, data: { status: 'ok', provider: 'fake', model: 'demo', env: 'dev', version: '0.1.0' } }));
     const r = await client(f).getHealth();
     expect(r).toMatchObject({ ok: true, data: { provider: 'fake' } });
+    expect(calls[0]?.url).toMatch(/\/health$/);
     expect((calls[0]?.init.headers as Record<string, string>)['X-Glitch-Device']).toBeUndefined();
   });
 

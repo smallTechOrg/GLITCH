@@ -25,7 +25,8 @@ header was sent.
 | `MODERATED` | 502 | Output blocked by the safety filter | true |
 | `INTERNAL` | 500 | Anything unexpected | true |
 
-## `GET /healthz`
+## `GET /health` (alias `/healthz`)
+`/health` is canonical — Cloud Run's front end reserves `/healthz` and answers it with its own 404. `/healthz` stays for local tools and tests.
 `200 {"ok":true,"data":{"status":"ok","provider":"fake"|"openrouter","model":"<slug>","env":"dev"|"prod","version":"<pkg version>"}}`.
 Never touches the provider.
 
