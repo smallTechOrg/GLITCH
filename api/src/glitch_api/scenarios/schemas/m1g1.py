@@ -113,7 +113,7 @@ def domain_errors(data: dict[str, Any]) -> list[str]:
             errors.append(f"{e['id']}: modelRight inconsistent with modelSays/label")
     dups = duplicates(e["text"] for e in [*train, *test])
     if dups:
-        errors.append(f"every email must be different (repeated: {dups[0]!r})")
+        errors.append(f"every email must be different (item {dups[0]} repeats an earlier one)")
     return errors
 
 

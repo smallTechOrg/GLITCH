@@ -111,10 +111,10 @@ def domain_errors(data: dict[str, Any]) -> list[str]:
                 errors.append(f"citation {i} is invented but uses a real source's author; invent the author too")
     dups = duplicates(c["text"] for c in citations)
     if dups:
-        errors.append(f"every citation must be different (repeated: {dups[0]!r})")
+        errors.append(f"every citation must be different (item {dups[0]} repeats an earlier one)")
     author_dups = duplicates(short(c["text"]) for c in citations)
     if author_dups and not dups:
-        errors.append(f"every citation needs a different author (repeated: {author_dups[0]!r})")
+        errors.append(f"every citation needs a different author (item {author_dups[0]} repeats an earlier author)")
     return errors
 
 

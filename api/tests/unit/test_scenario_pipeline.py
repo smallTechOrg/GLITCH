@@ -175,6 +175,8 @@ async def test_invalid_then_valid_regenerates_once_with_errors_fed_back(repo, en
     assert s.energy.remaining == 9 and await energy.global_remaining() == 498  # 1 device, 2 global
     outcomes = [(x["attempt"], x["outcome"]) for x in log_lines() if x["event"] == "llm_call"]
     assert outcomes == [(1, "invalid_output"), (2, "ok")]
+    first = next(x for x in log_lines() if x["event"] == "llm_call")
+    assert first["validation_errors"] == ["exactly 3 sentences must be fibs (got 4)"]  # rule, no content
 
 
 async def test_invalid_twice_falls_back_nothing_cached_energy_refunded(repo, energy) -> None:

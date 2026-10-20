@@ -77,7 +77,7 @@ def domain_errors(data: dict[str, Any]) -> list[str]:
             errors.append(f"sentence {i} is true and must have no explanation")
     dups = duplicates(s["text"] for s in sentences)
     if dups:
-        errors.append(f"every sentence must be different (repeated: {dups[0]!r})")
+        errors.append(f"every sentence must be different (item {dups[0]} repeats an earlier one)")
     return errors
 
 

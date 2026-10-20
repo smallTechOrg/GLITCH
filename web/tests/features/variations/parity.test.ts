@@ -1,8 +1,7 @@
 // Contract parity with P2-D1: serverSamples.json is the served `data` the API's own validators
 // produce (api/src/glitch_api/scenarios/schemas → parse_candidate) for each game's v3 exemplar
 // (index 0) and fake-provider case files 1–3. Regenerate after a server schema change with:
-//   cd api && uv run python <script> — parse_candidate(gid, GAMES[gid].v3_llm) and
-//   parse_candidate(gid, fake_gen.fake_scenario(gid, n)) for n = 1..3, dumped as JSON by game.
+//   cd api && uv run python -c "import json,sys;from glitch_api.scenarios.schemas import GAMES,parse_candidate;from glitch_api.scenarios import fake_gen;json.dump({g:[parse_candidate(g,s.v3_llm)]+[parse_candidate(g,fake_gen.fake_scenario(g,n)) for n in (1,2,3)] for g,s in GAMES.items()},sys.stdout,indent=1)" > ../web/tests/features/variations/serverSamples.json
 // Every sample must parse on the client, and the v3 exemplar must map back onto v3 data.
 import { CONTENT_GAME_IDS, parseScenario } from '@/features/variations';
 import { TEST_EMAILS, TRAIN_EMAILS } from '@/games/m1g1/data';

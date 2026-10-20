@@ -94,7 +94,9 @@ def test_duplicate_items_rejected(game_id: str) -> None:
     key, a, b, text_key = _SAME_ANSWER_PAIRS[game_id]
     bad = v3(game_id)
     bad[key][b][text_key] = "  " + bad[key][a][text_key].upper() + " "  # case/space-insensitive
-    assert any("different" in e for e in errors_of(game_id, bad))
+    errs = errors_of(game_id, bad)
+    assert any("different" in e and f"item {b + 1}" in e for e in errs)
+    assert not any(bad[key][a][text_key].lower() in e.lower() for e in errs)  # errors carry no content
 
 
 # ---- m1g1 Train the Model ---------------------------------------------------------------

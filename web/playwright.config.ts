@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import { E2E_API_PORT, E2E_HOST, E2E_WEB_PORT, EXPECTED_PROVIDER, REUSE_SERVERS, WEB_DIST_ENV, WEB_ORIGIN, WEB_URL, API_URL } from './e2e/helpers/config';
@@ -18,12 +18,18 @@ import { E2E_API_PORT, E2E_HOST, E2E_WEB_PORT, EXPECTED_PROVIDER, REUSE_SERVERS,
  */
 const provider = EXPECTED_PROVIDER;
 const apiLog = resolve(__dirname, 'test-results', 'api.log');
+// Phase 2: the E2E backend gets its OWN local blob store (scenario cache), fresh per run, so a
+// run never reads or writes the cache of a dev server (default api/.cache) and every run starts
+// with an empty cache (first replay = generation, later devices = cache hits).
+const blobCache = resolve(__dirname, 'test-results', 'blob-cache');
 mkdirSync(resolve(__dirname, 'test-results'), { recursive: true });
 // Fresh api.log per run so check_logs judges only the latest run. The config is evaluated by
 // the runner BEFORE the webServers start (globalSetup runs after them, too late), and again in
 // every worker process — the env flag (inherited by workers) makes only the first load truncate.
 if (!process.env.GLITCH_E2E_LOG_TRUNCATED) {
   writeFileSync(apiLog, '');
+  rmSync(blobCache, { recursive: true, force: true });
+  mkdirSync(blobCache, { recursive: true });
   process.env.GLITCH_E2E_LOG_TRUNCATED = '1';
 }
 
@@ -75,6 +81,9 @@ export default defineConfig({
         GLITCH_CORS_ORIGINS: `${WEB_ORIGIN},http://localhost:${E2E_WEB_PORT}`,
         GLITCH_LLM_PROVIDER: provider,
         GLITCH_LOG_FILE: apiLog,
+        GLITCH_BLOB_BACKEND: 'local',
+        GLITCH_CACHE_DIR: blobCache,
+        GLITCH_BLOB_PREFIX: '',
       },
     },
     {

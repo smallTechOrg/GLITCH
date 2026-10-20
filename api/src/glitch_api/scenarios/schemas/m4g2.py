@@ -18,8 +18,8 @@ from pydantic import Field
 
 from glitch_api.scenarios.schemas.base import BOOLEAN, INTEGER, STRING, GameSpec, Strict, arr, duplicates, obj
 
-STATEMENT_MIN, STATEMENT_MAX = 8, 70
-EVIDENCE_MIN, EVIDENCE_MAX = 3, 50
+STATEMENT_MIN, STATEMENT_MAX = 8, 80
+EVIDENCE_MIN, EVIDENCE_MAX = 3, 60
 CONFIDENCE_MIN, CONFIDENCE_MAX = 50, 99
 ANSWER_COUNT = 6
 TRUST_COUNT = 3
@@ -78,7 +78,7 @@ def domain_errors(data: dict[str, Any]) -> list[str]:
         errors.append(f"at least one VERIFY answer must have confidence {HIGH_CONFIDENCE} or more")
     dups = duplicates(a["statement"] for a in answers)
     if dups:
-        errors.append(f"every statement must be different (repeated: {dups[0]!r})")
+        errors.append(f"every statement must be different (item {dups[0]} repeats an earlier one)")
     return errors
 
 

@@ -35,13 +35,17 @@ def word_count(text: str) -> int:
     return len(text.split())
 
 
-def duplicates(values: Iterable[str]) -> list[str]:
+def duplicates(values: Iterable[str]) -> list[int]:
+    """1-based positions of items repeating an earlier one (case/space-insensitive).
+
+    Positions, never the text: validator errors are logged and must carry no content.
+    """
     seen: set[str] = set()
-    dups: list[str] = []
-    for value in values:
+    dups: list[int] = []
+    for i, value in enumerate(values, 1):
         norm = re.sub(r"\s+", " ", value.strip().lower())
         if norm in seen:
-            dups.append(value)
+            dups.append(i)
         seen.add(norm)
     return dups
 

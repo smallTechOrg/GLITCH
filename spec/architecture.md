@@ -111,9 +111,10 @@ whitespace; the key is a `SecretStr`, never printed):
 | `GLITCH_LOG_LEVEL` | `INFO` | |
 | `GLITCH_LOG_FILE` | empty | If set, JSON lines also appended here (E2E sets `web/test-results/api.log`). |
 | `GLITCH_FAKE_LATENCY_MS` | `0` | Fake provider delay (tests only). |
-| `GLITCH_BLOB_BACKEND` *(Phase 2)* | `local` | `local` \| `gcs`. |
-| `GLITCH_CACHE_DIR` *(Phase 2)* | `api/.cache` | Local blob root (gitignored). |
-| `GLITCH_GCS_BUCKET` *(Phase 2)* | — | Required when backend = `gcs`. |
+| `GLITCH_BLOB_BACKEND` *(Phase 2)* | `local` | `local` \| `gcs` (`store/local.py` / `store/gcs.py`, one `BlobStore` protocol in `store/base.py`). |
+| `GLITCH_CACHE_DIR` *(Phase 2)* | `api/.cache` | Local blob root (gitignored); a relative path resolves from the repo root. |
+| `GLITCH_GCS_BUCKET` *(Phase 2)* | — | Required when backend = `gcs` (startup error otherwise); auth = Application Default Credentials. |
+| `GLITCH_BLOB_PREFIX` *(Phase 2)* | empty | Optional key prefix inside the bucket / cache dir (e.g. `staging`; tests use a unique prefix). |
 
 Web (build-time, `EXPO_PUBLIC_*` are inlined by the export):
 

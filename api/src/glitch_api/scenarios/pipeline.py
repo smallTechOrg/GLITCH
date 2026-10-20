@@ -209,7 +209,8 @@ async def validate(s: ScenarioState, **_: Any) -> None:
         s.outcome = "invalid_output"
         s.detail = f"failed scenario validation ({len(s.errors)} problem(s))"
         s.error = ApiError("AI_INVALID_OUTPUT")
-        _log_call(s, validation_errors=len(s.errors))
+        # Validator messages name rules and positions only (never generated or learner text).
+        _log_call(s, validation_errors=list(s.errors))
 
 
 async def moderate(s: ScenarioState, **_: Any) -> None:

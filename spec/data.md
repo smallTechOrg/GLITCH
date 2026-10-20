@@ -66,8 +66,9 @@ Each migration is a pure function `vN → vN+1` with a unit test from a stored f
 | Object | Contents |
 |---|---|
 | `caps/<YYYY-MM-DD>.json` | `{ global: n, devices: { <hash>: n } }` |
-| `scenarios/<gameId>/index.json` | list of variation ids + content hashes |
+| `scenarios/<gameId>/index.json` | `{ gameId, schemaVersion, variations: [{ id, contentHash, createdAt }] }`, oldest first |
 | `scenarios/<gameId>/<variationId>.json` | `{ id, gameId, schemaVersion, model, createdAt, contentHash, data }` |
+| `scenarios-demo/<gameId>/…` | same layout, written only by the demo (fake) provider so demo case files are never served once the real AI is connected |
 | `explanations/<gameId>/<variationId>/<itemId>/<answer>.json` (Phase 3) | `{ text, tip, model, createdAt }` |
 | `forges/…`, `goals/…`, `sims/<gameId>/…`, `stories/<moduleId>/…` (Phase 4) | same envelope |
 Generated content contains no learner text. Objects are immutable once written (ids are

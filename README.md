@@ -72,6 +72,10 @@ which directory it is started from. The important ones:
 | `GLITCH_CORS_ORIGINS` | GH Pages + `127.0.0.1`/`localhost` on 8090 and 8092 | Exact origins, comma-separated |
 | `GLITCH_DEVICE_DAILY_CAP` / `GLITCH_GLOBAL_DAILY_CAP` | `10` / `500` | Daily AI budgets (UTC day) |
 | `GLITCH_LOG_FILE` | empty | Also append JSON log lines to this file |
+| `GLITCH_BLOB_BACKEND` | `local` | Where the shared scenario cache lives: `local` (a directory) or `gcs` (a bucket) |
+| `GLITCH_CACHE_DIR` | `api/.cache` | Local cache directory (gitignored); relative paths are from the repo root |
+| `GLITCH_GCS_BUCKET` | empty | Bucket name, required when `GLITCH_BLOB_BACKEND=gcs` (uses Application Default Credentials) |
+| `GLITCH_BLOB_PREFIX` | empty | Optional key prefix inside the cache dir / bucket |
 | `EXPO_PUBLIC_GLITCH_API_URL` | `http://127.0.0.1:8787` | Web build-time: the API base URL baked into the export |
 
 **Which AI answers.** The OpenRouter key is configured in the local root `.env`. With
@@ -117,7 +121,15 @@ curl -sf http://127.0.0.1:8787/healthz
 cd api && uv run pytest -q
 
 # [live] tests against the real OpenRouter key in the root .env
+# (free-write: 5 calls; scenarios: exactly 1 generation per content game = 5 calls)
 cd api && uv run pytest -q -m live
+
+# [gcs] real-bucket round-trip (needs GLITCH_GCS_BUCKET + Application Default Credentials;
+# fails with PENDING-CREDS otherwise; writes only under a unique glitch-test-* prefix)
+cd api && uv run pytest -q -m gcs
+
+# a fresh case file for Fact or Fib (any UUID v4 works as the device id)
+curl -s -H "X-Glitch-Device: 3f2b8c1e-9a4d-4e7b-8c2a-1d5e6f7a8b9c" "http://127.0.0.1:8787/v1/scenarios/m1g2/next?seen="
 
 # [live] check the key and that each configured model slug answers
 cd api && uv run python -m glitch_api.tools.check_model
@@ -133,7 +145,9 @@ cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.l
 ```
 
 Endpoints (`spec/api.md`): `GET /healthz`, `GET /v1/energy`,
-`POST /v1/freewrite/evaluate`, `GET /v1/metrics`. Every response uses the envelope
+`POST /v1/freewrite/evaluate`, `GET /v1/scenarios/{gameId}/next?seen=<ids>` (Phase 2: a
+fresh, never-seen case file for a content game — served free from the shared cache, or
+generated once with one AI call and cached for everyone), `GET /v1/metrics`. Every response uses the envelope
 `{"ok": true, "data": …}` / `{"ok": false, "error": {"code", "message", "retryable"}}`.
 Each request writes one JSON log line to stdout with `route`, `method`, `status`,
 `latency_ms`, `request_id`, `device_hash` and `outcome`. Bodies, prompts and raw device

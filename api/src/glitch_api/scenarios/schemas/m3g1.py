@@ -90,7 +90,7 @@ def domain_errors(data: dict[str, Any]) -> list[str]:
             errors.append(f"line {i}: NAME and GENDER are added by the game, do not repeat them")
     dups = duplicates(ln["text"] for ln in body)
     if dups:
-        errors.append(f"every line must be different (repeated: {dups[0]!r})")
+        errors.append(f"every line must be different (item {dups[0]} repeats an earlier one)")
     return errors
 
 
