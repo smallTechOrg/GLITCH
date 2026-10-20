@@ -13,7 +13,7 @@ import {
   HEADING, MEN_LABEL, MEN_SHORTLISTED, RULE_LINE, WIN_DELAY_MS, WIN_SUMMARY, WOMEN_LABEL, focusLine,
   xrayLine, type FeatureId,
 } from './data';
-import { audit, calc, focusTarget, initialOn, toggle, womenShortlisted, xrayFix, type OnMap } from './logic';
+import { audit, auditMistake, calc, focusTarget, initialOn, toggle, womenShortlisted, xrayFix, type OnMap } from './logic';
 
 export function FairnessLabGame({ api }: { api: GameApi }): React.JSX.Element {
   const [on, setOn] = useState<OnMap>(initialOn);
@@ -55,7 +55,7 @@ export function FairnessLabGame({ api }: { api: GameApi }): React.JSX.Element {
       setPassed(true);
       apiRef.current.say(r.message, 'good');
       timers.current.push(setTimeout(() => apiRef.current.win(WIN_SUMMARY), WIN_DELAY_MS));
-    } else apiRef.current.miss(r.message);
+    } else apiRef.current.miss(r.message, auditMistake(onRef.current));
   }, []);
 
   useEffect(() => {

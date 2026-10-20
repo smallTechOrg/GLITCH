@@ -52,5 +52,9 @@ export const NOT_YET_PREFIX = 'Not yet: ';
 export const XRAY_LINE = 'X-RAY: here is a balanced design. Ship it.';
 export const FOCUS_ALL_MET = 'FOCUS: all targets met. Ship it!';
 export const focusLine = (failure: string): string => `FOCUS: ${failure}. Try less engagement push, or turn on a safeguard.`;
+/** Phase 3 mistake copy (per-game mistake table, m4g3 SHIP IT fails). */
+export const SHIP_ITEM_TEXT = 'SHIP THE COMPANION';
+export const offTargetLabel = (metricLabel: string): string => `${metricLabel} OFF TARGET`;
+export const ALL_MET_LABEL = 'ALL 5 TARGETS MET';
 export const SUMMARY = 'Optimizing one number, like engagement, does not make the right decision. Responsible design balances trade-offs and keeps humans in the loop.';
 export const WIN_DELAY_MS = 500;

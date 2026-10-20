@@ -66,7 +66,7 @@ export function PromptForgeGame({ api }: { api: GameApi }): React.JSX.Element {
     <View testID={`m2g2-forge-${stage.k + 1}`} style={styles.wrap}>
       <SortBoard
         key={`forge-${stage.k}`}
-        cfg={forgeConfig(forge)}
+        cfg={forgeConfig(forge, stage.k + 1)}
         api={api}
         onDone={(s) => setStage({ kind: 'built', k: stage.k, prompt: builtPrompt(s) })}
         header={

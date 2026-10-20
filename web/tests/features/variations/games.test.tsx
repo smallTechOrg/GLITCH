@@ -129,3 +129,49 @@ describe('m4g2 Confidence Court with a variation', () => {
     expect(api.calls.win).toEqual([M4G2_WIN]);
   });
 });
+
+describe('variation mistakes use positional ids and the variation content (Phase 3)', () => {
+  it('m1g1: step 1 and step 2 payloads come from the variation emails', async () => {
+    const api = await setup('m1g1');
+    await place('e2', 'spam');
+    for (const [i, z] of [['e1', 'spam'], ['e2', 'ok'], ['e3', 'spam'], ['e4', 'ok'], ['e5', 'spam'], ['e6', 'ok']] as const) await place(i, z);
+    await tick(1000);
+    await place('t1', 'wrong'); // the variation's model is right on t1
+    expect(api.recorded.map((r) => r.mistake)).toEqual([
+      { itemId: 'e2', answer: 'spam', correct: 'ok', concept: 'Training data', itemText: 'Band practice moved to Thursday', answerLabel: 'SPAM', correctLabel: 'NOT SPAM', explain: true },
+      { itemId: 't1', answer: 'wrong', correct: 'right', concept: 'Generalization', itemText: 'Coach: bring your boots tomorrow', answerLabel: 'WRONG', correctLabel: 'RIGHT', explain: true },
+    ]);
+  });
+
+  it('m1g2: s<index> with the variation sentence', async () => {
+    const api = await setup('m1g2');
+    await press('pick-line-2');
+    expect(api.recorded.map((r) => r.mistake)).toEqual([
+      { itemId: 's2', answer: 'fib', correct: 'true', concept: 'Machine learning', itemText: 'More varied training examples usually help a model generalize.', answerLabel: 'FIB', correctLabel: 'TRUE', explain: true },
+    ]);
+  });
+
+  it('m3g1: l<index> with the variation resume line', async () => {
+    const api = await setup('m3g1');
+    await press('pick-line-8');
+    expect(api.recorded.map((r) => r.mistake)).toEqual([
+      { itemId: 'l8', answer: 'proxy', correct: 'real', concept: 'Proxy variables', itemText: 'Built a school timetable app', answerLabel: 'PROXY', correctLabel: 'OK', explain: true },
+    ]);
+  });
+
+  it('m4g1: c1 is invented in the variation, so KEEP is the mistake (correct cut)', async () => {
+    const api = await setup('m4g1');
+    await place('c1', 'keep');
+    expect(api.recorded.map((r) => r.mistake)).toEqual([
+      { itemId: 'c1', answer: 'keep', correct: 'cut', concept: 'Hallucination', itemText: 'Prof. Ada Quill (2024). Robots That Dream. Moon Review, 3(1).', answerLabel: 'KEEP', correctLabel: 'CUT', explain: true },
+    ]);
+  });
+
+  it('m4g2: a2 needs VERIFY in the variation', async () => {
+    const api = await setup('m4g2');
+    await place('a2', 'trust');
+    expect(api.recorded.map((r) => r.mistake)).toEqual([
+      { itemId: 'a2', answer: 'trust', correct: 'verify', concept: 'Verification', itemText: 'Your phone battery will last 9 days.', answerLabel: 'TRUST', correctLabel: 'VERIFY', explain: true },
+    ]);
+  });
+});

@@ -1,0 +1,72 @@
+{
+  "gameId": "m3g1",
+  "data": {
+    "candidate": "ANAYA",
+    "lines": [
+      {
+        "text": "NAME",
+        "proxy": null,
+        "note": "hid"
+      },
+      {
+        "text": "GENDER",
+        "proxy": null,
+        "note": "hid"
+      },
+      {
+        "text": "College: Maple Women's College",
+        "proxy": true,
+        "note": "Stands in for gender."
+      },
+      {
+        "text": "Captain, Girls' Football Team",
+        "proxy": true,
+        "note": "Stands in for gender."
+      },
+      {
+        "text": "Career break: 18 months",
+        "proxy": true,
+        "note": "Can stand in for gender and caregiving."
+      },
+      {
+        "text": "Postcode 40021",
+        "proxy": true,
+        "note": "Can stand in for race and income."
+      },
+      {
+        "text": "Hobby: Netball and Zumba",
+        "proxy": true,
+        "note": "Can stand in for gender."
+      },
+      {
+        "text": "Skills: Python, SQL",
+        "proxy": false,
+        "note": "A real skill."
+      },
+      {
+        "text": "Built a weather app",
+        "proxy": false,
+        "note": "A real project."
+      },
+      {
+        "text": "GPA 3.8",
+        "proxy": false,
+        "note": "A real result."
+      },
+      {
+        "text": "Data Analyst intern, 6 months",
+        "proxy": false,
+        "note": "Real experience."
+      }
+    ]
+  },
+  "copy": {
+    "missMessage": "That line measures ability, not who she is."
+  },
+  "conceptRules": [
+    [
+      "",
+      "Proxy variables"
+    ]
+  ]
+}

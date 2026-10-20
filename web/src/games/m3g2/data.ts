@@ -49,5 +49,10 @@ export const gapFailMessage = (gap: number): string => `The gap is still ${gap} 
 export const accuracyFailMessage = (acc: number): string => `Accuracy fell to ${acc}%. Keep the skill features on.`;
 export const xrayLine = (name: string): string => `X-RAY: I fixed ${name}.`;
 export const focusLine = (name: string): string => `FOCUS: ${name} is still on, and it can stand in for gender.`;
+/** Phase 3 mistake copy (per-game mistake table, m3g2 RUN AUDIT fails). */
+export const AUDIT_ITEM_TEXT = 'THE SCREENER AUDIT';
+export const gapFailLabel = (gap: number): string => `GAP ${gap} · GOAL ≤ ${GAP_GOAL}`;
+export const accuracyFailLabel = (acc: number): string => `ACCURACY ${acc}% · GOAL ≥ ${ACCURACY_GOAL}`;
+export const AUDIT_PASS_LABEL = `GAP ≤ ${GAP_GOAL} · ACCURACY ≥ ${ACCURACY_GOAL}`;
 export const WIN_SUMMARY =
   'Removing the sensitive column is not enough. Remove the proxies, keep the real skill signals, then test outcomes for each group.';

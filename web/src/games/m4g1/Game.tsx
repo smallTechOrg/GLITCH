@@ -13,7 +13,7 @@ import {
   ASK_ICON, ASK_LABEL, CHECK_LABEL, FOUND_TAG, HEADING, ITEM_ICON, LOOKUPS_LABEL, LOOKUP_ICON, NOT_FOUND_TAG, NOVA_LABEL, NOVA_REPLY, SUMMARY,
   V3_SCENARIO, checkA11y, itemsOf, lookupsA11y, type CitationItem, type DetectiveScenario,
 } from './data';
-import { askNova, check, createDetective, sortConfig, type DetectiveState } from './logic';
+import { ASK_MISTAKE, askNova, check, createDetective, sortConfig, type DetectiveState } from './logic';
 
 /** Keeps Enter/Space on an inner control from also activating the surrounding item (web). */
 const stopKeys =
@@ -50,7 +50,7 @@ export function SourceDetectiveGame({ api, scenario = V3_SCENARIO }: { api: Game
     const r = askNova(ref.current);
     if (!r.miss) return;
     commit(r.state);
-    apiRef.current.miss(r.miss);
+    apiRef.current.miss(r.miss, { ...ASK_MISTAKE });
   };
 
   const renderItem = (it: CitationItem, ctx: SortItemRenderContext): React.ReactNode => {

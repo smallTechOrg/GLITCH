@@ -16,7 +16,7 @@ import { PixelText } from '../ui/PixelText';
 import { useFocusRing } from '../ui/focus';
 import {
   FOCUS_DIM_LINE, FOCUS_FLASH_LINE, SORT_DONE_DELAY_MS,
-  clearFlash, createSort, drop, dropSelected, focus, getItem, getZone, isDone, placedIn, poolItems, select, wrongMessage, xray, xrayLine, zoneFull,
+  clearFlash, createSort, drop, dropSelected, focus, getItem, getZone, isDone, placedIn, poolItems, select, wrongMessage, wrongMistake, xray, xrayLine, zoneFull,
   type DropResult, type SortConfig, type SortItem, type SortState, type SortZone,
 } from './sortEngine';
 import { hitTest, useDragItem, useDropZones, type ZoneRect } from './useDrag';
@@ -129,7 +129,7 @@ export function SortBoard<I extends SortItem>({
       setWrongId(itemId);
       if (wrongTimer.current) clearTimeout(wrongTimer.current);
       wrongTimer.current = setTimeout(() => setWrongId(null), 500);
-      apiRef.current.miss(wrongMessage(next, itemId, zoneId));
+      apiRef.current.miss(wrongMessage(next, itemId, zoneId), wrongMistake(next, itemId, zoneId));
     },
     [afterPlace, commit],
   );

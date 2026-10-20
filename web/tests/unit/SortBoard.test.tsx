@@ -116,3 +116,45 @@ describe('<SortBoard>', () => {
     expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e1')).toBeTruthy();
   });
 });
+
+describe('<SortBoard> Phase 3 mistake plumbing', () => {
+  const mistake = (itemId: string, zoneId: string) => ({
+    itemId, answer: zoneId, correct: 'spam', concept: 'Training data' as const, itemText: 'x', answerLabel: zoneId, correctLabel: 'SPAM',
+  });
+
+  it('passes cfg.mistake(item, zone) as the second miss argument on a wrong drop only', async () => {
+    const api = createTestGameApi();
+    const spy = jest.fn((it: { id: string }, z: { id: string }) => mistake(it.id, z.id));
+    await renderWithProviders(<SortBoard cfg={{ ...cfg, mistake: spy }} api={api} onDone={jest.fn()} />);
+    await fireEvent.press(screen.getByTestId('dnd-item-e2'));
+    await fireEvent.press(screen.getByTestId('dnd-zone-ok')); // right: no miss
+    await fireEvent.press(screen.getByTestId('dnd-item-e1'));
+    await fireEvent.press(screen.getByTestId('dnd-zone-ok')); // wrong
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0]?.[0]).toMatchObject({ id: 'e1' });
+    expect(spy.mock.calls[0]?.[1]).toMatchObject({ id: 'ok', label: 'NOT SPAM' });
+    expect(api.calls.mistakes).toEqual([mistake('e1', 'ok')]);
+    expect(api.recorded).toEqual([{ mistake: mistake('e1', 'ok'), shielded: false }]);
+  });
+
+  it('without cfg.mistake the miss carries no payload (Phase-1 behaviour)', async () => {
+    const { api } = await setup();
+    await fireEvent.press(screen.getByTestId('dnd-item-e1'));
+    await fireEvent.press(screen.getByTestId('dnd-zone-ok'));
+    expect(api.calls.miss).toHaveLength(1);
+    expect(api.calls.mistakes).toEqual([undefined]);
+    expect(api.recorded).toEqual([]);
+  });
+
+  it('X-RAY and FOCUS never call cfg.mistake', async () => {
+    const api = createTestGameApi({ powerUses: 4 });
+    const spy = jest.fn(() => mistake('e1', 'ok'));
+    await renderWithProviders(<SortBoard cfg={{ ...cfg, mistake: spy }} api={api} onDone={jest.fn()} />);
+    await act(async () => {
+      api.usePower('scan');
+      api.usePower('hint');
+    });
+    expect(spy).not.toHaveBeenCalled();
+    expect(api.recorded).toEqual([]);
+  });
+});

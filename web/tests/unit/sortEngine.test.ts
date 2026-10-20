@@ -1,7 +1,7 @@
 // Sort engine = v3 sortGame semantics (game-runtime.md → Sort engine), incl. tap-to-select.
 import {
   DEFAULT_WRONG, FOCUS_DIM_LINE, clearFlash, createSort, drop, dropSelected, focus, isDone, placedIn, poolItems,
-  remaining, select, wrongMessage, xray, xrayLine, zoneFull, type SortConfig,
+  remaining, select, wrongMessage, wrongMistake, xray, xrayLine, zoneFull, type SortConfig,
 } from '@/dnd/sortEngine';
 
 const spam: SortConfig = {
@@ -141,5 +141,19 @@ describe('sortEngine powers', () => {
     let s = createSort(spam);
     for (let i = 0; i < 3; i++) s = xray(s).state;
     expect(focus(s).effect).toBeNull();
+  });
+});
+
+describe('sortEngine.wrongMistake (Phase 3)', () => {
+  it('builds the payload from cfg.mistake(item, zone); undefined without a builder or for unknown ids', () => {
+    const cfg: SortConfig = {
+      ...spam,
+      mistake: (it, z) => ({ itemId: it.id, answer: z.id, correct: it.answer ?? 'decoy', concept: 'Training data', itemText: it.text, answerLabel: z.label, correctLabel: 'SPAM' }),
+    };
+    const s = createSort(cfg);
+    expect(wrongMistake(s, 'e1', 'ok')).toEqual({ itemId: 'e1', answer: 'ok', correct: 'spam', concept: 'Training data', itemText: 'WIN a FREE prize!!! Click now', answerLabel: 'NOT SPAM', correctLabel: 'SPAM' });
+    expect(wrongMistake(s, 'nope', 'ok')).toBeUndefined();
+    expect(wrongMistake(s, 'e1', 'nope')).toBeUndefined();
+    expect(wrongMistake(createSort(spam), 'e1', 'ok')).toBeUndefined();
   });
 });

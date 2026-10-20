@@ -7,7 +7,7 @@ import {
   COUNTER_LABEL, FOCUS_LINE, MISS_MESSAGE, SAFE_TAG, TARGET_TAG, V3_SCENARIO, WIN_DELAY_MS, WIN_SUMMARY,
   paperTag, type ProxyScenario,
 } from './data';
-import { foundLine, resumeLines } from './logic';
+import { foundLine, realLineMistake, resumeLines } from './logic';
 
 /** `scenario` defaults to the v3 case file; a replay may inject a NOVA variation of the same shape. */
 export function ProxyHuntGame({ api, scenario = V3_SCENARIO }: { api: GameApi; scenario?: ProxyScenario }): React.JSX.Element {
@@ -23,6 +23,7 @@ export function ProxyHuntGame({ api, scenario = V3_SCENARIO }: { api: GameApi; s
       safeTag={SAFE_TAG}
       foundLine={foundLine}
       missMessage={MISS_MESSAGE}
+      mistakeFor={realLineMistake}
       focusLine={FOCUS_LINE}
       showSafeNote
       onDone={onDone}

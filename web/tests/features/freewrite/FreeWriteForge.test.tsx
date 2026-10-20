@@ -423,3 +423,55 @@ describe('FreeWriteRound (frozen contract)', () => {
     expect(api.hearts).toBe(2);
   });
 });
+
+describe('<FreeWriteForge> Phase 3 mistake payload (weak prompt, explain: false)', () => {
+  const goal = GOAL_BANK[0]!;
+  const weak = (n: number) => ({
+    itemId: `fw.${goal.id}`,
+    answer: 'weak',
+    correct: 'strong',
+    concept: 'Prompt engineering',
+    itemText: goal.goal,
+    answerLabel: `${n}/5 LEVERS`,
+    correctLabel: '4+/5 LEVERS',
+    explain: false,
+  });
+
+  it('a weak prompt records the spec-exact payload: goal text, never the learner prompt', async () => {
+    const { api } = await setup();
+    expect(screen.getByTestId('fw-goal')).toHaveTextContent(`${COPY.goalLabel} ${goal.goal}`);
+    await type(WEAK);
+    await send();
+    await screen.findByTestId('fw-result');
+    expect(api.calls.mistakes).toEqual([weak(0)]);
+    expect(api.recorded).toEqual([{ mistake: weak(0), shielded: false }]);
+    expect(api.recorded[0]?.mistake.itemText).not.toContain(WEAK);
+  });
+
+  it('a shielded weak prompt is still recorded (shielded: true); a strong prompt records nothing', async () => {
+    const { api } = await setup({ api: { hero: 'guard' } });
+    expect(await power(api)).toBe(true);
+    await type(WEAK);
+    await send();
+    await screen.findByTestId('fw-result');
+    expect(api.recorded).toEqual([{ mistake: weak(0), shielded: true }]);
+    await type(STRONG);
+    await send();
+    await screen.findByTestId('fw-finish');
+    expect(api.recorded).toHaveLength(1);
+  });
+
+  it('X-RAY and FOCUS never record a mistake', async () => {
+    const { api } = await setup({ api: { powerUses: 4 } });
+    await type(WEAK);
+    await act(async () => {
+      api.usePower('scan');
+    });
+    await act(async () => {
+      api.usePower('hint');
+    });
+    expect(api.powersUsed.length).toBeGreaterThan(0);
+    expect(api.calls.miss).toEqual([]);
+    expect(api.recorded).toEqual([]);
+  });
+});

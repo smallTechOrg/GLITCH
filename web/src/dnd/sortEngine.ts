@@ -1,6 +1,7 @@
 // Pure sort-into-bins engine — semantics of v3 `sortGame` (spec/GLITCH v3.html lines 488–500;
 // spec/capabilities/game-runtime.md → Sort engine). No React, no timers.
 import type { IconId } from '../contracts/art';
+import type { Mistake } from '../contracts/game';
 
 export interface SortItem {
   id: string;
@@ -26,6 +27,8 @@ export interface SortConfig<I extends SortItem = SortItem> {
   cap?: number;
   /** Game-specific wrong-drop message (method syntax: bivariant, so SortState<I> widens). */
   wrong?(item: I, zone: SortZone): string;
+  /** Phase 3: the closed-id payload of a wrong drop, passed as `miss`'s second argument. */
+  mistake?(item: I, zone: SortZone): Mistake | undefined;
 }
 
 export interface SortPlacement {
@@ -85,6 +88,13 @@ export function wrongMessage<I extends SortItem>(s: SortState<I>, itemId: string
   const it = getItem(s, itemId);
   const z = getZone(s, zoneId);
   return it && z && s.cfg.wrong ? s.cfg.wrong(it, z) : DEFAULT_WRONG;
+}
+
+/** Mistake payload for a wrong drop (undefined when the game supplies none). */
+export function wrongMistake<I extends SortItem>(s: SortState<I>, itemId: string, zoneId: string): Mistake | undefined {
+  const it = getItem(s, itemId);
+  const z = getZone(s, zoneId);
+  return it && z && s.cfg.mistake ? s.cfg.mistake(it, z) : undefined;
 }
 
 function place<I extends SortItem>(s: SortState<I>, itemId: string, zoneId: string): SortState<I> {

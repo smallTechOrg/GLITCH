@@ -94,3 +94,67 @@ describe('<PickList>', () => {
     expect(api.calls.miss).toHaveLength(0);
   });
 });
+
+describe('<PickList> Phase 3 mistake plumbing', () => {
+  it('passes mistakeFor(line, index) as the second miss argument for a non-target tap only', async () => {
+    const api = createTestGameApi({ powerUses: 4 });
+    const mistakeFor = jest.fn((l: PickLine, i: number) => ({
+      itemId: `s${i}`, answer: 'fib', correct: 'true', concept: 'Machine learning' as const, itemText: l.text, answerLabel: 'FIB', correctLabel: 'TRUE',
+    }));
+    await renderWithProviders(
+      <PickList
+        lines={lines}
+        api={api}
+        paperTag="P"
+        counterLabel="FIBS FOUND"
+        targetTag="FIB"
+        safeTag="TRUE"
+        foundLine={() => 'found'}
+        missMessage="miss"
+        focusLine="focus"
+        onDone={jest.fn()}
+        mistakeFor={mistakeFor}
+      />,
+    );
+    await act(async () => {
+      api.usePower('scan'); // X-RAY: catches line 1
+      api.usePower('hint'); // FOCUS: marks line 0 safe
+    });
+    expect(mistakeFor).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByTestId('pick-line-2')); // redacted: inert
+    await fireEvent.press(screen.getByTestId('pick-line-3')); // target: found
+    expect(api.recorded).toEqual([]);
+    expect(mistakeFor).not.toHaveBeenCalled();
+  });
+
+  it('a non-target tap records the payload built from that line and index', async () => {
+    const api = createTestGameApi();
+    await renderWithProviders(
+      <PickList
+        lines={lines}
+        api={api}
+        paperTag="P"
+        counterLabel="FIBS FOUND"
+        targetTag="FIB"
+        safeTag="TRUE"
+        foundLine={() => 'found'}
+        missMessage="miss"
+        focusLine="focus"
+        onDone={jest.fn()}
+        mistakeFor={(l, i) => ({ itemId: `s${i}`, answer: 'fib', correct: 'true', concept: 'Machine learning', itemText: l.text, answerLabel: 'FIB', correctLabel: 'TRUE' })}
+      />,
+    );
+    await fireEvent.press(screen.getByTestId('pick-line-0'));
+    expect(api.calls.miss).toEqual(['miss']);
+    expect(api.recorded).toEqual([
+      { shielded: false, mistake: { itemId: 's0', answer: 'fib', correct: 'true', concept: 'Machine learning', itemText: lines[0]!.text, answerLabel: 'FIB', correctLabel: 'TRUE' } },
+    ]);
+  });
+
+  it('without mistakeFor the miss carries no payload', async () => {
+    const { api } = await setup();
+    await fireEvent.press(screen.getByTestId('pick-line-0'));
+    expect(api.calls.mistakes).toEqual([undefined]);
+    expect(api.recorded).toEqual([]);
+  });
+});

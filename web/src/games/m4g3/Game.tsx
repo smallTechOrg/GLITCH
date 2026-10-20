@@ -12,7 +12,7 @@ import {
   HEADING, METRICS, SHIPPED_LINE, SHIP_LABEL, SLIDERS, SLIDER_MAX, SLIDER_MIN, START_DESIGN, SUMMARY, TOGGLES, WIN_DELAY_MS, XRAY_DESIGN, XRAY_LINE,
   type Design, type ToggleId,
 } from './data';
-import { calc, flip, focusHint, setLevel, ship } from './logic';
+import { calc, flip, focusHint, setLevel, ship, shipMistake } from './logic';
 
 export function DesignCompanionGame({ api }: { api: GameApi }): React.JSX.Element {
   const [design, setDesign] = useState<Design>(START_DESIGN);
@@ -61,7 +61,7 @@ export function DesignCompanionGame({ api }: { api: GameApi }): React.JSX.Elemen
     if (locked()) return;
     const r = ship(ref.current);
     if (!r.ok) {
-      apiRef.current.miss(r.message);
+      apiRef.current.miss(r.message, shipMistake(ref.current));
       return;
     }
     shipped.current = true;

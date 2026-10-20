@@ -5,7 +5,7 @@ import { PickList } from '../../dnd/PickList';
 import {
   COUNTER_LABEL, FIB_TAG, FOCUS_LINE, PAPER_TAG, TRUE_MISS, TRUE_TAG, V3_SCENARIO, WIN_DELAY_MS, WIN_SUMMARY, type FibScenario,
 } from './data';
-import { foundLine, pickLines } from './logic';
+import { foundLine, pickLines, trueLineMistake } from './logic';
 
 /** `scenario` defaults to the v3 case file; a replay may inject a NOVA variation of the same shape. */
 export function FactOrFib({ api, scenario = V3_SCENARIO }: { api: GameApi; scenario?: FibScenario }): React.JSX.Element {
@@ -21,6 +21,7 @@ export function FactOrFib({ api, scenario = V3_SCENARIO }: { api: GameApi; scena
       safeTag={TRUE_TAG}
       foundLine={foundLine}
       missMessage={TRUE_MISS}
+      mistakeFor={trueLineMistake}
       focusLine={FOCUS_LINE}
       onDone={onDone}
       doneDelayMs={WIN_DELAY_MS}

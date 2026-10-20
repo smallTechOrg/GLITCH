@@ -1,0 +1,46 @@
+{
+  "gameId": "m1g2",
+  "data": {
+    "sentences": [
+      {
+        "text": "Machine learning finds patterns in training data.",
+        "fib": false,
+        "explanation": null
+      },
+      {
+        "text": "A model that memorizes its training data will always do well on new data.",
+        "fib": true,
+        "explanation": "Memorizing is not generalizing. New data is the real test."
+      },
+      {
+        "text": "Labels are the right answers attached to training examples.",
+        "fib": false,
+        "explanation": null
+      },
+      {
+        "text": "A model's prediction is always a proven fact.",
+        "fib": true,
+        "explanation": "A prediction is an informed guess and it can be wrong."
+      },
+      {
+        "text": "Traditional software follows rules that a person wrote.",
+        "fib": false,
+        "explanation": null
+      },
+      {
+        "text": "Testing data is the same data the model trained on.",
+        "fib": true,
+        "explanation": "Testing uses data the model has NOT seen."
+      }
+    ]
+  },
+  "copy": {
+    "trueMiss": "That one is actually true. Look for something that sounds too sure."
+  },
+  "conceptRules": [
+    [
+      "",
+      "Machine learning"
+    ]
+  ]
+}

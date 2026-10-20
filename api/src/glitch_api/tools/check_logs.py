@@ -3,6 +3,7 @@
     cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log
     cd api && uv run python -m glitch_api.tools.check_logs <log> --forbid "some prompt text" --forbid-file prompts.txt
     cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log --route "/v1/scenarios/{game_id}/next"
+    cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/8798/api.log --route /v1/explain
 
 Asserts:
 1. every non-blank line is a JSON object;
@@ -10,14 +11,15 @@ Asserts:
 3. ≥1 ``llm_call`` line carrying ``latency_ms``, ``model``, ``prompt_tokens``,
    ``completion_tokens`` and ``cache``;
 4. cache (``--require-cache-hit-and-miss``; ON by default for the scenarios route
-   ``/v1/scenarios/{game_id}/next``, off otherwise; ``--no-require-cache-hit-and-miss``
+   ``/v1/scenarios/{game_id}/next`` and the explain route ``/v1/explain``, off otherwise; ``--no-require-cache-hit-and-miss``
    turns it off): ≥1 complete ``llm_call`` line with ``cache: "hit"`` AND ≥1 with
    ``cache: "miss"`` whose ``request_id`` belongs to a ``request`` line for the route
    (Phase 2 gate step 6 — a log of only generations, or only cache hits, fails);
 5. privacy: no line has a learner-text / secret field (``prompt``, ``goal``, ``reply``,
    ``tip``, ``messages``, ``content``, ``device_id``, ``authorization``, ``api_key`` …), no
    raw UUID (device ids), no OpenRouter key, and none of the forbidden strings appears
-   anywhere (case-insensitive). Forbidden strings = the spec fixture prompts + ``--forbid``
+   anywhere (case-insensitive). ``purpose: "explain"`` lines additionally never carry the
+   item id, the answer or the variation id (``item_id``, ``answer``, ``variation_id`` …). Forbidden strings = the spec fixture prompts + ``--forbid``
    + ``--forbid-file`` lines + every multi-word string literal in the web E2E specs
    (``web/e2e/**/*.ts``; skip with ``--no-e2e-scan``).
 
@@ -38,13 +40,16 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 E2E_DIR = REPO_ROOT / "web" / "e2e"
 DEFAULT_ROUTE = "/v1/freewrite/evaluate"
 SCENARIOS_ROUTE = "/v1/scenarios/{game_id}/next"
-CACHE_ROUTES = frozenset({SCENARIOS_ROUTE})  # routes where hit + miss are required by default
+EXPLAIN_ROUTE = "/v1/explain"
+CACHE_ROUTES = frozenset({SCENARIOS_ROUTE, EXPLAIN_ROUTE})  # routes where hit + miss are required by default
 
 REQUIRED_LLM_FIELDS = ("latency_ms", "model", "prompt_tokens", "completion_tokens", "cache")
 FORBIDDEN_KEYS = frozenset(
     {"prompt", "goal", "reply", "tip", "text", "messages", "content", "body", "device_id", "device",
      "authorization", "api_key", "openrouter_api_key", "key"}
 )
+# Explain lines must not identify what was asked (spec/api.md → POST /v1/explain → Logs).
+EXPLAIN_FORBIDDEN_KEYS = frozenset({"item_id", "itemid", "answer", "variation_id", "variationid", "item", "answers"})
 # Spec fixture prompts (freewrite-forge.md) — must never appear in a log.
 SPEC_FIXTURES = (
     "Act as a friendly science teacher. Explain photosynthesis to my 10-year-old brother, who loves plants.",
@@ -117,6 +122,10 @@ def check(
         bad_keys = sorted({k for k in _walk_keys(entry) if k.lower() in FORBIDDEN_KEYS})
         if bad_keys:
             failures.append(f"line {n}: forbidden field(s) {bad_keys}")
+        if entry.get("purpose") == "explain":
+            explain_keys = sorted({k for k in _walk_keys(entry) if k.lower() in EXPLAIN_FORBIDDEN_KEYS})
+            if explain_keys:
+                failures.append(f"line {n}: explain line carries item/answer/variation field(s) {explain_keys}")
         if _UUID.search(raw):
             failures.append(f"line {n}: contains a raw UUID (device id?)")
         if _KEY.search(raw):
@@ -178,7 +187,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--require-cache-hit-and-miss",
         action=argparse.BooleanOptionalAction,
         default=None,
-        help=f"require >=1 cache hit and >=1 cache miss llm_call line for --route (default: on for {SCENARIOS_ROUTE})",
+        help=f"require >=1 cache hit and >=1 cache miss llm_call line for --route (default: on for {SCENARIOS_ROUTE} and {EXPLAIN_ROUTE})",
     )
     parser.add_argument("--no-e2e-scan", action="store_true", help="do not read string literals from web/e2e")
     args = parser.parse_args(list(sys.argv[1:] if argv is None else argv))

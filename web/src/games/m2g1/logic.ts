@@ -1,5 +1,7 @@
 // m2g1 · Tune the Sorter — pure scoring (v3 `tuneRound`, spec/GLITCH v3.html lines 521–540).
-import { BASE_SCORE, FOCUS_ALL_MET_LINE, FOCUS_PREFIX, type TuneMessage, type TuneRoundConfig } from './data';
+import type { Mistake } from '../../contracts/game';
+import { buildMistake } from '../mistake';
+import { BASE_SCORE, BOTH_GOALS_MET_LABEL, FOCUS_ALL_MET_LINE, FOCUS_PREFIX, OVER_GOAL_SUFFIX, type TuneMessage, type TuneRoundConfig } from './data';
 
 /** score = 10 + wd·f1 + wC·caps + wk·f3 */
 export function scoreOf(cfg: TuneRoundConfig, m: TuneMessage, wC: number): number {
@@ -52,6 +54,24 @@ export function lockIn(cfg: TuneRoundConfig, t: number, wC: number): LockResult 
   const v = evaluate(cfg, t, wC);
   if (v.passes) return { pass: true };
   return { pass: false, message: v.a > cfg.ga ? cfg.fa : cfg.fb };
+}
+
+/**
+ * LOCK IT IN fails (mistake table): itemId = round id, answer `missed` (A > ga, checked first like
+ * the message) or `false_alarms`, correct `pass`, itemText = the round title. Undefined on pass.
+ */
+export function lockMistake(cfg: TuneRoundConfig, t: number, wC: number): Mistake | undefined {
+  const v = evaluate(cfg, t, wC);
+  if (v.passes) return undefined;
+  const missed = v.a > cfg.ga;
+  return buildMistake('m2g1', {
+    itemId: cfg.id,
+    answer: missed ? 'missed' : 'false_alarms',
+    correct: 'pass',
+    itemText: cfg.title,
+    answerLabel: (missed ? cfg.ma : cfg.mbl) + OVER_GOAL_SUFFIX,
+    correctLabel: BOTH_GOALS_MET_LABEL,
+  });
 }
 
 /** FOCUS line: fa if A > ga, else fb if B > gb, else "already meets both goals". */

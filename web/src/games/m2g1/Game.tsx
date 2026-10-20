@@ -12,7 +12,7 @@ import {
   CAPS_WEIGHT, LOCK_LABEL, NEXT_DELAY_MS, ROUNDS, ROUND_CLEAR_LINE, ROW_MISMATCH_TAG, THRESHOLD, WIN_SUMMARY, XRAY_LINE,
   type TuneRoundConfig,
 } from './data';
-import { evaluate, focusLine, lockIn, rowLabel } from './logic';
+import { evaluate, focusLine, lockIn, lockMistake, rowLabel } from './logic';
 
 export function TuneTheSorterGame({ api }: { api: GameApi }): React.JSX.Element {
   const [round, setRound] = useState(0);
@@ -65,7 +65,7 @@ export function TuneTheSorterGame({ api }: { api: GameApi }): React.JSX.Element 
     if (a.over || live.current.clearing) return;
     const r = lockIn(cfg, live.current.t, live.current.wC);
     if (!r.pass) {
-      a.miss(r.message);
+      a.miss(r.message, lockMistake(cfg, live.current.t, live.current.wC));
       return;
     }
     a.say(ROUND_CLEAR_LINE, 'good');

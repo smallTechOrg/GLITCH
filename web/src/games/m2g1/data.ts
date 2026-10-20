@@ -107,3 +107,7 @@ export const WIN_SUMMARY =
 
 /** Screen-reader words for a mismatched row (colour is never the only signal). */
 export const ROW_MISMATCH_TAG = 'WRONG';
+
+/** Phase 3 mistake labels (spec/architecture.md → per-game mistake table, m2g1). */
+export const OVER_GOAL_SUFFIX = ' OVER GOAL';
+export const BOTH_GOALS_MET_LABEL = 'BOTH GOALS MET';

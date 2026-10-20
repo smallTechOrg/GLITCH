@@ -1,0 +1,87 @@
+{
+  "gameId": "m1g1",
+  "data": {
+    "trainEmails": [
+      {
+        "id": "e1",
+        "text": "WIN a FREE prize!!! Click now",
+        "label": "spam"
+      },
+      {
+        "id": "e2",
+        "text": "Lunch at 1? I'm outside",
+        "label": "not_spam"
+      },
+      {
+        "id": "e3",
+        "text": "Account locked. Verify your password here",
+        "label": "spam"
+      },
+      {
+        "id": "e4",
+        "text": "Maths homework due Friday",
+        "label": "not_spam"
+      },
+      {
+        "id": "e5",
+        "text": "Cheap watches 90% off. Buy now",
+        "label": "spam"
+      },
+      {
+        "id": "e6",
+        "text": "Mum: dinner is ready",
+        "label": "not_spam"
+      }
+    ],
+    "testEmails": [
+      {
+        "id": "t1",
+        "text": "Meeting moved to 3pm",
+        "label": "not_spam",
+        "modelSays": "SPAM",
+        "modelRight": false
+      },
+      {
+        "id": "t2",
+        "text": "FREE pizza voucher, click",
+        "label": "spam",
+        "modelSays": "SPAM",
+        "modelRight": true
+      },
+      {
+        "id": "t3",
+        "text": "Photos from the trip",
+        "label": "not_spam",
+        "modelSays": "NOT SPAM",
+        "modelRight": true
+      },
+      {
+        "id": "t4",
+        "text": "Exam result: verify password",
+        "label": "spam",
+        "modelSays": "NOT SPAM",
+        "modelRight": false
+      }
+    ]
+  },
+  "copy": {
+    "zones": {
+      "spam": "SPAM",
+      "ok": "NOT SPAM",
+      "right": "RIGHT",
+      "wrong": "WRONG"
+    },
+    "trainWrong": "Look at the features: shouting, prizes, passwords. Those go with SPAM.",
+    "testWrong": "Compare the model's verdict with what the email really is."
+  },
+  "conceptRules": [
+    [
+      "e",
+      "Training data"
+    ],
+    [
+      "t",
+      "Generalization"
+    ]
+  ]
+}

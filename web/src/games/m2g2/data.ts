@@ -73,6 +73,13 @@ export const FORGE_SUBHEAD = 'Drag each block into its slot. Some blocks are too
 export const WRONG_DECOY = 'That block is too vague. Look for a specific one.';
 export const WRONG_SLOT = 'That block is a different part of a prompt. Check the slot name.';
 
+/** Phase 3 mistake label for a decoy's correct "slot" (per-game mistake table, m2g2). */
+export const NO_SLOT_LABEL = 'NO SLOT · TOO VAGUE';
+
+/** Phase 3 free-write mistake labels (mistake table, m2g2 weak free-write prompt). */
+export const freeWriteWeakLabel = (leversHit: number): string => `${leversHit}/5 LEVERS`;
+export const FREEWRITE_STRONG_LABEL = '4+/5 LEVERS';
+
 export const PROMPT_BUILT = 'PROMPT BUILT';
 export const YOUR_PROMPT = 'YOUR PROMPT';
 export const NOVA_REPLIES = 'NOVA REPLIES';

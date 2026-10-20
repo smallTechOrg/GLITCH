@@ -29,6 +29,10 @@ export const NOT_FOUND_TAG = 'NOT FOUND';
 export const NOVA_LABEL = 'NOVA';
 export const NOVA_REPLY = 'Yes! All 5 are real and verified. I am 100% confident.';
 export const ASK_MISS = 'Asking the same AI is not verification. It will sound sure either way.';
+/** Phase 3 mistake copy for the "Ask NOVA" trap (per-game mistake table, m4g1 `ask`). */
+export const ASK_ITEM_TEXT = 'ASK NOVA TO CHECK ITS OWN SOURCES';
+export const ASKED_NOVA_LABEL = 'ASKED NOVA';
+export const LOOKUP_LABEL = 'CHECK THE CATALOGUE';
 export const FOUND_LINE = 'Found in the catalogue.';
 export const NOT_FOUND_LINE = 'Not in any catalogue. Invented!';
 export const NO_LOOKUPS_LINE = 'No lookups left. Use the clues instead.';

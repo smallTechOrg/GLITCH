@@ -18,6 +18,7 @@ import { EnergyMeter, type EnergyState } from '../../ui/EnergyMeter';
 import { useFocusRing } from '../../ui/focus';
 import { PixelButton } from '../../ui/PixelButton';
 import { PixelText } from '../../ui/PixelText';
+import { freeWriteMistake } from '../../games/m2g2/logic';
 import { COPY, type Goal } from './data';
 import { checkLevers } from './levers';
 import { LeverChips } from './LeverChips';
@@ -124,7 +125,7 @@ export function FreeWriteForge({ api, onPassed, client, now = defaultNow, makeId
       setOutcome(o);
       announce(`${o.leversHit} of 5 levers`);
       if (o.passed) api.say(COPY.passed, 'good');
-      else api.miss(COPY.weak);
+      else api.miss(COPY.weak, freeWriteMistake(goal, o.leversHit));
     },
     [addPromptHistory, api, goal, makeId, now],
   );

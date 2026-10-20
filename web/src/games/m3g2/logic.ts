@@ -1,7 +1,9 @@
 // m3g2 · Fairness Lab — pure maths, audit and power logic (v3 lines 558–568).
+import type { Mistake } from '../../contracts/game';
+import { buildMistake } from '../mistake';
 import {
-  ACCURACY_BASE, ACCURACY_GOAL, FEATURES, GAP_BASE, GAP_GOAL, MEN_SHORTLISTED, PASS_LINE,
-  PROXY_ACCURACY_BONUS, accuracyFailMessage, gapFailMessage, type FeatureId,
+  ACCURACY_BASE, ACCURACY_GOAL, AUDIT_ITEM_TEXT, AUDIT_PASS_LABEL, FEATURES, GAP_BASE, GAP_GOAL, MEN_SHORTLISTED, PASS_LINE,
+  PROXY_ACCURACY_BONUS, accuracyFailLabel, accuracyFailMessage, gapFailLabel, gapFailMessage, type FeatureId,
 } from './data';
 
 export type OnMap = Record<FeatureId, boolean>;
@@ -51,6 +53,24 @@ export function audit(on: Readonly<OnMap>): AuditResult {
   if (passes(m)) return { pass: true, message: PASS_LINE };
   if (m.gap > GAP_GOAL) return { pass: false, message: gapFailMessage(m.gap) };
   return { pass: false, message: accuracyFailMessage(m.accuracy) };
+}
+
+/**
+ * RUN AUDIT fails (mistake table): itemId `audit`, answer `gap` (gap > 6, checked first like the
+ * message) or `accuracy`, correct `pass`. Undefined when the audit passes.
+ */
+export function auditMistake(on: Readonly<OnMap>): Mistake | undefined {
+  const m = calc(on);
+  if (passes(m)) return undefined;
+  const gap = m.gap > GAP_GOAL;
+  return buildMistake('m3g2', {
+    itemId: 'audit',
+    answer: gap ? 'gap' : 'accuracy',
+    correct: 'pass',
+    itemText: AUDIT_ITEM_TEXT,
+    answerLabel: gap ? gapFailLabel(m.gap) : accuracyFailLabel(m.accuracy),
+    correctLabel: AUDIT_PASS_LABEL,
+  });
 }
 
 export function toggle(on: Readonly<OnMap>, id: FeatureId): OnMap {

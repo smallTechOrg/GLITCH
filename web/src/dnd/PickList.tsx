@@ -3,7 +3,7 @@
 // Registers X-RAY (catch next target) and FOCUS (mark next non-target safe) with the frame.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import type { GameApi } from '../contracts/game';
+import type { GameApi, Mistake } from '../contracts/game';
 import { announce } from '../a11y/announce';
 import { border, colors, fontSize, shadows } from '../theme/tokens';
 import { PixelText } from '../ui/PixelText';
@@ -23,6 +23,8 @@ export interface PickListProps {
   foundLine: (line: PickLine, index: number) => string;
   /** miss() message when a non-target is tapped. */
   missMessage: string;
+  /** Phase 3: the mistake payload for tapping non-target line `index` (miss's second argument). */
+  mistakeFor?: (line: PickLine, index: number) => Mistake;
   /** FOCUS bubble line. */
   focusLine: string;
   /** Show the note on safe lines too (Proxy Hunt "OK" + note). */
@@ -37,14 +39,14 @@ export const REDACTED = '▮▮▮▮▮▮ REMOVED';
 
 export function PickList({
   lines, api, paperTag, counterLabel, targetTag, safeTag, foundLine, missMessage, focusLine,
-  showSafeNote = false, onDone, doneDelayMs = PICK_DONE_DELAY_MS, onChange,
+  showSafeNote = false, onDone, doneDelayMs = PICK_DONE_DELAY_MS, onChange, mistakeFor,
 }: PickListProps): React.JSX.Element {
   const [state, setState] = useState<PickState>(() => createPick(lines));
   const sref = useRef(state);
   const apiRef = useRef(api);
   apiRef.current = api;
-  const cbs = useRef({ onDone, onChange, foundLine });
-  cbs.current = { onDone, onChange, foundLine };
+  const cbs = useRef({ onDone, onChange, foundLine, mistakeFor });
+  cbs.current = { onDone, onChange, foundLine, mistakeFor };
   const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -76,7 +78,9 @@ export function PickList({
       if (r.result === 'found') found(r.state, i);
       else if (r.result === 'safe') {
         commit(r.state);
-        apiRef.current.miss(missMessage);
+        const l = r.state.lines[i];
+        const m = l && cbs.current.mistakeFor ? cbs.current.mistakeFor(l, i) : undefined;
+        apiRef.current.miss(missMessage, m);
       }
     },
     [commit, found, missMessage],

@@ -1,0 +1,114 @@
+{
+  "gameId": "m2g2",
+  "data": {
+    "forges": [
+      {
+        "title": "FORGE 1 · STUDY PLAN",
+        "blocks": [
+          {
+            "id": "b0",
+            "text": "Help me study.",
+            "slot": null
+          },
+          {
+            "id": "b1",
+            "text": "Make a 3-day study plan for my Maths test.",
+            "slot": "task"
+          },
+          {
+            "id": "b2",
+            "text": "I have 3 hours a day and I'm weak at algebra.",
+            "slot": "ctx"
+          },
+          {
+            "id": "b3",
+            "text": "Act as a patient Maths tutor for a 14-year-old.",
+            "slot": "role"
+          },
+          {
+            "id": "b4",
+            "text": "Give it as a table: Day, Topic, Time.",
+            "slot": "fmt"
+          },
+          {
+            "id": "b5",
+            "text": "Keep it under 120 words.",
+            "slot": "lim"
+          },
+          {
+            "id": "b6",
+            "text": "Make it good, thanks!",
+            "slot": null
+          },
+          {
+            "id": "b7",
+            "text": "You know what I mean.",
+            "slot": null
+          }
+        ]
+      },
+      {
+        "title": "FORGE 2 · EMAIL TO A TEACHER",
+        "blocks": [
+          {
+            "id": "b0",
+            "text": "Write an email.",
+            "slot": null
+          },
+          {
+            "id": "b1",
+            "text": "Write an email asking Mr. Rao for a 2-day extension on my history essay.",
+            "slot": "task"
+          },
+          {
+            "id": "b2",
+            "text": "I was ill on Monday and have finished two of four sections.",
+            "slot": "ctx"
+          },
+          {
+            "id": "b3",
+            "text": "Write as a polite Year 9 student, not a robot.",
+            "slot": "role"
+          },
+          {
+            "id": "b4",
+            "text": "Three short paragraphs with a subject line.",
+            "slot": "fmt"
+          },
+          {
+            "id": "b5",
+            "text": "Maximum 100 words. Friendly but formal.",
+            "slot": "lim"
+          },
+          {
+            "id": "b6",
+            "text": "Make it really persuasive!!!",
+            "slot": null
+          },
+          {
+            "id": "b7",
+            "text": "Do my essay for me.",
+            "slot": null
+          }
+        ]
+      }
+    ]
+  },
+  "copy": {
+    "slots": {
+      "task": "TASK",
+      "ctx": "CONTEXT",
+      "role": "ROLE",
+      "fmt": "FORMAT",
+      "lim": "LIMIT"
+    },
+    "wrongDecoy": "That block is too vague. Look for a specific one.",
+    "wrongSlot": "That block is a different part of a prompt. Check the slot name."
+  },
+  "conceptRules": [
+    [
+      "",
+      "Prompt engineering"
+    ]
+  ]
+}
