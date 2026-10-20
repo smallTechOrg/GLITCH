@@ -310,11 +310,23 @@ def test_m4g2_unbalanced_rejected() -> None:
     assert any("3 TRUST" in e for e in errors_of("m4g2", bad))
 
 
-@pytest.mark.parametrize("confidence", [49, 100, 99.5])
+@pytest.mark.parametrize("confidence", [49, 100, 99.5, 49.0, 100.0, "97", True, float("nan"), float("inf")])
 def test_m4g2_confidence_bounds_and_integer(confidence: Any) -> None:
     bad = v3("m4g2")
     bad["answers"][0]["confidence"] = confidence
     assert any("confidence" in e for e in errors_of("m4g2", bad))
+
+
+def test_m4g2_integral_float_confidence_coerced_to_int() -> None:
+    """Models often emit ``97.0`` for an integer field; integral floats are accepted as ints."""
+    out = v3("m4g2")
+    out["answers"][1]["confidence"] = 97.0
+    out["answers"][5]["confidence"] = 76.0
+    data = parse_candidate("m4g2", out)
+    assert data["answers"][1]["confidence"] == 97 and type(data["answers"][1]["confidence"]) is int
+    assert data["answers"][5]["confidence"] == 76 and type(data["answers"][5]["confidence"]) is int
+    assert validate_data("m4g2", data) == data
+    assert json.dumps(data["answers"][1]["confidence"]) == "97"
 
 
 # ---- fake generator ---------------------------------------------------------------------

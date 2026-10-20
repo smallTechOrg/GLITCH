@@ -113,6 +113,7 @@ async def test_miss_generates_one_call_stores_and_charges(game_id: str, repo, en
     assert len(provider.requests) == 1  # ONE call for the whole scenario
     req = provider.requests[0]
     assert req.purpose == "scenario_gen" and req.json_schema == GAMES[game_id].llm_json_schema
+    assert req.temperature == 0.7  # lowered from 0.9 to cut invalid generations
     assert f"<game>{game_id}</game>" in req.messages[1].content
     assert "<case_number>1</case_number>" in req.messages[1].content
     assert [v.id for v in [await repo.get(game_id, s.result.variation_id)] if v] == [s.result.variation_id]

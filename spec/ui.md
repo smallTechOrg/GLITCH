@@ -28,7 +28,15 @@ locked. Finish the earlier steps first." + Home button — never a crash.
 "SOON" tag, `accessibilityState.disabled`, hint "Coming in a future update":
 1. "ASK NOVA WHY" chip under the speech bubble after a mistake (testID `ask-nova-why-stub`).
 2. Win-screen strip "COMING SOON: Fresh case files on replay · Mistake recap"
-   (testID `win-soon-strip`).
+   (testID `win-soon-strip`). **From Phase 2** fresh case files are real, so the strip
+   reads only "COMING SOON: Mistake recap".
+
+**Case-file chrome (Phase 2, REAL)** — in the game frame on a replay of a cleared content
+game (`capabilities/scenario-variations.md`): while fetching, NOVA's thinking card
+("NEW CASE FILE" tag + "NOVA IS PULLING A NEW CASE FILE…", polite announcement, no
+dot animation under reduced motion; ≤ 15 s); a served variation shows the "NEW CASE FILE" tag; any
+fallback shows the note "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE". First plays show
+none of these.
 
 ## The four states (every data view)
 | View | Empty | Loading | Error | Populated |
@@ -94,11 +102,18 @@ Game frame: `game-title`, `hearts`, `shield-indicator`, `power-button`, `say-bub
 `game-goal`, `game-body`, `ask-nova-why-stub`; fail: `fail-screen`, `fail-retry`,
 `fail-home`; win: `win-screen`, `win-stars` (label "n stars"), `win-continue`,
 `win-replay`, `win-xp-tag`, `win-flawless-tag`, `win-soon-strip`.
+Case file (Phase 2): `case-file-loading` (NOVA thinking card, role progressbar, label
+"NOVA IS PULLING A NEW CASE FILE…"), `case-file-tag` (text "NEW CASE FILE"),
+`case-file-offline` (text "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE").
 Sort: `dnd-pool`, `dnd-item-<itemId>`, `dnd-zone-<zoneId>`. Pick: `pick-line-<index>`
 (0-based, v3 order), `pick-found`. Slider: `slider-<id>`, `slider-<id>-dec`,
-`slider-<id>-inc`, `slider-<id>-value`. Toggle: `toggle-<id>`. Metric: `metric-<id>`.
+`slider-<id>-inc`, `slider-<id>-value`. Toggle: `toggle-<id>`. Metric: `metric-<id>`
+(m3g2: `metric-gap`, `metric-accuracy`, label "<NAME> n%, goal ≤|≥g, met|not met").
 Game buttons: `m1g1-finish`, `m2g1-lock`, `m2g2-next-forge`, `m3g2-audit`,
 `m4g1-ask-nova`, `m4g1-check-<citationId>`, `m4g1-lookups`, `m4g3-ship`.
+m1g1 steps/result: `m1g1-step-train`, `m1g1-step-test`, `m1g1-result`,
+`m1g1-result-train`, `m1g1-result-test`. m3g2 group bars: `m3g2-men`, `m3g2-women`
+(label "<Group> n%").
 Slider ids: m2g1 `th`, `wc`; m4g3 `en`, `da`. Toggle ids: m3g2 feature ids
 (`code`, `gpa`, `int`, `col`, `cap`, `brk`, `pc`); m4g3 `R`, `H`, `A`.
 Sort item ids = v3 ids (`e1`…`e6`, `t1`…`t4`, `b0`…`b7` per forge, `c1`…`c5`,

@@ -17,7 +17,6 @@ from typing import Any
 import httpx
 import pytest
 
-from glitch_api.config import Settings
 from glitch_api.llm.factory import build_provider
 from glitch_api.main import create_app
 from glitch_api.moderation.filter import check as moderation_check
@@ -25,7 +24,7 @@ from glitch_api.moderation.filter import strip_links
 from glitch_api.scenarios.pipeline import ScenarioOptions
 from glitch_api.scenarios.schemas import GAME_IDS, GAMES, validate_data
 from glitch_api.tools.check_logs import check as check_log_lines
-from tests.live.conftest import CountingProvider, live_calls
+from tests.live.conftest import CountingProvider, live_calls, live_settings
 
 pytestmark = pytest.mark.live
 
@@ -36,7 +35,8 @@ ROUTE = "/v1/scenarios/{game_id}/next"
 
 @pytest.fixture
 async def live_scenario_app(tmp_path: Path, live_log: Path) -> AsyncIterator[tuple[httpx.AsyncClient, Any, Path]]:
-    settings = Settings(log_file=str(live_log), blob_backend="local", cache_dir=str(tmp_path / "cache"), blob_prefix="")
+    settings = live_settings(tmp_path, log_file=str(live_log))
+    assert settings.cache_path == tmp_path / "cache", "live tests must never use the repo's api/.cache"
     assert settings.resolved_provider == "openrouter", "live tests need the OpenRouter provider"
     app = create_app(settings)
     provider: Any = CountingProvider(build_provider(settings))

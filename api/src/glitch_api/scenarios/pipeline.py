@@ -42,7 +42,7 @@ PURPOSE = "scenario_gen"
 KIND = "scenario"
 MAX_ATTEMPTS = 2  # first try + one validator-fed regeneration
 MIN_RETRY_BUDGET_S = 2.0  # do not start a regeneration with less time than this left
-TEMPERATURE = 0.9
+TEMPERATURE = 0.7  # lower than 0.9: fewer schema/domain-invalid generations, still varied
 
 
 @dataclass(frozen=True)

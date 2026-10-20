@@ -141,11 +141,22 @@ class Settings(BaseSettings):
                 "GLITCH_LLM_PROVIDER=openrouter but GLITCH_OPENROUTER_API_KEY is missing — add it to .env"
             )
         if self.blob_backend == "gcs" and not self.gcs_bucket:
-            raise ConfigError("GLITCH_BLOB_BACKEND=gcs but GLITCH_GCS_BUCKET is missing — set it in .env")
+            raise ConfigError(
+                "GLITCH_BLOB_BACKEND=gcs but GLITCH_GCS_BUCKET is missing — set it in .env "
+                "or in the deploy command's --set-env-vars"
+            )
         if self.env == "prod" and self.resolved_provider == "fake":
             raise ConfigError(
                 "GLITCH_ENV=prod cannot run the fake demo provider — set GLITCH_OPENROUTER_API_KEY "
                 "(and GLITCH_LLM_PROVIDER=openrouter)"
+            )
+        if self.env == "prod" and self.blob_backend != "gcs":
+            # Cloud Run's filesystem is ephemeral: a local backend would lose the durable
+            # energy counters and the scenario cache on every cold start / redeploy.
+            raise ConfigError(
+                "GLITCH_ENV=prod requires GLITCH_BLOB_BACKEND=gcs and GLITCH_GCS_BUCKET=<bucket> "
+                "(the local backend loses counters + scenario cache on every Cloud Run cold start) — "
+                "set them in .env or in the deploy command's --set-env-vars (see README → Deploy)"
             )
 
 

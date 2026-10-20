@@ -12,9 +12,10 @@ v3 mapping: [id, statement, confidence, evidence, trust ? 1 : 0]; the web derive
 
 from __future__ import annotations
 
-from typing import Any
+import math
+from typing import Annotated, Any
 
-from pydantic import Field
+from pydantic import BeforeValidator, Field
 
 from glitch_api.scenarios.schemas.base import BOOLEAN, INTEGER, STRING, GameSpec, Strict, arr, duplicates, obj
 
@@ -27,9 +28,23 @@ LOW_CONFIDENCE = 80  # a TRUST below this is "low-confidence"
 HIGH_CONFIDENCE = 90  # a VERIFY at/above this is "high-confidence"
 
 
+def _integral_float_to_int(value: Any) -> Any:
+    """Models often emit ``97.0`` for an integer field: accept integral floats as ints.
+
+    Non-integral / non-finite floats pass through unchanged, so strict mode still rejects
+    them (as it does strings and bools).
+    """
+    if isinstance(value, float) and math.isfinite(value) and value.is_integer():
+        return int(value)
+    return value
+
+
+Confidence = Annotated[int, BeforeValidator(_integral_float_to_int), Field(ge=CONFIDENCE_MIN, le=CONFIDENCE_MAX)]
+
+
 class LLMAnswer(Strict):
     statement: str = Field(min_length=STATEMENT_MIN, max_length=STATEMENT_MAX)
-    confidence: int = Field(ge=CONFIDENCE_MIN, le=CONFIDENCE_MAX)
+    confidence: Confidence
     evidence: str = Field(min_length=EVIDENCE_MIN, max_length=EVIDENCE_MAX)
     trust: bool
 

@@ -117,8 +117,27 @@ def test_startup_check_rejects_fake_provider_in_prod(make_settings) -> None:
         make_settings(env="prod").startup_check()
 
 
-def test_startup_check_accepts_prod_with_key(make_settings) -> None:
-    make_settings(env="prod", openrouter_api_key="k").startup_check()
+def test_startup_check_accepts_prod_with_key_and_gcs_bucket(make_settings) -> None:
+    make_settings(env="prod", openrouter_api_key="k", blob_backend="gcs", gcs_bucket="glitch-cache").startup_check()
+
+
+def test_startup_check_rejects_prod_with_local_blob_backend(make_settings) -> None:
+    """Cloud Run's disk is ephemeral: a local backend loses counters + scenario cache on every cold start."""
+    with pytest.raises(ConfigError, match="GLITCH_BLOB_BACKEND=gcs") as err:
+        make_settings(env="prod", openrouter_api_key="k").startup_check()
+    assert "GLITCH_GCS_BUCKET" in str(err.value) and "--set-env-vars" in str(err.value)
+
+    with pytest.raises(ConfigError, match="GLITCH_BLOB_BACKEND=gcs"):
+        make_settings(env="prod", openrouter_api_key="k", blob_backend="local", gcs_bucket="b").startup_check()
+
+
+def test_startup_check_rejects_prod_gcs_without_bucket(make_settings) -> None:
+    with pytest.raises(ConfigError, match="GLITCH_GCS_BUCKET"):
+        make_settings(env="prod", openrouter_api_key="k", blob_backend="gcs", gcs_bucket="  ").startup_check()
+
+
+def test_startup_check_dev_still_allows_local_blob_backend(make_settings) -> None:
+    make_settings(env="dev", openrouter_api_key="k").startup_check()
 
 
 def test_get_settings_is_a_resettable_singleton() -> None:
