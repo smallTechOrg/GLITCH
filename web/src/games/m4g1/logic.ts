@@ -6,11 +6,11 @@ import {
   type CitationId, type CitationItem,
 } from './data';
 
-export const SORT_CONFIG: SortConfig<CitationItem> = {
-  items: ITEMS,
-  zones: ZONES,
-  wrong: () => WRONG,
-};
+export function sortConfig(items: readonly CitationItem[] = ITEMS): SortConfig<CitationItem> {
+  return { items, zones: ZONES, wrong: () => WRONG };
+}
+
+export const SORT_CONFIG: SortConfig<CitationItem> = sortConfig(ITEMS);
 
 export interface DetectiveState {
   readonly lookupsLeft: number;
@@ -27,8 +27,12 @@ export type CheckOutcome =
   | { kind: 'ignored' };
 
 /** v3 `.lkb` click: already checked / unknown → ignored; 0 left → "No lookups left…" (no heart). */
-export function check(s: DetectiveState, id: string): { state: DetectiveState; outcome: CheckOutcome } {
-  const it = ITEMS.find((x) => x.id === id);
+export function check(
+  s: DetectiveState,
+  id: string,
+  items: readonly CitationItem[] = ITEMS,
+): { state: DetectiveState; outcome: CheckOutcome } {
+  const it = items.find((x) => x.id === id);
   if (!it || s.checked[it.id] !== undefined) return { state: s, outcome: { kind: 'ignored' } };
   if (s.lookupsLeft <= 0) return { state: s, outcome: { kind: 'none-left', say: { text: NO_LOOKUPS_LINE, mood: NO_LOOKUPS_MOOD } } };
   return {

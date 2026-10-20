@@ -10,14 +10,16 @@ import { border, colors, fontSize, space } from '../../theme/tokens';
 import { PixelButton } from '../../ui/PixelButton';
 import { PixelText } from '../../ui/PixelText';
 import {
-  FINISH_LABEL, RESULT_EXPLAIN, RESULT_HEAD, RESULT_TEST, RESULT_TRAIN, STEP1_DONE_LINE, STEP1_HEAD, STEP2_HEAD, STEP2_SUB, WIN_SUMMARY,
+  FINISH_LABEL, RESULT_EXPLAIN, RESULT_HEAD, RESULT_TEST, RESULT_TRAIN, STEP1_DONE_LINE, STEP1_HEAD, STEP2_HEAD, STEP2_SUB, V3_SCENARIO, WIN_SUMMARY,
+  type TrainScenario,
 } from './data';
 import { nextStep, testConfig, trainingConfig, type Step, type TrainItem } from './logic';
 
-export function TrainTheModel({ api }: { api: GameApi }): React.JSX.Element {
+/** `scenario` defaults to the v3 case file; a replay may inject a NOVA variation of the same shape. */
+export function TrainTheModel({ api, scenario = V3_SCENARIO }: { api: GameApi; scenario?: TrainScenario }): React.JSX.Element {
   const [step, setStep] = useState<Step>('train');
-  const train = useMemo(trainingConfig, []);
-  const test = useMemo(testConfig, []);
+  const train = useMemo(() => trainingConfig(scenario), [scenario]);
+  const test = useMemo(() => testConfig(scenario), [scenario]);
 
   useEffect(() => {
     // Result screen: nothing left for X-RAY / FOCUS (v3: the step-2 board has nothing left).

@@ -24,6 +24,18 @@ export const TEST_EMAILS: readonly TestEmail[] = [
   ['t4', 'Exam result: verify password', 'NOT SPAM', 'w'],
 ];
 
+/**
+ * The data-source seam (Phase 2): a scenario is everything that varies between case files.
+ * v3 is the default; a NOVA variation (features/variations) is the same shape — 6 training
+ * emails + 4 test emails, the model wrong on exactly 2 — so the fixed result copy stays true.
+ */
+export interface TrainScenario {
+  train: readonly TrainEmail[];
+  test: readonly TestEmail[];
+}
+
+export const V3_SCENARIO: TrainScenario = { train: TRAIN_EMAILS, test: TEST_EMAILS };
+
 export interface ZoneDef {
   id: string;
   label: string;

@@ -23,6 +23,20 @@ export const RESUME: readonly ResumeLine[] = [
 ];
 
 export const PROXY_COUNT = 5;
+
+/**
+ * The data-source seam (Phase 2): v3 by default; a NOVA variation has the same shape (2 redacted,
+ * 5 proxies, 4 real) plus the candidate's upper-case first name for the paper tag.
+ */
+export interface ProxyScenario {
+  resume: readonly ResumeLine[];
+  candidate?: string;
+}
+
+export const V3_SCENARIO: ProxyScenario = { resume: RESUME, candidate: 'ANAYA' };
+
+/** v3 "ANAYA · RESUME · SCREENED BY AI" with the scenario's candidate. */
+export const paperTag = (sc: ProxyScenario): string => (sc.candidate ? `${sc.candidate} · RESUME · SCREENED BY AI` : PAPER_TAG);
 export const PAPER_TAG = 'ANAYA · RESUME · SCREENED BY AI';
 export const COUNTER_LABEL = 'PROXIES FOUND';
 export const TARGET_TAG = 'PROXY';

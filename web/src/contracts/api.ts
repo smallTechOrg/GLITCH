@@ -1,4 +1,5 @@
-// FROZEN Phase-1 contract — TypeScript mirror of spec/api.md.
+// TypeScript mirror of spec/api.md. Phase-1 shapes are frozen; Phase 2 adds the scenario route.
+import type { GameId } from './ids';
 import type { LeverMap } from './state';
 
 export type ApiErrorCode =
@@ -80,3 +81,21 @@ export interface FreewriteEvaluateData {
 export const FREEWRITE_PROMPT_MAX = 600;
 export const FREEWRITE_GOAL_MAX = 200;
 export const CLIENT_TIMEOUT_MS = 8000;
+
+/**
+ * GET /v1/scenarios/{gameId}/next?seen=<comma ids> (Phase 2, scenario-variations.md).
+ * `data` is the game's scenario in its wire shape; features/variations/schemas.ts validates
+ * and maps it onto the game's v3 data shape. A cache hit (`cached: true`) costs no energy.
+ */
+export interface ScenarioNextData {
+  variationId: string;
+  gameId: GameId;
+  data: unknown;
+  cached: boolean;
+}
+
+/**
+ * Bounded wait for a fresh case file before the classic (v3) one is played. Longer than
+ * CLIENT_TIMEOUT_MS because a cache miss is one full-scenario generation (+1 retry).
+ */
+export const SCENARIO_TIMEOUT_MS = 15000;

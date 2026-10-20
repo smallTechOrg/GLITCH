@@ -1,13 +1,13 @@
 // m1g2 · Fact or Fib — pure mapping of v3 sentences onto the pick-the-line engine (v3 512–519).
 import type { PickLine } from '../../dnd/pickEngine';
-import { FOUND_PREFIX, SENTENCES, type Sentence } from './data';
+import { FOUND_PREFIX, V3_SCENARIO, type FibScenario, type Sentence } from './data';
 
 export function toPickLine(s: Sentence): PickLine {
   return s[1] === 1 ? { text: s[0], isTarget: true, note: s[2] } : { text: s[0], isTarget: false };
 }
 
-export function pickLines(): PickLine[] {
-  return SENTENCES.map(toPickLine);
+export function pickLines(sc: FibScenario = V3_SCENARIO): PickLine[] {
+  return sc.sentences.map(toPickLine);
 }
 
 /** 0-based indices of the fibs, in v3 order. */

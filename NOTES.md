@@ -31,3 +31,7 @@ Running log of the zero-shot build: decisions, friction, and harness lessons. Ne
 - Phone overflow (top bar, sort items) passed all 59 desktop E2E; only the gate's screenshot review caught it. Harness lesson: the scaffold Playwright config should ship mobile projects (320/360 px) plus a generic no-horizontal-overflow spec from day one.
 - Live budget: scaffold 2 model checks, slice D ~6, D/E audit 5, phase gate 12 — roughly 25 small calls on gemini-2.5-flash-lite (~$0.01).
 - Phase 1 gate VERIFIED at 888a320: api 242 passed; web jest 688 passed; export OK; Playwright 89 passed (desktop + mobile-320 + mobile-360, fake provider); live pytest 5/5; live E2E (freewrite + journey) 11/11; check_logs OK, no learner text or key in logs.
+
+## 2026-10-20 11:30 — Phase 2 start (user approved Phase 1, no fix requests)
+- Root is serving on 8787/8090 during this phase; all Phase 2 boots/E2E use 8788/8091. Found that `web/playwright.config.ts` hardcoded the API on 8787 (and could reuse an existing server), so an E2E run would have silently tested the root's live server — W1 makes it port-configurable and fail-loud. Harness lesson: scaffold E2E configs must take ports from env and never `reuseExistingServer` by default.
+- Slices: P2-D1 store + scenarios, P2-W1 web client (parallel); P2-D2 durable caps launched as soon as D1's `store/base.py` landed (declared dependency satisfied early by having D1 write the protocol first); P2-D3 bank script waits for D1's scenario service.

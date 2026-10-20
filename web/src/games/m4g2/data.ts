@@ -5,8 +5,10 @@ import { colors } from '../../theme/tokens';
 
 export type AnswerId = 'a1' | 'a2' | 'a3' | 'a4' | 'a5' | 'a6';
 
+export type Answer = readonly [id: AnswerId, statement: string, confidence: number, evidence: string, trust: 0 | 1];
+
 /** v3 `A`: [id, answer, confidence %, evidence, trust (1) / verify (0)]. */
-export const ANSWERS: readonly (readonly [AnswerId, string, number, string, 0 | 1])[] = [
+export const ANSWERS: readonly Answer[] = [
   ['a1', 'Water boils at 100°C at sea level.', 99, 'Matches 3 textbooks', 1],
   ['a2', 'The Eiffel Tower was built in 1925.', 97, 'Encyclopaedia says 1889', 0],
   ['a3', "Dr. Rao's 2022 study proves this.", 95, 'Study not found in any database', 0],
@@ -37,14 +39,25 @@ export interface AnswerItem extends SortItem {
   short: string;
 }
 
+/** The data-source seam (Phase 2): v3 by default; a NOVA variation has the same shape (6 answers). */
+export interface CourtScenario {
+  answers: readonly Answer[];
+}
+
+export const V3_SCENARIO: CourtScenario = { answers: ANSWERS };
+
 /** v3: `sh: a[1].slice(0,26)`, `a: a[4] ? "trust" : "verify"`. `text` (screen-reader label) adds the verdict line. */
-export const ITEMS: readonly AnswerItem[] = ANSWERS.map(([id, statement, confidence, evidence, trust]) => ({
-  id,
-  statement,
-  confidence,
-  evidence,
-  text: `${statement} ${verdictLine(confidence, evidence)}`,
-  short: statement.slice(0, 26),
-  answer: trust ? 'trust' : 'verify',
-  icon: ITEM_ICON,
-}));
+export function itemsOf(sc: CourtScenario): readonly AnswerItem[] {
+  return sc.answers.map(([id, statement, confidence, evidence, trust]) => ({
+    id,
+    statement,
+    confidence,
+    evidence,
+    text: `${statement} ${verdictLine(confidence, evidence)}`,
+    short: statement.slice(0, 26),
+    answer: trust ? 'trust' : 'verify',
+    icon: ITEM_ICON,
+  }));
+}
+
+export const ITEMS: readonly AnswerItem[] = itemsOf(V3_SCENARIO);

@@ -2,7 +2,7 @@
 
 Selected by ``GLITCH_LLM_PROVIDER=auto`` only when no key is set; forbidden in prod
 (``Settings.startup_check``). It dispatches on the injected node tag for the request's
-purpose (``<node:freewrite_eval>``), never on prose keywords. For free-write it reads the
+purpose (``<node:freewrite_eval>``, ``<node:scenario_gen>``), never on prose keywords. For free-write it reads the
 goal and learner prompt from their delimiter tags, scores levers with the shared lever cue
 rules, and returns JSON in exactly the shape the real model must produce.
 """
@@ -58,8 +58,17 @@ def _freewrite_eval(request: LLMRequest) -> str:
     return json.dumps(out, ensure_ascii=False)
 
 
+def _scenario_gen(request: LLMRequest) -> str:
+    # Phase 2: deterministic demo case files (imported lazily — keeps llm/ free of a
+    # module-level dependency on the scenarios package).
+    from glitch_api.scenarios.fake_gen import fake_scenario_from_prompt
+
+    return fake_scenario_from_prompt(_user_text(request))
+
+
 _NODES: dict[str, Callable[[LLMRequest], str]] = {
     node_tag("freewrite_eval"): _freewrite_eval,
+    node_tag("scenario_gen"): _scenario_gen,
 }
 
 

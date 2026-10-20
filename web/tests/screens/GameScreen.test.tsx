@@ -12,6 +12,7 @@ import { setReducedMotionOverride } from '@/a11y/useReducedMotion';
 import { useGlitchStore } from '@/state/store';
 import { useToastStore, resetToasts } from '@/ui/toast';
 import { renderWithProviders } from '@/testing/renderWithProviders';
+import { setCaseFileClientForTests } from '@/features/variations';
 
 jest.mock('expo-router', () => ({
   router: { navigate: jest.fn(), replace: jest.fn(), push: jest.fn(), back: jest.fn() },
@@ -72,12 +73,21 @@ const M1_READY: Partial<PersistedState> = {
   steps: { m1h: true, m1s: true },
 };
 
+// Replays of cleared content games ask for a fresh case file; this suite tests the frame, so
+// the scenario server is "offline" (→ classic case file) and never touches the network.
+let restoreCaseFiles: () => void = () => undefined;
 beforeEach(() => {
+  restoreCaseFiles = setCaseFileClientForTests({
+    getNextScenario: async () => ({ ok: false, error: { code: 'NETWORK', message: 'offline (test)', retryable: true } }),
+  });
   setReducedMotionOverride(true);
   Object.assign(mockCtl, { scan: false, hint: false, undos: 0, mounts: 0, api: null });
   (router.navigate as jest.Mock).mockClear();
 });
-afterEach(() => setReducedMotionOverride(null));
+afterEach(() => {
+  setReducedMotionOverride(null);
+  restoreCaseFiles();
+});
 
 async function open(hero: HeroId = 'scout', state: Partial<PersistedState> = {}, game: 'm1g1' | 'm1g2' = 'm1g1') {
   await renderWithProviders(<GameScreen mod={1} gameId={game} />, { state: { ...M1_READY, heroByModule: { 1: hero }, ...state }, now: NOW });
@@ -290,7 +300,7 @@ describe('GameScreen · winning', () => {
     expect(screen.getByTestId('win-xp-tag')).toHaveTextContent('+30 XP');
     expect(screen.getByTestId('win-flawless-tag')).toHaveTextContent('FLAWLESS +25');
     const strip = screen.getByTestId('win-soon-strip');
-    expect(strip).toHaveTextContent(/COMING SOON: Fresh case files on replay · Mistake recap/);
+    expect(strip).toHaveTextContent(/COMING SOON: Mistake recap/);
     expect(strip.props.accessibilityState).toEqual({ disabled: true });
     expect(screen.getByTestId('say-bubble')).toHaveTextContent('Level clear!');
     expect(screen.getByTestId('win-continue')).toHaveTextContent('Continue ▶');

@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from glitch_api.caps.clock import Clock, SystemClock
-from glitch_api.caps.store import CounterStore, MemoryCounterStore
+from glitch_api.caps.store import CounterStore
 from glitch_api.envelope import Energy
 from glitch_api.logging import get_logger
 from glitch_api.metrics import get_metrics
@@ -149,14 +149,17 @@ class EnergyService:
 def energy_service_for(app: Any) -> EnergyService:
     """The app's EnergyService, created on first use from ``app.state.settings``.
 
-    Tests may pre-set ``app.state.clock`` (frozen clock) or ``app.state.energy``.
+    Tests may pre-set ``app.state.clock`` (frozen clock), ``app.state.counter_store`` or
+    ``app.state.energy``. Counters default to ``caps.blob_store.BlobCounterStore``.
     """
     state = app.state
     service = getattr(state, "energy", None)
     if service is None:
+        from glitch_api.caps.blob_store import counter_store_for  # Phase 2: durable counters
+
         settings = state.settings
         service = EnergyService(
-            MemoryCounterStore(),
+            counter_store_for(app),
             device_cap=settings.device_daily_cap,
             global_cap=settings.global_daily_cap,
             clock=getattr(state, "clock", None) or SystemClock(),

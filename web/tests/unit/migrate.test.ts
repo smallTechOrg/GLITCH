@@ -1,6 +1,8 @@
 // migrate.ts: pure validation + versioned migration from stored fixtures.
-import { cleanHistoryEntry, createInitialState, migrateState, parseStored, sanitizeV1 } from '@/state/migrate';
-import type { PersistedStateV1 } from '@/contracts/state';
+import {
+  MIGRATIONS, addSeen, cleanHistoryEntry, cleanSeenScenarios, createInitialState, migrateState, migrateV1toV2, parseStored, sanitizeV1,
+} from '@/state/migrate';
+import type { PersistedStateV1, PersistedStateV2 } from '@/contracts/state';
 
 const NOW = new Date('2026-10-19T10:00:00.000Z');
 
@@ -26,10 +28,18 @@ const fixtureV1: PersistedStateV1 = {
   ],
 };
 
+/** The v1 fixture after v1 → v2: every field kept, version 2, empty seen map. */
+const fixtureV2: PersistedStateV2 = { ...fixtureV1, version: 2, seenScenarios: {} };
+
 describe('migrateState', () => {
-  it('keeps a valid v1 fixture unchanged', () => {
+  it('migrates a stored v1 save to v2: every v1 field kept, seenScenarios starts empty', () => {
     const r = migrateState(JSON.parse(JSON.stringify(fixtureV1)), NOW);
-    expect(r).toEqual({ ok: true, state: fixtureV1, from: 1 });
+    expect(r).toEqual({ ok: true, state: fixtureV2, from: 1 });
+  });
+
+  it('keeps a valid v2 save unchanged', () => {
+    const v2: PersistedStateV2 = { ...fixtureV2, seenScenarios: { m1g2: ['a1b2', 'c3d4'], m4g1: ['z9'] } };
+    expect(migrateState(JSON.parse(JSON.stringify(v2)), NOW)).toEqual({ ok: true, state: v2, from: 2 });
   });
 
   it('fills defaults for missing fields and drops invalid entries', () => {
@@ -70,13 +80,13 @@ describe('migrateState', () => {
     expect(migrateState(null)).toMatchObject({ ok: false });
     expect(migrateState([1, 2])).toMatchObject({ ok: false });
     expect(migrateState({ xp: 10 })).toMatchObject({ ok: false, error: expect.stringMatching(/version/) });
-    expect(migrateState({ version: 2 })).toMatchObject({ ok: false, error: expect.stringMatching(/newer/) });
+    expect(migrateState({ version: 3 })).toMatchObject({ ok: false, error: expect.stringMatching(/newer/) });
   });
 
   it('parseStored handles nothing stored, corrupt JSON and good JSON', () => {
     expect(parseStored(null)).toBeNull();
     expect(parseStored('{not json')).toMatchObject({ ok: false, error: expect.stringMatching(/JSON/) });
-    expect(parseStored(JSON.stringify(fixtureV1), NOW)).toMatchObject({ ok: true, state: fixtureV1 });
+    expect(parseStored(JSON.stringify(fixtureV1), NOW)).toMatchObject({ ok: true, state: fixtureV2 });
   });
 
   it('clamps nicknames to 20 characters and caps history at 50, newest first kept', () => {
@@ -95,6 +105,52 @@ describe('migrateState', () => {
 
   it('creates the documented fresh state', () => {
     const s = createInitialState(NOW);
-    expect(s).toMatchObject({ version: 1, xp: 0, lastHero: 'scout', profile: { nickname: null, onboarded: false }, streak: { current: 0, best: 0, lastPlayDay: null } });
+    expect(s.seenScenarios).toEqual({});
+    expect(s).toMatchObject({ version: 2, xp: 0, lastHero: 'scout', profile: { nickname: null, onboarded: false }, streak: { current: 0, best: 0, lastPlayDay: null } });
+  });
+});
+
+describe('v1 → v2 (seenScenarios)', () => {
+  it('is a pure, additive step registered as MIGRATIONS[1]', () => {
+    const v1 = JSON.parse(JSON.stringify(fixtureV1)) as Record<string, unknown>;
+    const out = migrateV1toV2(v1);
+    expect(out).toEqual({ ...fixtureV1, version: 2, seenScenarios: {} });
+    expect(v1.version).toBe(1); // input untouched
+    expect(MIGRATIONS[1]).toBe(migrateV1toV2);
+  });
+
+  it('a v1 save carrying a stray seenScenarios key is reset to empty (v1 had none)', () => {
+    const r = migrateState({ ...JSON.parse(JSON.stringify(fixtureV1)), seenScenarios: { m1g2: ['x1'] } }, NOW);
+    expect(r).toMatchObject({ ok: true, state: { seenScenarios: {} } });
+  });
+
+  it('cleans the seen map: known games only, URL-safe unique ids, newest 100 kept', () => {
+    const many = Array.from({ length: 130 }, (_, i) => `id${i}`);
+    const s = cleanSeenScenarios({
+      m1g2: ['ok1', 'ok1', 'has space', 'a,b', 42, '', 'x'.repeat(65), 'ok2'],
+      m9g9: ['nope'],
+      m1g1: 'not a list',
+      m4g1: many,
+      m3g1: [],
+    });
+    expect(s.m1g2).toEqual(['ok1', 'ok2']);
+    expect('m9g9' in s).toBe(false);
+    expect('m1g1' in s).toBe(false);
+    expect('m3g1' in s).toBe(false);
+    expect(s.m4g1).toHaveLength(100);
+    expect(s.m4g1?.[0]).toBe('id30');
+    expect(s.m4g1?.[99]).toBe('id129');
+    expect(cleanSeenScenarios(null)).toEqual({});
+    expect(cleanSeenScenarios(['m1g2'])).toEqual({});
+  });
+
+  it('addSeen appends once, moves a repeat to the end and caps at 100 (oldest dropped)', () => {
+    expect(addSeen(undefined, 'a')).toEqual(['a']);
+    expect(addSeen(['a', 'b'], 'a')).toEqual(['b', 'a']);
+    const full = Array.from({ length: 100 }, (_, i) => `v${i}`);
+    const next = addSeen(full, 'new');
+    expect(next).toHaveLength(100);
+    expect(next[0]).toBe('v1');
+    expect(next[99]).toBe('new');
   });
 });

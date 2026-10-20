@@ -4,18 +4,20 @@ import React, { useCallback, useMemo } from 'react';
 import type { GameApi } from '../../contracts/game';
 import { PickList } from '../../dnd/PickList';
 import {
-  COUNTER_LABEL, FOCUS_LINE, MISS_MESSAGE, PAPER_TAG, SAFE_TAG, TARGET_TAG, WIN_DELAY_MS, WIN_SUMMARY,
+  COUNTER_LABEL, FOCUS_LINE, MISS_MESSAGE, SAFE_TAG, TARGET_TAG, V3_SCENARIO, WIN_DELAY_MS, WIN_SUMMARY,
+  paperTag, type ProxyScenario,
 } from './data';
 import { foundLine, resumeLines } from './logic';
 
-export function ProxyHuntGame({ api }: { api: GameApi }): React.JSX.Element {
-  const lines = useMemo(resumeLines, []);
+/** `scenario` defaults to the v3 case file; a replay may inject a NOVA variation of the same shape. */
+export function ProxyHuntGame({ api, scenario = V3_SCENARIO }: { api: GameApi; scenario?: ProxyScenario }): React.JSX.Element {
+  const lines = useMemo(() => resumeLines(scenario), [scenario]);
   const onDone = useCallback(() => api.win(WIN_SUMMARY), [api]);
   return (
     <PickList
       lines={lines}
       api={api}
-      paperTag={PAPER_TAG}
+      paperTag={paperTag(scenario)}
       counterLabel={COUNTER_LABEL}
       targetTag={TARGET_TAG}
       safeTag={SAFE_TAG}

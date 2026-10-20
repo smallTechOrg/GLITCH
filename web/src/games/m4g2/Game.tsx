@@ -1,15 +1,17 @@
 // m4g2 · Confidence Court — render + wiring only (v3 lines 578–580).
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { GameApi } from '../../contracts/game';
 import { Icon } from '../../art/Icon';
 import { SortBoard, type SortItemRenderContext } from '../../dnd/SortBoard';
 import { colors, fontSize } from '../../theme/tokens';
 import { PixelText } from '../../ui/PixelText';
-import { HEADING, ITEM_ICON, SUBHEAD, SUMMARY, verdictLine, type AnswerItem } from './data';
-import { SORT_CONFIG } from './logic';
+import { HEADING, ITEM_ICON, SUBHEAD, SUMMARY, V3_SCENARIO, itemsOf, verdictLine, type AnswerItem, type CourtScenario } from './data';
+import { sortConfig } from './logic';
 
-export function ConfidenceCourtGame({ api }: { api: GameApi }): React.JSX.Element {
+/** `scenario` defaults to the v3 case file; a replay may inject a NOVA variation of the same shape. */
+export function ConfidenceCourtGame({ api, scenario = V3_SCENARIO }: { api: GameApi; scenario?: CourtScenario }): React.JSX.Element {
+  const cfg = useMemo(() => sortConfig(itemsOf(scenario)), [scenario]);
   const apiRef = useRef(api);
   apiRef.current = api;
 
@@ -49,7 +51,7 @@ export function ConfidenceCourtGame({ api }: { api: GameApi }): React.JSX.Elemen
 
   return (
     <SortBoard<AnswerItem>
-      cfg={SORT_CONFIG}
+      cfg={cfg}
       api={api}
       layout="zones-top"
       header={header}

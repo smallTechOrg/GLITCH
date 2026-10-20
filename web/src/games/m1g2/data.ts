@@ -13,6 +13,13 @@ export const SENTENCES: readonly Sentence[] = [
   ['Testing data is the same data the model trained on.', 1, 'Testing uses data the model has NOT seen.'],
 ];
 
+/** The data-source seam (Phase 2): v3 by default; a NOVA variation has the same shape (6 lines, 3 fibs). */
+export interface FibScenario {
+  sentences: readonly Sentence[];
+}
+
+export const V3_SCENARIO: FibScenario = { sentences: SENTENCES };
+
 export const PAPER_TAG = 'NOVA · DRAFT ESSAY';
 export const COUNTER_LABEL = 'FIBS FOUND';
 export const FIB_TAG = 'FIB';

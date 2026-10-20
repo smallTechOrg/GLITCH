@@ -15,7 +15,8 @@ from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # api/src/glitch_api/config.py → parents[3] is the repo root.
-ROOT_ENV_FILE: Path = Path(__file__).resolve().parents[3] / ".env"
+REPO_ROOT: Path = Path(__file__).resolve().parents[3]
+ROOT_ENV_FILE: Path = REPO_ROOT / ".env"
 
 DEFAULT_CORS_ORIGINS = (
     "https://smalltechorg.github.io,"
@@ -61,9 +62,14 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_file: str | None = None
     fake_latency_ms: int = 0
+    # Phase 2: shared blob store (scenario cache; durable counters from slice P2-D2).
+    blob_backend: Literal["local", "gcs"] = "local"
+    cache_dir: str = "api/.cache"  # relative paths resolve against the repo root
+    gcs_bucket: str | None = None
+    blob_prefix: str = ""  # optional key prefix inside the bucket / cache dir
 
     # ---- normalisation -------------------------------------------------------------
-    @field_validator("env", "llm_provider", "openrouter_response_format", "log_level", mode="before")
+    @field_validator("env", "llm_provider", "openrouter_response_format", "log_level", "blob_backend", mode="before")
     @classmethod
     def _strip_enum(cls, value: Any) -> Any:
         """Drop inline ``# comments`` and whitespace that .env editors leave behind."""
@@ -87,7 +93,7 @@ class Settings(BaseSettings):
             return value.strip()
         return value
 
-    @field_validator("log_file", mode="before")
+    @field_validator("log_file", "gcs_bucket", mode="before")
     @classmethod
     def _blank_log_file_is_none(cls, value: Any) -> Any:
         if isinstance(value, str) and not value.strip():
@@ -122,12 +128,20 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return _split_csv(self.cors_origins)
 
+    @property
+    def cache_path(self) -> Path:
+        """``GLITCH_CACHE_DIR`` as an absolute path (relative = from the repo root)."""
+        path = Path(self.cache_dir).expanduser()
+        return path if path.is_absolute() else REPO_ROOT / path
+
     def startup_check(self) -> None:
         """Raise ConfigError for configurations the server must refuse to boot with."""
         if self.llm_provider == "openrouter" and not self.has_openrouter_key:
             raise ConfigError(
                 "GLITCH_LLM_PROVIDER=openrouter but GLITCH_OPENROUTER_API_KEY is missing — add it to .env"
             )
+        if self.blob_backend == "gcs" and not self.gcs_bucket:
+            raise ConfigError("GLITCH_BLOB_BACKEND=gcs but GLITCH_GCS_BUCKET is missing — set it in .env")
         if self.env == "prod" and self.resolved_provider == "fake":
             raise ConfigError(
                 "GLITCH_ENV=prod cannot run the fake demo provider — set GLITCH_OPENROUTER_API_KEY "

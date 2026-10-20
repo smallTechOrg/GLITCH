@@ -1,11 +1,11 @@
 // GLITCH API client. Every call resolves to ApiResult<T> and NEVER throws/rejects:
 // server envelopes pass through; network failure → NETWORK; abort after timeout → TIMEOUT.
 import {
-  CLIENT_TIMEOUT_MS,
+  CLIENT_TIMEOUT_MS, SCENARIO_TIMEOUT_MS,
   type ApiErrorCode, type ApiResult, type ClientErr, type EnergyData, type EnergyDTO,
-  type FreewriteEvaluateData, type FreewriteEvaluateRequest, type HealthDTO,
+  type FreewriteEvaluateData, type FreewriteEvaluateRequest, type HealthDTO, type ScenarioNextData,
 } from '../contracts/api';
-import { LEVER_IDS } from '../contracts/ids';
+import { GAME_IDS, LEVER_IDS, type GameId } from '../contracts/ids';
 import { getDeviceId } from '../state/deviceId';
 import { API_BASE_URL, DEVICE_HEADER, normalizeBaseUrl } from './config';
 
@@ -72,10 +72,27 @@ export const isFreewriteData = (d: unknown): d is FreewriteEvaluateData => {
   );
 };
 
+export const isScenarioNext = (d: unknown): d is ScenarioNextData =>
+  isObj(d) &&
+  typeof d.variationId === 'string' &&
+  d.variationId.length > 0 &&
+  typeof d.gameId === 'string' &&
+  (GAME_IDS as readonly string[]).includes(d.gameId) &&
+  'data' in d &&
+  d.data !== null &&
+  d.data !== undefined &&
+  typeof d.cached === 'boolean';
+
+/** `/v1/scenarios/<gameId>/next?seen=a,b` — ids are URL-safe; each is still encoded. */
+export function scenarioNextPath(gameId: GameId, seen: readonly string[]): string {
+  return `/v1/scenarios/${encodeURIComponent(gameId)}/next?seen=${seen.map(encodeURIComponent).join(',')}`;
+}
+
 export interface ApiClient {
   getHealth(opts?: RequestOptions): Promise<ApiResult<HealthDTO>>;
   getEnergy(signal?: AbortSignal): Promise<ApiResult<EnergyData>>;
   evaluateFreewrite(req: FreewriteEvaluateRequest, opts?: RequestOptions): Promise<ApiResult<FreewriteEvaluateData>>;
+  getNextScenario(gameId: GameId, seen: readonly string[], opts?: RequestOptions): Promise<ApiResult<ScenarioNextData>>;
 }
 
 export function createApiClient(o: ApiClientOptions = {}): ApiClient {
@@ -133,6 +150,8 @@ export function createApiClient(o: ApiClientOptions = {}): ApiClient {
     getHealth: (opts = {}) => call('GET', '/healthz', isHealth, { ...opts }),
     getEnergy: (signal) => call('GET', '/v1/energy', isEmptyObj, { signal, withDevice: true }),
     evaluateFreewrite: (req, opts = {}) => call('POST', '/v1/freewrite/evaluate', isFreewriteData, { ...opts, body: req, withDevice: true }),
+    getNextScenario: (gameId, seen, opts = {}) =>
+      call('GET', scenarioNextPath(gameId, seen), isScenarioNext, { ...opts, timeoutMs: opts.timeoutMs ?? SCENARIO_TIMEOUT_MS, withDevice: true }),
   };
 }
 
@@ -149,6 +168,11 @@ export function evaluateFreewrite(
   { timeoutMs = CLIENT_TIMEOUT_MS, signal }: RequestOptions = {},
 ): Promise<ApiResult<FreewriteEvaluateData>> {
   return defaultClient.evaluateFreewrite(req, { timeoutMs, signal });
+}
+
+/** GET /v1/scenarios/{gameId}/next — never throws; times out after SCENARIO_TIMEOUT_MS. */
+export function getNextScenario(gameId: GameId, seen: readonly string[], opts?: RequestOptions): Promise<ApiResult<ScenarioNextData>> {
+  return defaultClient.getNextScenario(gameId, seen, opts);
 }
 
 /** GET /healthz — provider/model info (demo tag, E2E checks). */

@@ -5,14 +5,26 @@ import {
   type BadgeId, type GameId, type HeroId, type ModuleId, type StepId,
 } from '../contracts/ids';
 import {
-  NICKNAME_MAX, PROMPT_HISTORY_MAX, STATE_VERSION,
-  type LeverMap, type PersistedState, type PromptHistoryEntry, type PromptSource,
+  NICKNAME_MAX, PROMPT_HISTORY_MAX, SEEN_SCENARIOS_MAX, STATE_VERSION,
+  type LeverMap, type PersistedState, type PromptHistoryEntry, type PromptSource, type SeenScenarios,
 } from '../contracts/state';
 
 export type MigrateResult = { ok: true; state: PersistedState; from: number } | { ok: false; error: string };
 
-/** vN → vN+1 steps. Empty in Phase 1 (v1 is the first shape). */
-export const MIGRATIONS: Readonly<Record<number, (s: Record<string, unknown>) => Record<string, unknown>>> = {};
+/** v1 → v2 (Phase 2): additive — every v1 field kept, `seenScenarios` starts empty. */
+export function migrateV1toV2(s: Record<string, unknown>): Record<string, unknown> {
+  return { ...s, version: 2, seenScenarios: {} };
+}
+
+/** vN → vN+1 steps. */
+export const MIGRATIONS: Readonly<Record<number, (s: Record<string, unknown>) => Record<string, unknown>>> = {
+  1: migrateV1toV2,
+};
+
+/** Variation ids are server-generated, content-derived (`<gameId>-<hash>`) and URL-safe — the
+ * same rule the server applies to `?seen=` ids (api routes/scenarios.py `_SEEN_ID`). */
+export const VARIATION_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+export const isVariationId = (v: unknown): v is string => typeof v === 'string' && VARIATION_ID_RE.test(v);
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const nonNegInt = (v: unknown, d = 0): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : d);
@@ -41,7 +53,27 @@ export function createInitialState(now: Date = new Date()): PersistedState {
     badges: {},
     onceBonuses: {},
     promptHistory: [],
+    seenScenarios: {},
   };
+}
+
+/** Append a seen id once (oldest first), keeping the newest SEEN_SCENARIOS_MAX. */
+export function addSeen(list: readonly string[] | undefined, id: string): string[] {
+  const cur = (list ?? []).filter((x) => x !== id);
+  return [...cur, id].slice(-SEEN_SCENARIOS_MAX);
+}
+
+/** Validate the per-game seen map: known game ids only, valid unique ids, newest 100 kept. */
+export function cleanSeenScenarios(v: unknown): SeenScenarios {
+  const out: SeenScenarios = {};
+  if (!isObj(v)) return out;
+  for (const g of GAME_IDS) {
+    const list = v[g];
+    if (!Array.isArray(list)) continue;
+    const ids = [...new Set(list.filter(isVariationId))].slice(-SEEN_SCENARIOS_MAX);
+    if (ids.length) out[g] = ids;
+  }
+  return out;
 }
 
 function trueSet<K extends string>(v: unknown, keys: readonly K[]): Partial<Record<K, true>> {
@@ -85,8 +117,8 @@ export function cleanHistoryEntry(v: unknown): PromptHistoryEntry | null {
   };
 }
 
-/** Validate/coerce a v1-shaped object; invalid fields fall back to defaults, unknown keys dropped. */
-export function sanitizeV1(raw: Record<string, unknown>, now: Date = new Date()): PersistedState {
+/** Validate/coerce a current-shape object; invalid fields fall back to defaults, unknown keys dropped. */
+export function sanitizeState(raw: Record<string, unknown>, now: Date = new Date()): PersistedState {
   const base = createInitialState(now);
   const profile = isObj(raw.profile) ? raw.profile : {};
   const settings = isObj(raw.settings) ? raw.settings : {};
@@ -142,8 +174,12 @@ export function sanitizeV1(raw: Record<string, unknown>, now: Date = new Date())
     badges,
     onceBonuses,
     promptHistory: history,
+    seenScenarios: cleanSeenScenarios(raw.seenScenarios),
   };
 }
+
+/** Phase-1 name kept for callers/tests: the sanitizer accepts any v1/v2-shaped object. */
+export const sanitizeV1 = sanitizeState;
 
 /**
  * Bring any stored value up to the current shape.
@@ -162,7 +198,7 @@ export function migrateState(raw: unknown, now: Date = new Date()): MigrateResul
     if (!step) return { ok: false, error: `No migration from version ${v}` };
     cur = step(cur);
   }
-  return { ok: true, state: sanitizeV1(cur, now), from };
+  return { ok: true, state: sanitizeState(cur, now), from };
 }
 
 /** Parse the raw storage string (null = nothing stored). */

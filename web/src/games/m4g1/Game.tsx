@@ -1,5 +1,5 @@
 // m4g1 · Source Detective — render + wiring only (v3 lines 570–577). Rules live in logic.ts.
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import type { GameApi } from '../../contracts/game';
 import { Icon } from '../../art/Icon';
@@ -11,9 +11,9 @@ import { Tag } from '../../ui/Tag';
 import { Terminal } from '../../ui/Terminal';
 import {
   ASK_ICON, ASK_LABEL, CHECK_LABEL, FOUND_TAG, HEADING, ITEM_ICON, LOOKUPS_LABEL, LOOKUP_ICON, NOT_FOUND_TAG, NOVA_LABEL, NOVA_REPLY, SUMMARY,
-  checkA11y, lookupsA11y, type CitationItem,
+  V3_SCENARIO, checkA11y, itemsOf, lookupsA11y, type CitationItem, type DetectiveScenario,
 } from './data';
-import { SORT_CONFIG, askNova, check, createDetective, type DetectiveState } from './logic';
+import { askNova, check, createDetective, sortConfig, type DetectiveState } from './logic';
 
 /** Keeps Enter/Space on an inner control from also activating the surrounding item (web). */
 const stopKeys =
@@ -21,7 +21,12 @@ const stopKeys =
     ? ({ onKeyDown: (e: { stopPropagation(): void }) => e.stopPropagation(), onKeyUp: (e: { stopPropagation(): void }) => e.stopPropagation() } as object)
     : {};
 
-export function SourceDetectiveGame({ api }: { api: GameApi }): React.JSX.Element {
+/** `scenario` defaults to the v3 case file; a replay may inject a NOVA variation of the same shape. */
+export function SourceDetectiveGame({ api, scenario = V3_SCENARIO }: { api: GameApi; scenario?: DetectiveScenario }): React.JSX.Element {
+  const items = useMemo(() => itemsOf(scenario), [scenario]);
+  const cfg = useMemo(() => sortConfig(items), [items]);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const [st, setSt] = useState<DetectiveState>(createDetective);
   const ref = useRef(st);
   const apiRef = useRef(api);
@@ -34,7 +39,7 @@ export function SourceDetectiveGame({ api }: { api: GameApi }): React.JSX.Elemen
 
   const onCheck = useCallback((id: string) => {
     if (apiRef.current.over) return;
-    const r = check(ref.current, id);
+    const r = check(ref.current, id, itemsRef.current);
     if (r.outcome.kind === 'ignored') return;
     commit(r.state);
     apiRef.current.say(r.outcome.say.text, r.outcome.say.mood);
@@ -97,7 +102,7 @@ export function SourceDetectiveGame({ api }: { api: GameApi }): React.JSX.Elemen
 
   return (
     <SortBoard<CitationItem>
-      cfg={SORT_CONFIG}
+      cfg={cfg}
       api={api}
       layout="zones-top"
       header={header}

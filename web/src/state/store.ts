@@ -1,5 +1,5 @@
 // On-device learner state: zustand + persist over AsyncStorage (localStorage on web).
-// Storage key `glitch.v1.state` holds exactly PersistedStateV1 (spec/data.md).
+// Storage key `glitch.v1.state` holds exactly the current PersistedState (v2; spec/data.md).
 // Primitive actions only — A1's state/actions.ts composes rules on top of `patch`.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
@@ -8,14 +8,15 @@ import {
   PROMPT_HISTORY_MAX, STATE_STORAGE_KEY, STATE_VERSION,
   type GlitchStoreState, type PersistedState, type PromptHistoryEntry,
 } from '../contracts/state';
-import { cleanHistoryEntry, cleanNickname, createInitialState, parseStored } from './migrate';
+import { GAME_IDS } from '../contracts/ids';
+import { addSeen, cleanHistoryEntry, cleanNickname, createInitialState, isVariationId, parseStored } from './migrate';
 import { toast } from '../ui/toast';
 
 export const LOAD_ERROR_TOAST = "Couldn't read saved progress. Starting fresh.";
 
 const PERSISTED_KEYS = [
   'version', 'profile', 'settings', 'xp', 'streak', 'steps', 'stars', 'heroByModule',
-  'lastHero', 'heroesPlayed', 'powersUsed', 'badges', 'onceBonuses', 'promptHistory',
+  'lastHero', 'heroesPlayed', 'powersUsed', 'badges', 'onceBonuses', 'promptHistory', 'seenScenarios',
 ] as const satisfies readonly (keyof PersistedState)[];
 
 /** The persisted slice of the store (no runtime flags, no functions). */
@@ -90,13 +91,25 @@ export const useGlitchStore = create<GlitchStoreState>()(
         set((s) => ({ promptHistory: [clean, ...s.promptHistory].slice(0, PROMPT_HISTORY_MAX) }));
       },
 
+      markScenarioSeen: (gameId, variationId) => {
+        if (!(GAME_IDS as readonly string[]).includes(gameId) || !isVariationId(variationId)) return;
+        set((s) => ({ seenScenarios: { ...s.seenScenarios, [gameId]: addSeen(s.seenScenarios[gameId], variationId) } }));
+      },
+
       // course-shell.md → Settings: keep streak/best/last-play day, nickname (+ onboarded,
       // createdAt) and the readable-font setting; clear everything else incl. prompt history.
-      // The device id lives under its own key and is untouched.
+      // The device id lives under its own key and is untouched; so is `seenScenarios`
+      // (scenario-variations.md: never repeat a variation already seen on THIS device).
       resetProgress: () => {
         const s = get();
         const fresh = createInitialState(new Date(s.profile.createdAt));
-        set({ ...fresh, profile: { ...s.profile }, settings: { ...s.settings }, streak: { ...s.streak } });
+        set({
+          ...fresh,
+          profile: { ...s.profile },
+          settings: { ...s.settings },
+          streak: { ...s.streak },
+          seenScenarios: JSON.parse(JSON.stringify(s.seenScenarios)) as PersistedState['seenScenarios'],
+        });
       },
     }),
     {

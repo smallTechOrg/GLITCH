@@ -10,7 +10,7 @@ from glitch_api.config import Settings, get_settings
 from glitch_api.device import DEVICE_HEADER
 from glitch_api.envelope import install_handlers
 from glitch_api.logging import RequestLogMiddleware, configure_logging
-from glitch_api.routes import energy, freewrite, health, metrics
+from glitch_api.routes import energy, freewrite, health, metrics, scenarios
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -45,4 +45,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(metrics.router)
     app.include_router(energy.router)
     app.include_router(freewrite.router)
+    app.include_router(scenarios.router)
     return app

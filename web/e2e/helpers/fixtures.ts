@@ -1,9 +1,9 @@
 // Shared Playwright fixtures. Every test gets a fresh browser context (= a fresh device:
 // empty localStorage, new device id) — Playwright's default, made explicit here.
 import { test as base, expect, type Page } from '@playwright/test';
+import { API_URL, EXPECTED_PROVIDER } from './config';
 
-export const API_URL = (process.env.EXPO_PUBLIC_GLITCH_API_URL ?? 'http://127.0.0.1:8787').replace(/\/+$/, '');
-export const EXPECTED_PROVIDER = process.env.GLITCH_E2E_EXPECT_PROVIDER ?? 'fake';
+export { API_URL, EXPECTED_PROVIDER };
 export const PIXEL_FONT = 'PressStart2P_400Regular';
 
 export interface GlitchFixtures {

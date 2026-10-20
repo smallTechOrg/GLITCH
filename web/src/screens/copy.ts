@@ -56,7 +56,7 @@ export const GAME = {
   xpTag: (n: number) => `+${n} XP`,
   flawlessTag: (n: number) => `FLAWLESS +${n}`,
   askNovaWhy: 'ASK NOVA WHY',
-  soonStrip: 'COMING SOON: Fresh case files on replay · Mistake recap',
+  soonStrip: 'COMING SOON: Mistake recap', // fresh case files shipped in Phase 2
   winAnnounce: (n: number) => `Level clear, ${n} ${n === 1 ? 'star' : 'stars'}`,
   failAnnounce: 'Out of hearts',
   heroAlt: 'Use hero power',

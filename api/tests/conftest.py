@@ -64,6 +64,20 @@ def _isolate(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) ->
     reset_metrics()
 
 
+@pytest.fixture(autouse=True)
+def _isolate_counter_blobs(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    """Durable caps (P2-D2): apps' counters live in a fresh temp dir, never the repo's api/.cache."""
+    if request.node.get_closest_marker("live") is not None:
+        return
+    from glitch_api.caps import blob_store as caps_blob_store
+    from glitch_api.store.local import LocalBlobStore
+
+    root = tmp_path_factory.mktemp("counter-blobs")
+    monkeypatch.setattr(caps_blob_store, "blob_store_for", lambda app: LocalBlobStore(root))
+
+
 @pytest.fixture
 def make_settings() -> Callable[..., Settings]:
     """Build Settings that ignore the repo-root .env: ``make_settings(llm_provider="fake")``."""

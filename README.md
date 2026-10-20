@@ -162,10 +162,14 @@ cd web && npx expo start --web --port 8092
 # types + unit/component tests
 cd web && npx tsc --noEmit && npx jest --ci
 
-# end-to-end tests (Playwright starts the API and the export server itself;
-# run the export command first, and stop any server already on 8787 / 8090)
+# end-to-end tests (Playwright starts the API and the export server itself and never
+# reuses one already running). Ports: GLITCH_E2E_API_PORT (default 8787), GLITCH_WEB_PORT
+# (default 8090); GLITCH_WEB_DIST picks the export dir (default dist). The API URL is baked
+# into the export, so export against the same API port first (setup fails on a mismatch).
+# Side ports + a separate export dir leave a dev server on 8787 / 8090 untouched:
 cd web && npx playwright install chromium
-cd web && GLITCH_E2E_EXPECT_PROVIDER=fake npx playwright test
+cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8788 npx expo export --platform web --output-dir dist-e2e
+cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8788 GLITCH_WEB_PORT=8091 GLITCH_E2E_EXPECT_PROVIDER=fake npx playwright test
 
 # [live] end-to-end with the real AI (needs the key in the root .env)
 cd web && GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/freewrite.spec.ts e2e/journey.spec.ts

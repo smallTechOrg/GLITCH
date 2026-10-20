@@ -2,11 +2,14 @@
 import React, { useCallback, useMemo } from 'react';
 import type { GameApi } from '../../contracts/game';
 import { PickList } from '../../dnd/PickList';
-import { COUNTER_LABEL, FIB_TAG, FOCUS_LINE, PAPER_TAG, TRUE_MISS, TRUE_TAG, WIN_DELAY_MS, WIN_SUMMARY } from './data';
+import {
+  COUNTER_LABEL, FIB_TAG, FOCUS_LINE, PAPER_TAG, TRUE_MISS, TRUE_TAG, V3_SCENARIO, WIN_DELAY_MS, WIN_SUMMARY, type FibScenario,
+} from './data';
 import { foundLine, pickLines } from './logic';
 
-export function FactOrFib({ api }: { api: GameApi }): React.JSX.Element {
-  const lines = useMemo(pickLines, []);
+/** `scenario` defaults to the v3 case file; a replay may inject a NOVA variation of the same shape. */
+export function FactOrFib({ api, scenario = V3_SCENARIO }: { api: GameApi; scenario?: FibScenario }): React.JSX.Element {
+  const lines = useMemo(() => pickLines(scenario), [scenario]);
   const onDone = useCallback(() => api.win(WIN_SUMMARY), [api]);
   return (
     <PickList

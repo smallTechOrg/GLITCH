@@ -1,18 +1,22 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { E2E_API_PORT, E2E_HOST, E2E_WEB_PORT, EXPECTED_PROVIDER, REUSE_SERVERS, WEB_DIST_ENV, WEB_ORIGIN, WEB_URL, API_URL } from './e2e/helpers/config';
 
 /**
  * E2E against the static export (web/dist) served under /GLITCH/ exactly like GitHub Pages,
- * plus the real backend. Requires a prior export built with
+ * plus the real backend. Ports/dirs come from e2e/helpers/config.ts (GLITCH_E2E_API_PORT,
+ * default 8787; GLITCH_WEB_PORT, default 8090; GLITCH_WEB_DIST, default `dist`). Requires a
+ * prior export whose baked API URL matches the E2E API port, e.g.
  *   cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8787 npx expo export --platform web
+ * (globalSetup fails loudly on a mismatch).
  *
  * GLITCH_E2E_EXPECT_PROVIDER (default `fake`) selects the backend provider; the global setup
- * asserts /healthz reports it. Servers are never reused so the mode is always the one under
- * test. Backend JSON logs go to web/test-results/api.log (read by check_logs).
+ * asserts /healthz reports it. Servers are never reused (unless GLITCH_E2E_REUSE_SERVERS=1)
+ * so a port already taken fails the run instead of silently testing someone else's server.
+ * Backend JSON logs go to web/test-results/api.log (read by check_logs).
  */
-const provider = process.env.GLITCH_E2E_EXPECT_PROVIDER ?? 'fake';
-const webPort = Number(process.env.GLITCH_WEB_PORT ?? 8090);
+const provider = EXPECTED_PROVIDER;
 const apiLog = resolve(__dirname, 'test-results', 'api.log');
 mkdirSync(resolve(__dirname, 'test-results'), { recursive: true });
 // Fresh api.log per run so check_logs judges only the latest run. The config is evaluated by
@@ -37,7 +41,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
-    baseURL: `http://127.0.0.1:${webPort}/GLITCH/`,
+    baseURL: WEB_URL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -58,27 +62,29 @@ export default defineConfig({
   webServer: [
     {
       command: 'cd ../api && uv run python -m glitch_api',
-      url: 'http://127.0.0.1:8787/healthz',
-      reuseExistingServer: false,
+      url: `${API_URL}/healthz`,
+      reuseExistingServer: REUSE_SERVERS,
       timeout: 120_000,
       stdout: 'ignore',
       stderr: 'pipe',
       env: {
         GLITCH_ENV: 'dev',
-        GLITCH_HOST: '127.0.0.1',
-        GLITCH_PORT: '8787',
+        GLITCH_HOST: E2E_HOST,
+        GLITCH_PORT: String(E2E_API_PORT),
+        // The page origin must be allowed by CORS whatever the web port is.
+        GLITCH_CORS_ORIGINS: `${WEB_ORIGIN},http://localhost:${E2E_WEB_PORT}`,
         GLITCH_LLM_PROVIDER: provider,
         GLITCH_LOG_FILE: apiLog,
       },
     },
     {
       command: 'node scripts/serve-export.mjs',
-      url: `http://127.0.0.1:${webPort}/GLITCH/`,
-      reuseExistingServer: false,
+      url: WEB_URL,
+      reuseExistingServer: REUSE_SERVERS,
       timeout: 30_000,
       stdout: 'ignore',
       stderr: 'pipe',
-      env: { GLITCH_WEB_PORT: String(webPort), GLITCH_WEB_HOST: '127.0.0.1' },
+      env: { GLITCH_WEB_PORT: String(E2E_WEB_PORT), GLITCH_WEB_HOST: E2E_HOST, GLITCH_WEB_DIST: WEB_DIST_ENV },
     },
   ],
 });

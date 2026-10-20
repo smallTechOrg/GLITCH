@@ -2,6 +2,8 @@
 // game-runtime.md). Owns hearts, hero power (2 uses), shield, speech bubble, Out-of-hearts
 // and Win screens; games only talk to it through the frozen GameApi. Session rules are the
 // pure functions in engine/session.ts; progress rewards go through state/actions.ts.
+// Phase 2: on a REPLAY of a cleared content game the frame asks features/variations for a
+// fresh case file (NOVA thinking while it loads, "NEW CASE FILE" tag, v3 fallback + note).
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { GameId, ModuleId, Mood } from '../contracts/ids';
@@ -24,6 +26,7 @@ import { useReducedMotion } from '../a11y/useReducedMotion';
 import { bobTransform, useStepAnimation } from '../a11y/useStepAnimation';
 import { recordPowerUse, startGame, winGame } from '../state/actions';
 import { useGlitchStore } from '../state/store';
+import { CaseFileBadge, CaseFileLoading, ScenarioGame, useCaseFile } from '../features/variations';
 import { border, colors, fontSize, layout } from '../theme/tokens';
 import { Page } from '../ui/Page';
 import { PixelButton } from '../ui/PixelButton';
@@ -77,6 +80,8 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
   const handlersRef = useRef<PowerHandlers>({});
   const [shakeN, setShakeN] = useState(0);
   const [won, setWon] = useState<WinState | null>(null);
+  const caseFile = useCaseFile(gameId);
+  const file = caseFile.state.status === 'ready' ? caseFile.state.file : null;
 
   // Starting a game (and every retry/replay) marks its hero as played.
   useEffect(() => {
@@ -134,7 +139,7 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
 
   const pressPower = (): void => {
     const s = sessionRef.current;
-    if (!canUsePower(s)) return;
+    if (!canUsePower(s) || !file) return;
     const kind = HEROES[hero].power;
     const r = applyPower(s, handlersRef.current, kind);
     if (!r.consumed) {
@@ -153,6 +158,13 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
     setWon(null);
     setBubble((b) => ({ text: def.intro, mood: 'neutral', v: b.v + 1 }));
     setRun(runRef.current);
+  };
+
+  // REPLAY from the win screen: the game is cleared now, so the next session may be a fresh
+  // case file. Retry after a fail keeps the case file in play.
+  const replay = (): void => {
+    caseFile.next();
+    restart();
   };
 
   const shake = useStepAnimation({ ...ANIM.shake, play: shakeN > 0, trigger: shakeN, restValue: 0 });
@@ -206,7 +218,7 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
           icon={POWER_ICON[h.power]}
           variant="secondary"
           color={m.color}
-          disabled={!canUsePower(session)}
+          disabled={!canUsePower(session) || !file}
           accessibilityLabel={powerLabel(session)}
           accessibilityHint={GAME.heroAlt}
           onPress={pressPower}
@@ -219,9 +231,18 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
         {failed ? (
           <FailView onRetry={restart} />
         ) : won ? (
-          <WinView gameId={gameId} mod={mod} win={won} onReplay={restart} />
+          <WinView gameId={gameId} mod={mod} win={won} onReplay={replay} />
+        ) : !file ? (
+          <CaseFileLoading />
         ) : (
-          <def.Component key={run} api={api} />
+          <View style={styles.play}>
+            <CaseFileBadge file={file} />
+            {file.kind === 'variation' ? (
+              <ScenarioGame key={`${run}-${file.variationId}`} game={file.game} api={api} />
+            ) : (
+              <def.Component key={run} api={api} />
+            )}
+          </View>
         )}
       </Animated.View>
     </Page>
@@ -301,6 +322,7 @@ const styles = StyleSheet.create({
   shield: { marginLeft: 6 },
   goal: { flex: 1, minWidth: 160 },
   body: { marginTop: 14 },
+  play: { gap: 10 },
   res: { alignItems: 'center', gap: 14, paddingVertical: 24, paddingHorizontal: 12, backgroundColor: colors.cd, borderWidth: border.width, borderColor: colors.ln },
   center: { textAlign: 'center' },
   stars: { flexDirection: 'row', gap: 8 },

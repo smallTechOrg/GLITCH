@@ -1,0 +1,944 @@
+{
+ "m1g1": [
+  {
+   "trainEmails": [
+    {
+     "id": "e1",
+     "text": "WIN a FREE prize!!! Click now",
+     "label": "spam"
+    },
+    {
+     "id": "e2",
+     "text": "Lunch at 1? I'm outside",
+     "label": "not_spam"
+    },
+    {
+     "id": "e3",
+     "text": "Account locked. Verify your password here",
+     "label": "spam"
+    },
+    {
+     "id": "e4",
+     "text": "Maths homework due Friday",
+     "label": "not_spam"
+    },
+    {
+     "id": "e5",
+     "text": "Cheap watches 90% off. Buy now",
+     "label": "spam"
+    },
+    {
+     "id": "e6",
+     "text": "Mum: dinner is ready",
+     "label": "not_spam"
+    }
+   ],
+   "testEmails": [
+    {
+     "id": "t1",
+     "text": "Meeting moved to 3pm",
+     "label": "not_spam",
+     "modelSays": "SPAM",
+     "modelRight": false
+    },
+    {
+     "id": "t2",
+     "text": "FREE pizza voucher, click",
+     "label": "spam",
+     "modelSays": "SPAM",
+     "modelRight": true
+    },
+    {
+     "id": "t3",
+     "text": "Photos from the trip",
+     "label": "not_spam",
+     "modelSays": "NOT SPAM",
+     "modelRight": true
+    },
+    {
+     "id": "t4",
+     "text": "Exam result: verify password",
+     "label": "spam",
+     "modelSays": "NOT SPAM",
+     "modelRight": false
+    }
+   ]
+  },
+  {
+   "trainEmails": [
+    {
+     "id": "e1",
+     "text": "You won a phone!!! Reply now",
+     "label": "spam"
+    },
+    {
+     "id": "e2",
+     "text": "Gran: thanks for the card",
+     "label": "not_spam"
+    },
+    {
+     "id": "e3",
+     "text": "Verify your bank login here",
+     "label": "spam"
+    },
+    {
+     "id": "e4",
+     "text": "Science project group notes",
+     "label": "not_spam"
+    },
+    {
+     "id": "e5",
+     "text": "Last chance: 95% off sneakers",
+     "label": "spam"
+    },
+    {
+     "id": "e6",
+     "text": "Swim club kit list for Saturday",
+     "label": "not_spam"
+    }
+   ],
+   "testEmails": [
+    {
+     "id": "t1",
+     "text": "Library book due next week",
+     "label": "not_spam",
+     "modelSays": "SPAM",
+     "modelRight": false
+    },
+    {
+     "id": "t2",
+     "text": "Free game coins, just click",
+     "label": "spam",
+     "modelSays": "SPAM",
+     "modelRight": true
+    },
+    {
+     "id": "t3",
+     "text": "Can you feed the cat at 6?",
+     "label": "not_spam",
+     "modelSays": "NOT SPAM",
+     "modelRight": true
+    },
+    {
+     "id": "t4",
+     "text": "Your parcel is held. Pay fee now",
+     "label": "spam",
+     "modelSays": "NOT SPAM",
+     "modelRight": false
+    }
+   ]
+  },
+  {
+   "trainEmails": [
+    {
+     "id": "e1",
+     "text": "Verify your bank login here",
+     "label": "spam"
+    },
+    {
+     "id": "e2",
+     "text": "Science project group notes",
+     "label": "not_spam"
+    },
+    {
+     "id": "e3",
+     "text": "Last chance: 95% off sneakers",
+     "label": "spam"
+    },
+    {
+     "id": "e4",
+     "text": "Swim club kit list for Saturday",
+     "label": "not_spam"
+    },
+    {
+     "id": "e5",
+     "text": "Free game coins, just click",
+     "label": "spam"
+    },
+    {
+     "id": "e6",
+     "text": "Library book due next week",
+     "label": "not_spam"
+    }
+   ],
+   "testEmails": [
+    {
+     "id": "t1",
+     "text": "Can you feed the cat at 6?",
+     "label": "not_spam",
+     "modelSays": "SPAM",
+     "modelRight": false
+    },
+    {
+     "id": "t2",
+     "text": "Your parcel is held. Pay fee now",
+     "label": "spam",
+     "modelSays": "SPAM",
+     "modelRight": true
+    },
+    {
+     "id": "t3",
+     "text": "Match photos from Sunday",
+     "label": "not_spam",
+     "modelSays": "NOT SPAM",
+     "modelRight": true
+    },
+    {
+     "id": "t4",
+     "text": "Secret trick doctors hate",
+     "label": "spam",
+     "modelSays": "NOT SPAM",
+     "modelRight": false
+    }
+   ]
+  },
+  {
+   "trainEmails": [
+    {
+     "id": "e1",
+     "text": "Last chance: 95% off sneakers",
+     "label": "spam"
+    },
+    {
+     "id": "e2",
+     "text": "Swim club kit list for Saturday",
+     "label": "not_spam"
+    },
+    {
+     "id": "e3",
+     "text": "Free game coins, just click",
+     "label": "spam"
+    },
+    {
+     "id": "e4",
+     "text": "Library book due next week",
+     "label": "not_spam"
+    },
+    {
+     "id": "e5",
+     "text": "Your parcel is held. Pay fee now",
+     "label": "spam"
+    },
+    {
+     "id": "e6",
+     "text": "Can you feed the cat at 6?",
+     "label": "not_spam"
+    }
+   ],
+   "testEmails": [
+    {
+     "id": "t1",
+     "text": "Match photos from Sunday",
+     "label": "not_spam",
+     "modelSays": "SPAM",
+     "modelRight": false
+    },
+    {
+     "id": "t2",
+     "text": "Secret trick doctors hate",
+     "label": "spam",
+     "modelSays": "SPAM",
+     "modelRight": true
+    },
+    {
+     "id": "t3",
+     "text": "Reminder: school trip forms",
+     "label": "not_spam",
+     "modelSays": "NOT SPAM",
+     "modelRight": true
+    },
+    {
+     "id": "t4",
+     "text": "Act now: your account expires",
+     "label": "spam",
+     "modelSays": "NOT SPAM",
+     "modelRight": false
+    }
+   ]
+  }
+ ],
+ "m1g2": [
+  {
+   "sentences": [
+    {
+     "text": "Machine learning finds patterns in training data.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "A model that memorizes its training data will always do well on new data.",
+     "fib": true,
+     "explanation": "Memorizing is not generalizing. New data is the real test."
+    },
+    {
+     "text": "Labels are the right answers attached to training examples.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "A model's prediction is always a proven fact.",
+     "fib": true,
+     "explanation": "A prediction is an informed guess and it can be wrong."
+    },
+    {
+     "text": "Traditional software follows rules that a person wrote.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "Testing data is the same data the model trained on.",
+     "fib": true,
+     "explanation": "Testing uses data the model has NOT seen."
+    }
+   ]
+  },
+  {
+   "sentences": [
+    {
+     "text": "Training data is the information a model learns from.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "Once trained, a model can never make a mistake.",
+     "fib": true,
+     "explanation": "Every model can be wrong, especially on unusual data."
+    },
+    {
+     "text": "A label tells the model the right answer for an example.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "Labels are optional because models always guess right.",
+     "fib": true,
+     "explanation": "Without labels, a model cannot learn the right answers."
+    },
+    {
+     "text": "A prediction is the model's best guess about new data.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "Bigger datasets always remove every kind of bias.",
+     "fib": true,
+     "explanation": "More data can repeat old bias. Quality matters too."
+    }
+   ]
+  },
+  {
+   "sentences": [
+    {
+     "text": "Bigger datasets always remove every kind of bias.",
+     "fib": true,
+     "explanation": "More data can repeat old bias. Quality matters too."
+    },
+    {
+     "text": "A label tells the model the right answer for an example.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "A model's confidence score proves its answer is true.",
+     "fib": true,
+     "explanation": "Confidence shows pattern fit, not proof."
+    },
+    {
+     "text": "A prediction is the model's best guess about new data.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "Testing on training data shows how a model handles new data.",
+     "fib": true,
+     "explanation": "Only unseen data shows if a model generalizes."
+    },
+    {
+     "text": "More varied training examples usually help a model generalize.",
+     "fib": false,
+     "explanation": null
+    }
+   ]
+  },
+  {
+   "sentences": [
+    {
+     "text": "A prediction is the model's best guess about new data.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "Testing on training data shows how a model handles new data.",
+     "fib": true,
+     "explanation": "Only unseen data shows if a model generalizes."
+    },
+    {
+     "text": "More varied training examples usually help a model generalize.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "Machine learning means a person writes every rule by hand.",
+     "fib": true,
+     "explanation": "In machine learning, the model learns rules from examples."
+    },
+    {
+     "text": "Testing checks how a model does on data it has not seen.",
+     "fib": false,
+     "explanation": null
+    },
+    {
+     "text": "A model that scores 100% in training is perfect.",
+     "fib": true,
+     "explanation": "Training scores can hide memorizing. Check new data."
+    }
+   ]
+  }
+ ],
+ "m3g1": [
+  {
+   "candidate": "ANAYA",
+   "lines": [
+    {
+     "text": "NAME",
+     "proxy": null,
+     "note": "hid"
+    },
+    {
+     "text": "GENDER",
+     "proxy": null,
+     "note": "hid"
+    },
+    {
+     "text": "College: Maple Women's College",
+     "proxy": true,
+     "note": "Stands in for gender."
+    },
+    {
+     "text": "Captain, Girls' Football Team",
+     "proxy": true,
+     "note": "Stands in for gender."
+    },
+    {
+     "text": "Career break: 18 months",
+     "proxy": true,
+     "note": "Can stand in for gender and caregiving."
+    },
+    {
+     "text": "Postcode 40021",
+     "proxy": true,
+     "note": "Can stand in for race and income."
+    },
+    {
+     "text": "Hobby: Netball and Zumba",
+     "proxy": true,
+     "note": "Can stand in for gender."
+    },
+    {
+     "text": "Skills: Python, SQL",
+     "proxy": false,
+     "note": "A real skill."
+    },
+    {
+     "text": "Built a weather app",
+     "proxy": false,
+     "note": "A real project."
+    },
+    {
+     "text": "GPA 3.8",
+     "proxy": false,
+     "note": "A real result."
+    },
+    {
+     "text": "Data Analyst intern, 6 months",
+     "proxy": false,
+     "note": "Real experience."
+    }
+   ]
+  },
+  {
+   "candidate": "PRIYA",
+   "lines": [
+    {
+     "text": "NAME",
+     "proxy": null,
+     "note": "hid"
+    },
+    {
+     "text": "GENDER",
+     "proxy": null,
+     "note": "hid"
+    },
+    {
+     "text": "Member: Women in Coding Society",
+     "proxy": true,
+     "note": "Stands in for gender."
+    },
+    {
+     "text": "Built a recycling sorter app",
+     "proxy": false,
+     "note": "A real project."
+    },
+    {
+     "text": "Career break: 2 years",
+     "proxy": true,
+     "note": "Can stand in for gender and caregiving."
+    },
+    {
+     "text": "Top grade in Statistics",
+     "proxy": false,
+     "note": "A real result."
+    },
+    {
+     "text": "Captain, Girls' Hockey Team",
+     "proxy": true,
+     "note": "Stands in for gender."
+    },
+    {
+     "text": "Junior developer, 1 year",
+     "proxy": false,
+     "note": "Real experience."
+    },
+    {
+     "text": "Postcode 90210",
+     "proxy": true,
+     "note": "Can stand in for race and income."
+    },
+    {
+     "text": "Won a regional coding contest",
+     "proxy": false,
+     "note": "A real achievement."
+    },
+    {
+     "text": "Hobby: Ballet and Netball",
+     "proxy": true,
+     "note": "Can stand in for gender."
+    }
+   ]
+  },
+  {
+   "candidate": "LENA",
+   "lines": [
+    {
+     "text": "NAME",
+     "proxy": null,
+     "note": "hid"
+    },
+    {
+     "text": "GENDER",
+     "proxy": null,
+     "note": "hid"
+    },
+    {
+     "text": "Career break: 2 years",
+     "proxy": true,
+     "note": "Can stand in for gender and caregiving."
+    },
+    {
+     "text": "Top grade in Statistics",
+     "proxy": false,
+     "note": "A real result."
+    },
+    {
+     "text": "Captain, Girls' Hockey Team",
+     "proxy": true,
+     "note": "Stands in for gender."
+    },
+    {
+     "text": "Junior developer, 1 year",
+     "proxy": false,
+     "note": "Real experience."
+    },
+    {
+     "text": "Postcode 90210",
+     "proxy": true,
+     "note": "Can stand in for race and income."
+    },
+    {
+     "text": "Won a regional coding contest",
+     "proxy": false,
+     "note": "A real achievement."
+    },
+    {
+     "text": "Hobby: Ballet and Netball",
+     "proxy": true,
+     "note": "Can stand in for gender."
+    },
+    {
+     "text": "Certificate: Data Basics",
+     "proxy": false,
+     "note": "A real qualification."
+    },
+    {
+     "text": "Part-time hours: school run",
+     "proxy": true,
+     "note": "Can stand in for caregiving."
+    }
+   ]
+  },
+  {
+   "candidate": "ZARA",
+   "lines": [
+    {
+     "text": "NAME",
+     "proxy": null,
+     "note": "hid"
+    },
+    {
+     "text": "GENDER",
+     "proxy": null,
+     "note": "hid"
+    },
+    {
+     "text": "Captain, Girls' Hockey Team",
+     "proxy": true,
+     "note": "Stands in for gender."
+    },
+    {
+     "text": "Junior developer, 1 year",
+     "proxy": false,
+     "note": "Real experience."
+    },
+    {
+     "text": "Postcode 90210",
+     "proxy": true,
+     "note": "Can stand in for race and income."
+    },
+    {
+     "text": "Won a regional coding contest",
+     "proxy": false,
+     "note": "A real achievement."
+    },
+    {
+     "text": "Hobby: Ballet and Netball",
+     "proxy": true,
+     "note": "Can stand in for gender."
+    },
+    {
+     "text": "Certificate: Data Basics",
+     "proxy": false,
+     "note": "A real qualification."
+    },
+    {
+     "text": "Part-time hours: school run",
+     "proxy": true,
+     "note": "Can stand in for caregiving."
+    },
+    {
+     "text": "Made a school timetable tool",
+     "proxy": false,
+     "note": "A real project."
+    },
+    {
+     "text": "St Mary's College for Women",
+     "proxy": true,
+     "note": "Stands in for gender."
+    }
+   ]
+  }
+ ],
+ "m4g1": [
+  {
+   "citations": [
+    {
+     "id": "c1",
+     "text": "UNESCO (2021). Recommendation on the Ethics of Artificial Intelligence. Paris.",
+     "real": true
+    },
+    {
+     "id": "c2",
+     "text": "Dr. Elena Marsh (2023). 'Why GPT-9 Reads Minds'. Journal of Imaginary Science, 14(2).",
+     "real": false
+    },
+    {
+     "id": "c3",
+     "text": "Bender et al. (2021). On the Dangers of Stochastic Parrots. ACM FAccT.",
+     "real": true
+    },
+    {
+     "id": "c4",
+     "text": "A. Smith (2022). AI Facts Everyone Knows. Totally True Blog.",
+     "real": false
+    },
+    {
+     "id": "c5",
+     "text": "OECD (2019). OECD Principles on AI. Paris.",
+     "real": true
+    }
+   ]
+  },
+  {
+   "citations": [
+    {
+     "id": "c1",
+     "text": "OECD (2019). OECD Principles on AI. Paris.",
+     "real": true
+    },
+    {
+     "id": "c2",
+     "text": "Dr. Mia Vance (2022). 'GPT-12 Knows Your Future'. Annals of Unlikely Science.",
+     "real": false
+    },
+    {
+     "id": "c3",
+     "text": "Turing (1950). Computing Machinery and Intelligence. Mind, 59(236).",
+     "real": true
+    },
+    {
+     "id": "c4",
+     "text": "B. Jones (2023). Everything AI Can Do. Totally Real Facts Blog.",
+     "real": false
+    },
+    {
+     "id": "c5",
+     "text": "Hartley Institute (2025). Proof That AI Never Lies. Fictional Press.",
+     "real": false
+    }
+   ]
+  },
+  {
+   "citations": [
+    {
+     "id": "c1",
+     "text": "Buolamwini & Gebru (2018). Gender Shades. Proceedings of Machine Learning Research, 81.",
+     "real": true
+    },
+    {
+     "id": "c2",
+     "text": "B. Jones (2023). Everything AI Can Do. Totally Real Facts Blog.",
+     "real": false
+    },
+    {
+     "id": "c3",
+     "text": "NIST (2023). Artificial Intelligence Risk Management Framework (AI RMF 1.0). Gaithersburg.",
+     "real": true
+    },
+    {
+     "id": "c4",
+     "text": "Hartley Institute (2025). Proof That AI Never Lies. Fictional Press.",
+     "real": false
+    },
+    {
+     "id": "c5",
+     "text": "Vaswani et al. (2017). Attention Is All You Need. NeurIPS.",
+     "real": true
+    }
+   ]
+  },
+  {
+   "citations": [
+    {
+     "id": "c1",
+     "text": "Vaswani et al. (2017). Attention Is All You Need. NeurIPS.",
+     "real": true
+    },
+    {
+     "id": "c2",
+     "text": "Hartley Institute (2025). Proof That AI Never Lies. Fictional Press.",
+     "real": false
+    },
+    {
+     "id": "c3",
+     "text": "Obermeyer et al. (2019). Dissecting racial bias in an algorithm used to manage the health of populations. Science.",
+     "real": true
+    },
+    {
+     "id": "c4",
+     "text": "Dr. K. Orbit (2021). Moon Data Trains Better Models. Lunar AI Review, 9(4).",
+     "real": false
+    },
+    {
+     "id": "c5",
+     "text": "C. Lee (2020). The AI That Writes Perfect Essays. Anonymous Study Notes.",
+     "real": false
+    }
+   ]
+  }
+ ],
+ "m4g2": [
+  {
+   "answers": [
+    {
+     "statement": "Water boils at 100\u00b0C at sea level.",
+     "confidence": 99,
+     "evidence": "Matches 3 textbooks",
+     "trust": true,
+     "id": "a1"
+    },
+    {
+     "statement": "The Eiffel Tower was built in 1925.",
+     "confidence": 97,
+     "evidence": "Encyclopaedia says 1889",
+     "trust": false,
+     "id": "a2"
+    },
+    {
+     "statement": "Dr. Rao's 2022 study proves this.",
+     "confidence": 95,
+     "evidence": "Study not found in any database",
+     "trust": false,
+     "id": "a3"
+    },
+    {
+     "statement": "Your essay has 412 words.",
+     "confidence": 90,
+     "evidence": "Word counter agrees: 412",
+     "trust": true,
+     "id": "a4"
+    },
+    {
+     "statement": "This medicine is safe with your prescription.",
+     "confidence": 98,
+     "evidence": "No source cited. High stakes",
+     "trust": false,
+     "id": "a5"
+    },
+    {
+     "statement": "The capital of Australia is Canberra.",
+     "confidence": 76,
+     "evidence": "Matches atlas and government site",
+     "trust": true,
+     "id": "a6"
+    }
+   ]
+  },
+  {
+   "answers": [
+    {
+     "statement": "Prof. Lin's 2023 paper proves it.",
+     "confidence": 97,
+     "evidence": "Paper not found in any library",
+     "trust": false,
+     "id": "a1"
+    },
+    {
+     "statement": "Your playlist lasts 54 minutes.",
+     "confidence": 74,
+     "evidence": "Music app total agrees: 54",
+     "trust": true,
+     "id": "a2"
+    },
+    {
+     "statement": "You can skip your allergy medicine.",
+     "confidence": 93,
+     "evidence": "No source cited. High stakes",
+     "trust": false,
+     "id": "a3"
+    },
+    {
+     "statement": "The Pacific is the largest ocean.",
+     "confidence": 91,
+     "evidence": "Matches atlas and encyclopaedia",
+     "trust": true,
+     "id": "a4"
+    },
+    {
+     "statement": "The Great Wall is visible from Mars.",
+     "confidence": 85,
+     "evidence": "Space agency says it is not",
+     "trust": false,
+     "id": "a5"
+    },
+    {
+     "statement": "There are 26 letters in English.",
+     "confidence": 99,
+     "evidence": "Matches 2 dictionaries",
+     "trust": true,
+     "id": "a6"
+    }
+   ]
+  },
+  {
+   "answers": [
+    {
+     "statement": "The Pacific is the largest ocean.",
+     "confidence": 74,
+     "evidence": "Matches atlas and encyclopaedia",
+     "trust": true,
+     "id": "a1"
+    },
+    {
+     "statement": "You can skip your allergy medicine.",
+     "confidence": 97,
+     "evidence": "No source cited. High stakes",
+     "trust": false,
+     "id": "a2"
+    },
+    {
+     "statement": "There are 26 letters in English.",
+     "confidence": 91,
+     "evidence": "Matches 2 dictionaries",
+     "trust": true,
+     "id": "a3"
+    },
+    {
+     "statement": "The Great Wall is visible from Mars.",
+     "confidence": 93,
+     "evidence": "Space agency says it is not",
+     "trust": false,
+     "id": "a4"
+    },
+    {
+     "statement": "Your class has 28 students.",
+     "confidence": 99,
+     "evidence": "Register count agrees: 28",
+     "trust": true,
+     "id": "a5"
+    },
+    {
+     "statement": "This loan has no hidden fees.",
+     "confidence": 85,
+     "evidence": "No document provided. Money at stake",
+     "trust": false,
+     "id": "a6"
+    }
+   ]
+  },
+  {
+   "answers": [
+    {
+     "statement": "The Great Wall is visible from Mars.",
+     "confidence": 97,
+     "evidence": "Space agency says it is not",
+     "trust": false,
+     "id": "a1"
+    },
+    {
+     "statement": "There are 26 letters in English.",
+     "confidence": 74,
+     "evidence": "Matches 2 dictionaries",
+     "trust": true,
+     "id": "a2"
+    },
+    {
+     "statement": "This loan has no hidden fees.",
+     "confidence": 93,
+     "evidence": "No document provided. Money at stake",
+     "trust": false,
+     "id": "a3"
+    },
+    {
+     "statement": "Your class has 28 students.",
+     "confidence": 91,
+     "evidence": "Register count agrees: 28",
+     "trust": true,
+     "id": "a4"
+    },
+    {
+     "statement": "Sharks are a kind of mammal.",
+     "confidence": 85,
+     "evidence": "Biology book says fish",
+     "trust": false,
+     "id": "a5"
+    },
+    {
+     "statement": "Mount Everest is in the Himalayas.",
+     "confidence": 99,
+     "evidence": "Matches 3 geography books",
+     "trust": true,
+     "id": "a6"
+    }
+   ]
+  }
+ ]
+}

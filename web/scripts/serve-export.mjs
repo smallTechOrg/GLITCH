@@ -5,13 +5,15 @@
 //   /GLITCH/<path>   → dist/<path> | dist/<path>.html | dist/<path>/index.html
 //   anything else    → 404 with dist/404.html or dist/+not-found.html (the SPA deep-link
 //                      fallback: the router boots and renders the requested route client-side)
-// Env: GLITCH_WEB_PORT (default 8090), GLITCH_WEB_HOST (default 127.0.0.1; 0.0.0.0 for LAN).
+// Env: GLITCH_WEB_PORT (default 8090), GLITCH_WEB_HOST (default 127.0.0.1; 0.0.0.0 for LAN),
+//      GLITCH_WEB_DIST (default `dist`, relative to web/ or absolute — e.g. `dist-e2e`, the
+//      export the E2E run builds so it never overwrites a `dist` another server is serving).
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)), 'dist');
+const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)), process.env.GLITCH_WEB_DIST || 'dist');
 const BASE = '/GLITCH';
 const PORT = Number(process.env.GLITCH_WEB_PORT ?? 8090);
 const HOST = process.env.GLITCH_WEB_HOST ?? '127.0.0.1';
@@ -35,7 +37,7 @@ const TYPES = {
 };
 
 if (!existsSync(join(ROOT, 'index.html'))) {
-  console.error(`serve-export: ${ROOT}/index.html not found. Run: cd web && npx expo export --platform web`);
+  console.error(`serve-export: ${ROOT}/index.html not found. Run: cd web && npx expo export --platform web${process.env.GLITCH_WEB_DIST ? ` --output-dir ${process.env.GLITCH_WEB_DIST}` : ''}`);
   process.exit(1);
 }
 

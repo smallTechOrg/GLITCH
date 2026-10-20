@@ -1,8 +1,8 @@
 // m1g1 · Train the Model — pure builders for the two sort steps (v3 lines 504–511).
 import type { SortConfig, SortItem } from '../../dnd/sortEngine';
 import {
-  ITEM_ICON, MODEL_SAYS_PREFIX, STEP1_WRONG, STEP2_WRONG, TEST_EMAILS, TEST_ZONES, TRAIN_EMAILS, TRAIN_ZONES,
-  type TestEmail, type TrainEmail,
+  ITEM_ICON, MODEL_SAYS_PREFIX, STEP1_WRONG, STEP2_WRONG, TEST_ZONES, TRAIN_ZONES, V3_SCENARIO,
+  type TestEmail, type TrainEmail, type TrainScenario,
 } from './data';
 
 export type Step = 'train' | 'test' | 'result';
@@ -29,18 +29,18 @@ export function modelSays(e: TestEmail): string {
   return MODEL_SAYS_PREFIX + e[2];
 }
 
-export function trainingConfig(): SortConfig<TrainItem> {
+export function trainingConfig(sc: TrainScenario = V3_SCENARIO): SortConfig<TrainItem> {
   return {
-    items: TRAIN_EMAILS.map((e) => ({ id: e[0], answer: trainAnswer(e), text: e[1], email: e[1], icon: ITEM_ICON })),
+    items: sc.train.map((e) => ({ id: e[0], answer: trainAnswer(e), text: e[1], email: e[1], icon: ITEM_ICON })),
     zones: TRAIN_ZONES,
     wrong: () => STEP1_WRONG,
   };
 }
 
-export function testConfig(): SortConfig<TrainItem> {
+export function testConfig(sc: TrainScenario = V3_SCENARIO): SortConfig<TrainItem> {
   return {
     // `text` (used for screen-reader labels and announcements) carries the model's verdict too.
-    items: TEST_EMAILS.map((e) => ({ id: e[0], answer: testAnswer(e), text: `${e[1]}. ${modelSays(e)}`, email: e[1], says: modelSays(e), icon: ITEM_ICON })),
+    items: sc.test.map((e) => ({ id: e[0], answer: testAnswer(e), text: `${e[1]}. ${modelSays(e)}`, email: e[1], says: modelSays(e), icon: ITEM_ICON })),
     zones: TEST_ZONES,
     wrong: () => STEP2_WRONG,
   };
