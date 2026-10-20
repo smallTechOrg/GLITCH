@@ -1,11 +1,11 @@
 # Build the web export and deploy it to GitHub Pages at https://<owner>.github.io/GLITCH/
-# (spec/architecture.md → Deploy). Set the repo variable GLITCH_API_URL to the Cloud Run URL
-# and Settings → Pages → Source = "GitHub Actions".
+# (spec/architecture.md → Deploy). Uses the repo variable GLITCH_API_URL (the Cloud Run URL);
+# Settings → Pages → Source = "GitHub Actions". Setup: README → Deploy.
 name: Deploy web to GitHub Pages
 
 on:
   push:
-    branches: [main, 'feature/glitch-20261019-2317-v0.1']  # TEMP: one verification run from the build branch
+    branches: [main]
     paths:
       - 'web/**'
       - '.nvmrc'

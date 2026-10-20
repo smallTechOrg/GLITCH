@@ -332,53 +332,92 @@ export is built, so rebuild the export whenever it changes.
 
 ## Deploy
 
-**API → Cloud Run** (`api/Dockerfile`: `python:3.12-slim` + uv, listens on Cloud Run's
-`PORT`, one instance max):
+### What's live
+| Part | Where | How it deploys |
+|---|---|---|
+| Web (static export) | https://smalltechorg.github.io/GLITCH/ | `.github/workflows/pages.yml` on every push to `main` touching `web/**` |
+| API (FastAPI, `api/Dockerfile`) | https://glitch-api-870371939888.us-central1.run.app (health: `/health`) | `.github/workflows/deploy-api.yml` on every push to `main` touching `api/**` |
+
+Both workflows can also be started by hand (Actions → Run workflow). Merging into `dev`
+deploys nothing; promoting `dev` → `main` does.
+
+**Google Cloud** (project `ai-agent-boilerplate0`, region `us-central1`):
+- **Cloud Run** service `glitch-api`: max 1 instance, scales to zero, public. It runs as
+  service account `glitch-api@…`, which can only read and write the bucket and read the
+  key secret.
+- **Bucket** `gs://glitch-cache-ai-agent-boilerplate0`: private. It holds the energy
+  counters (`caps/`, auto-deleted after 7 days) plus the case-file and explanation caches.
+- **Secret** `glitch-openrouter-key`: the OpenRouter key, mounted as
+  `GLITCH_OPENROUTER_API_KEY`.
+- **Artifact Registry** `glitch`: the API images, tagged by commit SHA.
+- **CI auth is keyless.** GitHub's OIDC token goes through Workload Identity Federation
+  (pool `github`, provider `glitch-github`, restricted to `smallTechOrg/GLITCH`) to act as
+  `glitch-deployer@…`. That account can only push to the `glitch` repo and deploy
+  `glitch-api`.
+
+**GitHub:** Pages source is "GitHub Actions". The repo variable `GLITCH_API_URL` holds the
+Cloud Run URL, which is baked into the web export at build time.
 
 Production refuses to boot without a bucket: `GLITCH_ENV=prod` requires
 `GLITCH_BLOB_BACKEND=gcs` and `GLITCH_GCS_BUCKET`. Cloud Run's disk is wiped on every cold
-start, so a `local` backend would lose the energy counters and the scenario cache.
+start, so a `local` backend would lose the energy counters and the caches.
+
+### Changing config
+CI deploys with `--image` only, so env vars, the secret mount and the service account
+stay as configured on the service. To change them:
 
 ```bash
-PROJECT=<gcp-project-id>
-BUCKET=<bucket-name>   # globally unique, e.g. glitch-cache-<project-id>
-
-# once: store the key in Secret Manager
-printf %s "$KEY" | gcloud secrets create glitch-openrouter-key --data-file=-
-
-# once: create the private bucket for counters (caps/) + scenario cache
-gcloud storage buckets create "gs://$BUCKET" --project "$PROJECT" --location us-central1 --uniform-bucket-level-access --public-access-prevention
-
-# once: delete caps/ counter objects after 7 days (backs up the server's own pruning;
-# if you set GLITCH_BLOB_PREFIX=<p>, use "<p>/caps/" as the prefix)
-printf '%s' '{"rule":[{"action":{"type":"Delete"},"condition":{"age":7,"matchesPrefix":["caps/"]}}]}' > /tmp/glitch-lifecycle.json
-gcloud storage buckets update "gs://$BUCKET" --lifecycle-file=/tmp/glitch-lifecycle.json
-
-# once: let the Cloud Run service account read/write objects in the bucket
-# (default = the project's compute service account; use yours if you deploy with --service-account)
-SA="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')-compute@developer.gserviceaccount.com"
-gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member "serviceAccount:$SA" --role roles/storage.objectAdmin
-
-# deploy from the api/ directory
-cd api && gcloud run deploy glitch-api --source . --region us-central1 --allow-unauthenticated --max-instances 1 --set-env-vars GLITCH_ENV=prod,GLITCH_LLM_PROVIDER=openrouter,GLITCH_BLOB_BACKEND=gcs,GLITCH_GCS_BUCKET=$BUCKET,GLITCH_CORS_ORIGINS=https://smalltechorg.github.io --set-secrets GLITCH_OPENROUTER_API_KEY=glitch-openrouter-key:latest
-
-# verify
-curl -sf https://<service-url>/health   # not /healthz: Cloud Run reserves it
+gcloud run services update glitch-api --project ai-agent-boilerplate0 --region us-central1 \
+  --update-env-vars GLITCH_OPENROUTER_MODEL=<slug>        # e.g. model, caps, CORS
+printf %s "$NEW_KEY" | gcloud secrets versions add glitch-openrouter-key --data-file=-   # rotate the key
+gcloud run services update glitch-api --project ai-agent-boilerplate0 --region us-central1   # pick up the new secret version
 ```
 
 Also set a credit limit on the OpenRouter key. It is the hard spend backstop on top of
-the daily counters, which live in the bucket and survive cold starts.
+the daily counters.
 
-**Web → GitHub Pages** (`.github/workflows/pages.yml`):
-set the repository variable `GLITCH_API_URL` to the Cloud Run URL, set Pages source to
-"GitHub Actions", and push to `main`. The workflow builds the export and deploys
-`https://smalltechorg.github.io/GLITCH/`. Manual equivalent:
-
+### One-time setup (already done, kept for a rebuild)
 ```bash
-cd web && EXPO_PUBLIC_GLITCH_API_URL=https://<service-url> npx expo export --platform web
+P=ai-agent-boilerplate0; PN=$(gcloud projects describe $P --format='value(projectNumber)')
+B=glitch-cache-$P; RUNSA=glitch-api@$P.iam.gserviceaccount.com; DEP=glitch-deployer@$P.iam.gserviceaccount.com
+
+# runtime: service account, secret, private bucket with a 7-day caps/ lifecycle
+gcloud iam service-accounts create glitch-api --project $P
+printf %s "$KEY" | gcloud secrets create glitch-openrouter-key --project $P --data-file=-
+gcloud storage buckets create gs://$B --project $P --location us-central1 --uniform-bucket-level-access --public-access-prevention
+printf '%s' '{"rule":[{"action":{"type":"Delete"},"condition":{"age":7,"matchesPrefix":["caps/"]}}]}' > lifecycle.json
+gcloud storage buckets update gs://$B --lifecycle-file=lifecycle.json
+gcloud storage buckets add-iam-policy-binding gs://$B --member serviceAccount:$RUNSA --role roles/storage.objectAdmin
+gcloud secrets add-iam-policy-binding glitch-openrouter-key --project $P --member serviceAccount:$RUNSA --role roles/secretmanager.secretAccessor
+
+# first deploy (sets env vars, secret and service account; CI reuses them)
+cd api && gcloud run deploy glitch-api --project $P --source . --region us-central1 --service-account $RUNSA \
+  --allow-unauthenticated --max-instances 1 --memory 512Mi \
+  --set-env-vars GLITCH_ENV=prod,GLITCH_LLM_PROVIDER=openrouter,GLITCH_BLOB_BACKEND=gcs,GLITCH_GCS_BUCKET=$B,GLITCH_CORS_ORIGINS=https://smalltechorg.github.io \
+  --set-secrets GLITCH_OPENROUTER_API_KEY=glitch-openrouter-key:latest
+
+# CI: image repo, deployer account, Workload Identity Federation for this repo only
+gcloud artifacts repositories create glitch --project $P --location us-central1 --repository-format docker
+gcloud iam service-accounts create glitch-deployer --project $P
+gcloud iam workload-identity-pools create github --project $P --location global
+gcloud iam workload-identity-pools providers create-oidc glitch-github --project $P --location global \
+  --workload-identity-pool github --issuer-uri https://token.actions.githubusercontent.com \
+  --attribute-mapping "google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" \
+  --attribute-condition "assertion.repository=='smallTechOrg/GLITCH'"
+gcloud iam service-accounts add-iam-policy-binding $DEP --project $P --role roles/iam.workloadIdentityUser \
+  --member "principalSet://iam.googleapis.com/projects/$PN/locations/global/workloadIdentityPools/github/attribute.repository/smallTechOrg/GLITCH"
+gcloud artifacts repositories add-iam-policy-binding glitch --project $P --location us-central1 --role roles/artifactregistry.writer --member serviceAccount:$DEP
+gcloud run services add-iam-policy-binding glitch-api --project $P --region us-central1 --role roles/run.developer --member serviceAccount:$DEP
+gcloud iam service-accounts add-iam-policy-binding $RUNSA --project $P --role roles/iam.serviceAccountUser --member serviceAccount:$DEP
+
+# GitHub: Pages from Actions + the API URL for the web build
+gh api -X PUT repos/smallTechOrg/GLITCH/pages -f build_type=workflow
+gh variable set GLITCH_API_URL -R smallTechOrg/GLITCH --body https://glitch-api-870371939888.us-central1.run.app
 ```
 
-then publish `web/dist`, including `dist/.nojekyll`.
+Manual web build, if you ever need one:
+`cd web && EXPO_PUBLIC_GLITCH_API_URL=https://<service-url> npx expo export --platform web`,
+then publish `web/dist`, including `dist/.nojekyll` (`dist/+not-found.html` → `404.html`).
 
 ## Repository layout
 
