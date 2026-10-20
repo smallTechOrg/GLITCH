@@ -156,9 +156,10 @@ test.describe('Fresh case files · Fact or Fib', () => {
     await expect(page.getByTestId('case-file-offline')).toHaveCount(0);
     await pickLines(page, V3_FIBS);
     await expectWin(page, 3);
-    // The Phase-1 strip no longer advertises fresh case files (they are live now).
-    await expect(page.getByTestId('win-soon-strip')).toContainText('COMING SOON: Mistake recap');
-    await expect(page.getByTestId('win-soon-strip')).not.toContainText('Fresh case files');
+    // Phase 3: no stubs left — the COMING SOON strip is gone and the mistake recap is mounted.
+    await expect(page.getByTestId('win-soon-strip')).toHaveCount(0);
+    await expect(page.getByTestId('win-screen')).not.toContainText('COMING SOON');
+    await expect(page.getByTestId('recap')).toHaveCount(1);
     expect(requests).toEqual([]);
   });
 
@@ -198,7 +199,7 @@ test.describe('Fresh case files · Fact or Fib', () => {
     // The seen list is on the device: after a reload, opening the cleared game is a replay
     // that sends both ids and gets a third, unseen case file.
     const saved = await page.evaluate(() => JSON.parse(window.localStorage.getItem('glitch.v1.state') ?? '{}') as { version: number; seenScenarios: Record<string, string[]> });
-    expect(saved.version).toBe(2);
+    expect(saved.version).toBe(3); // stored as v3 (Phase 3), seen list kept by the v2 → v3 migration
     expect(saved.seenScenarios.m1g2).toEqual([first.variationId, second.variationId]);
     served = page.waitForResponse(isNext);
     await page.reload();

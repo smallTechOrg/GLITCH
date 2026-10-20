@@ -4,10 +4,12 @@
 // pure functions in engine/session.ts; progress rewards go through state/actions.ts.
 // Phase 2: on a REPLAY of a cleared content game the frame asks features/variations for a
 // fresh case file (NOVA thinking while it loads, "NEW CASE FILE" tag, v3 fallback + note).
+// Phase 3: every accepted miss that carries a Mistake payload is recorded for this run
+// (recap), remembered on the device (features/memory) and offered to ASK NOVA WHY.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { GameId, ModuleId, Mood } from '../contracts/ids';
-import type { GameApi, PowerHandlers } from '../contracts/game';
+import type { GameApi, Mistake, PowerHandlers, SessionMistake } from '../contracts/game';
 import { Icon } from '../art/Icon';
 import { Scene } from '../art/Scene';
 import { Sprite } from '../art/Sprite';
@@ -17,7 +19,7 @@ import { GAMES } from '../games/registry';
 import { advanceTarget, heroOf, isLastOpenStep, isStepDone, isStepStartable } from '../engine/progression';
 import type { WinRewards } from '../engine/rewards';
 import {
-  WIN_LINE, applyMiss, applyPower, applyWin, canUsePower, commitPower, createSession, heartsLabel, isOver, powerLabel,
+  DEFAULT_MISS, WIN_LINE, applyMiss, applyPower, applyWin, canUsePower, commitPower, createSession, heartsLabel, isOver, powerLabel,
   START_HEARTS, type GameSession,
 } from '../engine/session';
 import { announce } from '../a11y/announce';
@@ -27,12 +29,15 @@ import { bobTransform, useStepAnimation } from '../a11y/useStepAnimation';
 import { recordPowerUse, startGame, winGame } from '../state/actions';
 import { useGlitchStore } from '../state/store';
 import { CaseFileBadge, CaseFileLoading, ScenarioGame, useCaseFile } from '../features/variations';
+import { AskNovaWhy, type Explanation } from '../features/tutor/AskNovaWhy';
+import { ASK_WINDOW_MS } from '../features/tutor/copy';
+import { MistakeRecap } from '../features/recap/MistakeRecap';
+import { onGameWon, rememberMistake } from '../features/memory';
 import { border, colors, fontSize, layout } from '../theme/tokens';
 import { Page } from '../ui/Page';
 import { PixelButton } from '../ui/PixelButton';
 import { PixelText } from '../ui/PixelText';
 import { SpeechBubble } from '../ui/SpeechBubble';
-import { StubBadge } from '../ui/StubBadge';
 import { Tag } from '../ui/Tag';
 import { toast } from '../ui/toast';
 import { GAME } from './copy';
@@ -51,6 +56,15 @@ interface Bubble {
   text: string;
   mood: Mood;
   v: number;
+}
+
+/** The run's latest recorded mistake, for the ask chip. */
+interface LatestMistake {
+  index: number; // position in this run's mistake list (component key)
+  seq: number; // frame-lifetime counter (chip-window timer identity)
+  mistake: SessionMistake;
+  bubbleV: number; // bubble version the miss produced; any later say/miss/win hides the chip
+  atMs: number;
 }
 
 interface WinState {
@@ -77,18 +91,65 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
     setSessionState(s);
   }, []);
   const [bubble, setBubble] = useState<Bubble>({ text: def.intro, mood: 'neutral', v: 0 });
+  const bubbleVRef = useRef(0);
   const handlersRef = useRef<PowerHandlers>({});
   const [shakeN, setShakeN] = useState(0);
   const [won, setWon] = useState<WinState | null>(null);
   const caseFile = useCaseFile(gameId);
   const file = caseFile.state.status === 'ready' ? caseFile.state.file : null;
+  const fileRef = useRef(file);
+  fileRef.current = file;
+
+  // Phase 3 run-scoped mistake state (cleared by restart()).
+  const mistakesRef = useRef<SessionMistake[]>([]);
+  const [mistakes, setMistakes] = useState<readonly SessionMistake[]>([]);
+  const [latest, setLatest] = useState<LatestMistake | null>(null);
+  const latestSeqRef = useRef(0);
+  const [askExpired, setAskExpired] = useState<number | null>(null);
+  const [explanations, setExplanations] = useState<Readonly<Record<string, Explanation>>>({});
 
   // Starting a game (and every retry/replay) marks its hero as played.
   useEffect(() => {
     startGame(hero, new Date());
   }, [run, hero]);
 
-  const say = useCallback((text: string, mood: Mood = 'neutral') => setBubble((b) => ({ text, mood, v: b.v + 1 })), []);
+  const say = useCallback((text: string, mood: Mood = 'neutral') => {
+    bubbleVRef.current += 1;
+    setBubble({ text, mood, v: bubbleVRef.current });
+  }, []);
+
+  // Accepted miss + payload → this run's list, device memory and the ask chip's latest mistake.
+  const recordMistake = useCallback(
+    (mistake: Mistake, message: string | undefined, shielded: boolean) => {
+      const f = fileRef.current;
+      const record: SessionMistake = {
+        ...mistake,
+        gameId,
+        variationId: f && f.kind === 'variation' ? f.variationId : 'v3',
+        message: message || DEFAULT_MISS,
+        shielded,
+        at: new Date().toISOString(),
+      };
+      const index = mistakesRef.current.length;
+      mistakesRef.current = [...mistakesRef.current, record];
+      setMistakes(mistakesRef.current);
+      rememberMistake(record);
+      latestSeqRef.current += 1;
+      setLatest({ index, seq: latestSeqRef.current, mistake: record, bubbleV: bubbleVRef.current, atMs: Date.now() });
+    },
+    [gameId],
+  );
+
+  const onExplained = useCallback((key: string, e: Explanation) => {
+    setExplanations((prev) => ({ ...prev, [key]: { text: e.text, tip: e.tip } }));
+  }, []);
+
+  // The chip window: at most ASK_WINDOW_MS after the latest mistake.
+  useEffect(() => {
+    if (!latest) return undefined;
+    const t = setTimeout(() => setAskExpired(latest.seq), Math.max(0, ASK_WINDOW_MS - (Date.now() - latest.atMs)));
+    return () => clearTimeout(t);
+  }, [latest]);
 
   const api = useMemo<GameApi>(() => {
     const myRun = run;
@@ -109,12 +170,14 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
       say(text: string, mood?: Mood) {
         if (live()) say(text, mood);
       },
-      miss(message?: string) {
+      miss(message?: string, mistake?: Mistake) {
         if (!live()) return;
+        const shielded = sessionRef.current.shield;
         const r = applyMiss(sessionRef.current, message);
         if (!r.line) return;
         setSession(r.session);
         say(r.line.text, r.line.mood);
+        if (mistake) recordMistake(mistake, message, shielded);
         if (r.shake) setShakeN((n) => n + 1);
         if (r.failed) announce(GAME.failAnnounce);
       },
@@ -125,6 +188,7 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
         setSession(r.session);
         const rewards = winGame(gameId, r.session.hearts, r.session.lost, new Date());
         setWon({ rewards, summary });
+        onGameWon(gameId, rewards.stars);
         say(WIN_LINE, 'good');
         announce(GAME.winAnnounce(rewards.stars));
       },
@@ -135,7 +199,7 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
         if (live()) toast(text);
       },
     };
-  }, [run, hero, gameId, say, setSession]);
+  }, [run, hero, gameId, say, setSession, recordMistake]);
 
   const pressPower = (): void => {
     const s = sessionRef.current;
@@ -156,7 +220,11 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
     handlersRef.current = {};
     setSession(createSession(gameId, hero));
     setWon(null);
-    setBubble((b) => ({ text: def.intro, mood: 'neutral', v: b.v + 1 }));
+    mistakesRef.current = [];
+    setMistakes([]);
+    setLatest(null);
+    setExplanations({});
+    say(def.intro, 'neutral');
     setRun(runRef.current);
   };
 
@@ -172,11 +240,16 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
     transform: [{ translateX: shake.interpolate({ inputRange: [0, 0.17, 0.33, 0.5, 0.67, 0.83, 1], outputRange: [0, -6, 6, -6, 6, -3, 0] }) }],
   };
 
-  // The Phase-1 ASK NOVA WHY stub sits under the bubble after a mistake (outside its live region).
+  // ASK NOVA WHY sits under the bubble (outside its live region) for the latest mistake.
+  const chipVisible = latest !== null && bubble.v === latest.bubbleV && askExpired !== latest.seq;
   const bubbleView = (
     <View style={narrow ? styles.sayNarrow : styles.say}>
       <SpeechBubble text={bubble.text} mood={bubble.mood} version={bubble.v} />
-      {bubble.mood === 'bad' ? <StubBadge testID="ask-nova-why-stub" label={GAME.askNovaWhy} style={styles.stub} /> : null}
+      {latest && latest.mistake.explain !== false ? (
+        <View style={styles.ask}>
+          <AskNovaWhy key={`${run}-${latest.index}`} mistake={latest.mistake} chipVisible={chipVisible} onExplained={onExplained} />
+        </View>
+      ) : null}
     </View>
   );
   const h = HEROES[hero];
@@ -229,9 +302,9 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
 
       <Animated.View testID="game-body" style={[styles.body, shakeStyle]}>
         {failed ? (
-          <FailView onRetry={restart} />
+          <FailView onRetry={restart} mistakes={mistakes} explanations={explanations} />
         ) : won ? (
-          <WinView gameId={gameId} mod={mod} win={won} onReplay={replay} />
+          <WinView gameId={gameId} mod={mod} win={won} onReplay={replay} mistakes={mistakes} explanations={explanations} />
         ) : !file ? (
           <CaseFileLoading />
         ) : (
@@ -254,12 +327,18 @@ function Bob({ children }: { children: React.ReactNode }): React.JSX.Element {
   return <Animated.View style={bobTransform(v, BOB_PX)}>{children}</Animated.View>;
 }
 
-function FailView({ onRetry }: { onRetry(): void }): React.JSX.Element {
+interface RecapData {
+  mistakes: readonly SessionMistake[];
+  explanations: Readonly<Record<string, Explanation>>;
+}
+
+function FailView({ onRetry, mistakes, explanations }: { onRetry(): void } & RecapData): React.JSX.Element {
   return (
     <View testID="fail-screen" style={styles.res}>
       <Icon name="heart0" scale={10} />
       <PixelText size={fontSize.h2} color={colors.no} bold accessibilityRole="header">{GAME.failTitle}</PixelText>
       <PixelText long size={fontSize.small} color={colors.mu} style={styles.center}>{GAME.failText}</PixelText>
+      <MistakeRecap mistakes={mistakes} explanations={explanations} />
       <View style={styles.buttons}>
         <PixelButton testID="fail-retry" variant="primary" label={GAME.retry} onPress={onRetry} />
         <PixelButton testID="fail-home" label={GAME.home} onPress={goHome} />
@@ -268,7 +347,9 @@ function FailView({ onRetry }: { onRetry(): void }): React.JSX.Element {
   );
 }
 
-function WinView({ gameId, mod, win, onReplay }: { gameId: GameId; mod: ModuleId; win: WinState; onReplay(): void }): React.JSX.Element {
+function WinView({
+  gameId, mod, win, onReplay, mistakes, explanations,
+}: { gameId: GameId; mod: ModuleId; win: WinState; onReplay(): void } & RecapData): React.JSX.Element {
   const lastStep = useGlitchStore((s) => isLastOpenStep(s, gameId));
   const { stars, gameXp, flawlessXp } = win.rewards;
   return (
@@ -292,6 +373,7 @@ function WinView({ gameId, mod, win, onReplay }: { gameId: GameId; mod: ModuleId
         {gameXp > 0 ? <Tag testID="win-xp-tag" label={GAME.xpTag(gameXp)} variant="good" /> : null}
         {flawlessXp > 0 ? <Tag testID="win-flawless-tag" label={GAME.flawlessTag(flawlessXp)} variant="good" /> : null}
       </View>
+      <MistakeRecap mistakes={mistakes} explanations={explanations} />
       <View style={styles.buttons}>
         <PixelButton
           testID="win-continue"
@@ -301,7 +383,6 @@ function WinView({ gameId, mod, win, onReplay }: { gameId: GameId; mod: ModuleId
         />
         <PixelButton testID="win-replay" label={GAME.replay} onPress={onReplay} />
       </View>
-      <StubBadge testID="win-soon-strip" label={GAME.soonStrip} style={styles.soon} />
     </View>
   );
 }
@@ -313,7 +394,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   say: { flex: 1, alignSelf: 'center' },
   sayNarrow: { alignSelf: 'stretch' },
-  stub: { marginTop: 8, backgroundColor: colors.deep },
+  ask: { marginTop: 8, alignSelf: 'flex-start' },
   hud: {
     flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, padding: 10,
     backgroundColor: colors.cd, borderWidth: border.width, borderTopWidth: 0, borderColor: colors.ln,
@@ -329,5 +410,4 @@ const styles = StyleSheet.create({
   reveal: { alignSelf: 'stretch', backgroundColor: colors.deep, borderWidth: border.thin, borderColor: colors.ac, padding: 12, gap: 6 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
-  soon: { alignSelf: 'center', marginTop: 6 },
 });

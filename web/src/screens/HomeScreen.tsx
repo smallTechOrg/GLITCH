@@ -12,6 +12,7 @@ import { MODULES } from '../content/modules';
 import { badgesEarned } from '../engine/badges';
 import { modulesDone, questBox } from '../engine/progression';
 import { levelOf, xpIntoLevel } from '../engine/xp';
+import { ReviewPanel } from '../features/memory/ReviewPanel';
 import { runDaily } from '../state/actions';
 import { useGlitchStore } from '../state/store';
 import { border, colors, fontSize } from '../theme/tokens';
@@ -59,6 +60,7 @@ export function HomeScreen(): React.JSX.Element {
       <View style={styles.energy}>
         <HomeEnergy />
       </View>
+      <ReviewPanel />
 
       <View testID="home-quest" style={styles.quest}>
         <Sprite id="n" scale={3} animate="bob" />

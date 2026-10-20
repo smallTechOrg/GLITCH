@@ -5,9 +5,10 @@ import {
   type BadgeId, type GameId, type HeroId, type ModuleId, type StepId,
 } from '../contracts/ids';
 import {
-  NICKNAME_MAX, PROMPT_HISTORY_MAX, SEEN_SCENARIOS_MAX, STATE_VERSION,
-  type LeverMap, type PersistedState, type PromptHistoryEntry, type PromptSource, type SeenScenarios,
+  MISTAKES_MAX, NICKNAME_MAX, PROMPT_HISTORY_MAX, SEEN_SCENARIOS_MAX, STATE_VERSION,
+  type LeverMap, type MistakeRecord, type PersistedState, type PromptHistoryEntry, type PromptSource, type SeenScenarios,
 } from '../contracts/state';
+import { isConcept } from '../content/concepts';
 
 export type MigrateResult = { ok: true; state: PersistedState; from: number } | { ok: false; error: string };
 
@@ -16,9 +17,15 @@ export function migrateV1toV2(s: Record<string, unknown>): Record<string, unknow
   return { ...s, version: 2, seenScenarios: {} };
 }
 
+/** v2 → v3 (Phase 3): additive — every v2 field kept, `mistakes` starts empty. */
+export function migrateV2toV3(s: Record<string, unknown>): Record<string, unknown> {
+  return { ...s, version: 3, mistakes: [] };
+}
+
 /** vN → vN+1 steps. */
 export const MIGRATIONS: Readonly<Record<number, (s: Record<string, unknown>) => Record<string, unknown>>> = {
   1: migrateV1toV2,
+  2: migrateV2toV3,
 };
 
 /** Variation ids are server-generated, content-derived (`<gameId>-<hash>`) and URL-safe — the
@@ -54,6 +61,7 @@ export function createInitialState(now: Date = new Date()): PersistedState {
     onceBonuses: {},
     promptHistory: [],
     seenScenarios: {},
+    mistakes: [],
   };
 }
 
@@ -74,6 +82,27 @@ export function cleanSeenScenarios(v: unknown): SeenScenarios {
     if (ids.length) out[g] = ids;
   }
   return out;
+}
+
+export const MISTAKE_ITEM_ID_RE = /^[A-Za-z0-9._-]{1,40}$/;
+export const MISTAKE_ANSWER_RE = /^[a-z_]{1,24}$/;
+
+/** spec/data.md → v3 MistakeRecord rules; null when any field fails. Unknown keys dropped. */
+export function cleanMistakeRecord(v: unknown): MistakeRecord | null {
+  if (!isObj(v)) return null;
+  const { gameId, variationId, itemId, answer, concept, shielded, at } = v;
+  if (!(GAME_IDS as readonly unknown[]).includes(gameId)) return null;
+  if (!(variationId === 'v3' || isVariationId(variationId))) return null;
+  if (typeof itemId !== 'string' || !MISTAKE_ITEM_ID_RE.test(itemId)) return null;
+  if (typeof answer !== 'string' || !MISTAKE_ANSWER_RE.test(answer)) return null;
+  if (!isConcept(concept) || typeof shielded !== 'boolean' || !isIso(at)) return null;
+  return { gameId: gameId as GameId, variationId, itemId, answer, concept, shielded, at };
+}
+
+/** Valid records only, newest first as stored, the newest MISTAKES_MAX kept. */
+export function cleanMistakes(v: unknown): MistakeRecord[] {
+  if (!Array.isArray(v)) return [];
+  return v.map(cleanMistakeRecord).filter((m): m is MistakeRecord => m !== null).slice(0, MISTAKES_MAX);
 }
 
 function trueSet<K extends string>(v: unknown, keys: readonly K[]): Partial<Record<K, true>> {
@@ -175,10 +204,11 @@ export function sanitizeState(raw: Record<string, unknown>, now: Date = new Date
     onceBonuses,
     promptHistory: history,
     seenScenarios: cleanSeenScenarios(raw.seenScenarios),
+    mistakes: cleanMistakes(raw.mistakes),
   };
 }
 
-/** Phase-1 name kept for callers/tests: the sanitizer accepts any v1/v2-shaped object. */
+/** Phase-1 name kept for callers/tests: the sanitizer accepts any v1/v2/v3-shaped object. */
 export const sanitizeV1 = sanitizeState;
 
 /**

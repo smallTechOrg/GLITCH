@@ -2,7 +2,7 @@
 // simulates hearts, shield and powers EXACTLY like the Game Frame (game-runtime.md, v3
 // lines 467–487). Games are tested against this; A1's real frame must behave the same.
 import type { HeroId, Mood, PowerKind } from '../contracts/ids';
-import type { GameApi, PowerHandlers } from '../contracts/game';
+import type { GameApi, Mistake, PowerHandlers } from '../contracts/game';
 import { HEROES } from '../content/heroes';
 
 export const NOTHING_TO_USE = 'NOTHING TO USE IT ON YET';
@@ -27,7 +27,10 @@ export interface SayCall {
 }
 
 export interface TestGameApi extends GameApi {
-  readonly calls: { say: SayCall[]; miss: (string | undefined)[]; win: (string | undefined)[]; toast: string[] };
+  /** `miss` = the messages of accepted misses (unchanged); `mistakes` runs parallel to it. */
+  readonly calls: { say: SayCall[]; miss: (string | undefined)[]; mistakes: (Mistake | undefined)[]; win: (string | undefined)[]; toast: string[] };
+  /** Accepted misses that carried a payload — the same rule the Game Frame records by. */
+  readonly recorded: { mistake: Mistake; shielded: boolean }[];
   readonly lost: number;
   readonly shield: boolean;
   readonly powerUses: number;
@@ -48,7 +51,8 @@ export function createTestGameApi(o: TestGameApiOptions = {}): TestGameApi {
   let status: 'playing' | 'won' | 'failed' = 'playing';
   let powers: PowerHandlers = {};
   const hero = o.hero ?? 'scout';
-  const calls: TestGameApi['calls'] = { say: [], miss: [], win: [], toast: [] };
+  const calls: TestGameApi['calls'] = { say: [], miss: [], mistakes: [], win: [], toast: [] };
+  const recorded: TestGameApi['recorded'] = [];
   const powersUsed: PowerKind[] = [];
 
   const api: TestGameApi = {
@@ -85,12 +89,17 @@ export function createTestGameApi(o: TestGameApiOptions = {}): TestGameApi {
     get powersUsed() {
       return powersUsed;
     },
+    get recorded() {
+      return recorded;
+    },
     say(text: string, mood: Mood = 'neutral') {
       calls.say.push({ text, mood });
     },
-    miss(message?: string) {
+    miss(message?: string, mistake?: Mistake) {
       if (status !== 'playing') return;
       calls.miss.push(message);
+      calls.mistakes.push(mistake);
+      if (mistake) recorded.push({ mistake, shielded: shield });
       if (shield) {
         shield = false;
         api.say(SHIELDED_PREFIX + (message ?? ''), 'good');

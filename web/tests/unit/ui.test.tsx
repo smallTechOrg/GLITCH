@@ -118,9 +118,10 @@ describe('MetricBar, ToggleTile, StubBadge', () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
+  // The shared stub look (no screen mounts it since Phase 3; kept for future labelled stubs).
   it('stubs are disabled, tagged SOON and hinted', async () => {
-    await renderWithProviders(<StubBadge label="ASK NOVA WHY" testID="ask-nova-why-stub" />);
-    const s = screen.getByTestId('ask-nova-why-stub');
+    await renderWithProviders(<StubBadge label="FUTURE FEATURE" testID="sample-stub" />);
+    const s = screen.getByTestId('sample-stub');
     expect(s.props.accessibilityState).toEqual({ disabled: true });
     expect(s.props.accessibilityHint).toBe(STUB_HINT);
     expect(s).toHaveTextContent(/SOON/);

@@ -1,11 +1,11 @@
 // On-device learner state: zustand + persist over AsyncStorage (localStorage on web).
-// Storage key `glitch.v1.state` holds exactly the current PersistedState (v2; spec/data.md).
+// Storage key `glitch.v1.state` holds exactly the current PersistedState (v3; spec/data.md).
 // Primitive actions only — A1's state/actions.ts composes rules on top of `patch`.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, type PersistStorage, type StorageValue } from 'zustand/middleware';
 import {
-  PROMPT_HISTORY_MAX, STATE_STORAGE_KEY, STATE_VERSION,
+  MISTAKES_MAX, PROMPT_HISTORY_MAX, STATE_STORAGE_KEY, STATE_VERSION,
   type GlitchStoreState, type PersistedState, type PromptHistoryEntry,
 } from '../contracts/state';
 import { GAME_IDS } from '../contracts/ids';
@@ -17,6 +17,7 @@ export const LOAD_ERROR_TOAST = "Couldn't read saved progress. Starting fresh.";
 const PERSISTED_KEYS = [
   'version', 'profile', 'settings', 'xp', 'streak', 'steps', 'stars', 'heroByModule',
   'lastHero', 'heroesPlayed', 'powersUsed', 'badges', 'onceBonuses', 'promptHistory', 'seenScenarios',
+  'mistakes',
 ] as const satisfies readonly (keyof PersistedState)[];
 
 /** The persisted slice of the store (no runtime flags, no functions). */
@@ -82,6 +83,7 @@ export const useGlitchStore = create<GlitchStoreState>()(
         const draft = clone(pickPersisted(get()));
         fn(draft);
         draft.version = STATE_VERSION;
+        if (Array.isArray(draft.mistakes) && draft.mistakes.length > MISTAKES_MAX) draft.mistakes = draft.mistakes.slice(0, MISTAKES_MAX);
         set(draft);
       },
 
@@ -100,6 +102,7 @@ export const useGlitchStore = create<GlitchStoreState>()(
       // createdAt) and the readable-font setting; clear everything else incl. prompt history.
       // The device id lives under its own key and is untouched; so is `seenScenarios`
       // (scenario-variations.md: never repeat a variation already seen on THIS device).
+      // `mistakes` (v3) is progress: it is cleared (fresh state → []).
       resetProgress: () => {
         const s = get();
         const fresh = createInitialState(new Date(s.profile.createdAt));

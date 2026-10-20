@@ -1,8 +1,9 @@
 // migrate.ts: pure validation + versioned migration from stored fixtures.
 import {
-  MIGRATIONS, addSeen, cleanHistoryEntry, cleanSeenScenarios, createInitialState, migrateState, migrateV1toV2, parseStored, sanitizeV1,
+  MIGRATIONS, addSeen, cleanHistoryEntry, cleanMistakeRecord, cleanMistakes, cleanSeenScenarios, createInitialState, migrateState,
+  migrateV1toV2, migrateV2toV3, parseStored, sanitizeState, sanitizeV1,
 } from '@/state/migrate';
-import type { PersistedStateV1, PersistedStateV2 } from '@/contracts/state';
+import { MISTAKES_MAX, STATE_VERSION, type MistakeRecord, type PersistedStateV1, type PersistedStateV2, type PersistedStateV3 } from '@/contracts/state';
 
 const NOW = new Date('2026-10-19T10:00:00.000Z');
 
@@ -30,16 +31,29 @@ const fixtureV1: PersistedStateV1 = {
 
 /** The v1 fixture after v1 → v2: every field kept, version 2, empty seen map. */
 const fixtureV2: PersistedStateV2 = { ...fixtureV1, version: 2, seenScenarios: {} };
+/** The v2 fixture after v2 → v3: every field kept, version 3, no mistakes. */
+const fixtureV3: PersistedStateV3 = { ...fixtureV2, version: 3, mistakes: [] };
+/** A stored v2 save from a device that has played case files. */
+const storedV2: PersistedStateV2 = { ...fixtureV2, seenScenarios: { m1g2: ['m1g2-0123456789ab'], m4g1: ['m4g1-aaaaaaaaaaaa'] } };
+const rec = (i: number, over: Partial<MistakeRecord> = {}): MistakeRecord => ({
+  gameId: 'm1g2', variationId: 'v3', itemId: `s${i % 6}`, answer: 'fib', concept: 'Machine learning', shielded: false,
+  at: new Date(Date.UTC(2026, 9, 19, 9, 0, i)).toISOString(), ...over,
+});
 
 describe('migrateState', () => {
-  it('migrates a stored v1 save to v2: every v1 field kept, seenScenarios starts empty', () => {
+  it('migrates a stored v1 save to v3: every v1 field kept, seenScenarios and mistakes start empty', () => {
     const r = migrateState(JSON.parse(JSON.stringify(fixtureV1)), NOW);
-    expect(r).toEqual({ ok: true, state: fixtureV2, from: 1 });
+    expect(r).toEqual({ ok: true, state: fixtureV3, from: 1 });
   });
 
-  it('keeps a valid v2 save unchanged', () => {
-    const v2: PersistedStateV2 = { ...fixtureV2, seenScenarios: { m1g2: ['a1b2', 'c3d4'], m4g1: ['z9'] } };
-    expect(migrateState(JSON.parse(JSON.stringify(v2)), NOW)).toEqual({ ok: true, state: v2, from: 2 });
+  it('migrates a stored v2 save to v3: every v2 field (incl. seenScenarios) kept, mistakes empty', () => {
+    const r = migrateState(JSON.parse(JSON.stringify(storedV2)), NOW);
+    expect(r).toEqual({ ok: true, state: { ...storedV2, version: 3, mistakes: [] }, from: 2 });
+  });
+
+  it('keeps a valid v3 save unchanged', () => {
+    const v3: PersistedStateV3 = { ...fixtureV3, seenScenarios: { m1g2: ['a1b2', 'c3d4'], m4g1: ['z9'] }, mistakes: [rec(1), rec(0, { gameId: 'm3g1', itemId: 'l4', answer: 'proxy', concept: 'Proxy variables', shielded: true })] };
+    expect(migrateState(JSON.parse(JSON.stringify(v3)), NOW)).toEqual({ ok: true, state: v3, from: 3 });
   });
 
   it('fills defaults for missing fields and drops invalid entries', () => {
@@ -80,13 +94,13 @@ describe('migrateState', () => {
     expect(migrateState(null)).toMatchObject({ ok: false });
     expect(migrateState([1, 2])).toMatchObject({ ok: false });
     expect(migrateState({ xp: 10 })).toMatchObject({ ok: false, error: expect.stringMatching(/version/) });
-    expect(migrateState({ version: 3 })).toMatchObject({ ok: false, error: expect.stringMatching(/newer/) });
+    expect(migrateState({ version: 4 })).toMatchObject({ ok: false, error: expect.stringMatching(/newer/) });
   });
 
   it('parseStored handles nothing stored, corrupt JSON and good JSON', () => {
     expect(parseStored(null)).toBeNull();
     expect(parseStored('{not json')).toMatchObject({ ok: false, error: expect.stringMatching(/JSON/) });
-    expect(parseStored(JSON.stringify(fixtureV1), NOW)).toMatchObject({ ok: true, state: fixtureV2 });
+    expect(parseStored(JSON.stringify(fixtureV1), NOW)).toMatchObject({ ok: true, state: fixtureV3 });
   });
 
   it('clamps nicknames to 20 characters and caps history at 50, newest first kept', () => {
@@ -106,7 +120,8 @@ describe('migrateState', () => {
   it('creates the documented fresh state', () => {
     const s = createInitialState(NOW);
     expect(s.seenScenarios).toEqual({});
-    expect(s).toMatchObject({ version: 2, xp: 0, lastHero: 'scout', profile: { nickname: null, onboarded: false }, streak: { current: 0, best: 0, lastPlayDay: null } });
+    expect(s.mistakes).toEqual([]);
+    expect(s).toMatchObject({ version: 3, xp: 0, lastHero: 'scout', profile: { nickname: null, onboarded: false }, streak: { current: 0, best: 0, lastPlayDay: null } });
   });
 });
 
@@ -152,5 +167,47 @@ describe('v1 → v2 (seenScenarios)', () => {
     expect(next).toHaveLength(100);
     expect(next[0]).toBe('v1');
     expect(next[99]).toBe('new');
+  });
+});
+
+describe('v2 → v3 (mistakes)', () => {
+  it('is a pure, additive step registered as MIGRATIONS[2]; STATE_VERSION is 3', () => {
+    const v2 = JSON.parse(JSON.stringify(storedV2)) as Record<string, unknown>;
+    const out = migrateV2toV3(v2);
+    expect(out).toEqual({ ...storedV2, version: 3, mistakes: [] });
+    expect(v2.version).toBe(2); // input untouched
+    expect('mistakes' in v2).toBe(false);
+    expect(MIGRATIONS[2]).toBe(migrateV2toV3);
+    expect(STATE_VERSION).toBe(3);
+  });
+
+  it('a v2 save carrying a stray mistakes key is reset to empty (v2 had none)', () => {
+    const r = migrateState({ ...JSON.parse(JSON.stringify(storedV2)), mistakes: [rec(0)] }, NOW);
+    expect(r).toMatchObject({ ok: true, state: { mistakes: [] } });
+  });
+
+  it('cleanMistakeRecord applies the spec/data.md rules and drops unknown keys (no text persisted)', () => {
+    expect(cleanMistakeRecord({ ...rec(0), itemText: 'secret text', message: 'x', answerLabel: 'FIB' })).toEqual(rec(0));
+    expect(cleanMistakeRecord(rec(0, { variationId: 'm1g2-0123456789ab' }))).not.toBeNull();
+    expect(cleanMistakeRecord(rec(0, { itemId: 'f1.b3' }))).not.toBeNull();
+    expect(cleanMistakeRecord(rec(0, { answer: 'false_alarms' }))).not.toBeNull();
+    const bad: Record<string, unknown>[] = [
+      { gameId: 'm9g9' }, { variationId: 'has space' }, { variationId: '' }, { variationId: 'x'.repeat(65) },
+      { itemId: '' }, { itemId: 'a b' }, { itemId: 'x'.repeat(41) }, { answer: 'FIB' }, { answer: 'x'.repeat(25) }, { answer: 'a-b' },
+      { concept: 'Magic' }, { shielded: 'no' }, { at: 'yesterday' },
+    ];
+    for (const b of bad) expect(cleanMistakeRecord({ ...rec(0), ...b })).toBeNull();
+    expect(cleanMistakeRecord(null)).toBeNull();
+    expect(cleanMistakeRecord([rec(0)])).toBeNull();
+  });
+
+  it('sanitize drops invalid records and keeps the newest 200 (newest first)', () => {
+    const many = Array.from({ length: 230 }, (_, i) => rec(i));
+    const withBad = [{ junk: true }, ...many.slice(0, 5), rec(0, { concept: 'Nope' as never }), ...many.slice(5)];
+    const s = sanitizeState({ ...JSON.parse(JSON.stringify(fixtureV3)), mistakes: withBad }, NOW);
+    expect(s.mistakes).toHaveLength(MISTAKES_MAX);
+    expect(s.mistakes[0]).toEqual(many[0]);
+    expect(s.mistakes[199]).toEqual(many[199]);
+    expect(cleanMistakes('not a list')).toEqual([]);
   });
 });

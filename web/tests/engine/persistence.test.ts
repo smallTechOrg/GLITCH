@@ -1,7 +1,7 @@
 // State survives a full reload (course-shell.md success criterion): complete a step through
 // the shell actions, reload from device storage, complete the next, reload, both present.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STATE_STORAGE_KEY } from '@/contracts/state';
+import { STATE_STORAGE_KEY, STATE_VERSION } from '@/contracts/state';
 import { chooseHero, completeOnboarding, finishStory, runDaily, winGame } from '@/state/actions';
 import { hydrateStore, resetHydrationForTests, resetStoreForTests, useGlitchStore } from '@/state/store';
 import { resetToasts } from '@/ui/toast';
@@ -46,7 +46,7 @@ describe('progress persistence', () => {
     expect(s.xp).toBe(20);
     expect(s.streak).toEqual({ current: 1, best: 1, lastPlayDay: '2026-10-20' });
     const raw = JSON.parse((await AsyncStorage.getItem(STATE_STORAGE_KEY)) ?? '{}') as { version?: number };
-    expect(raw.version).toBe(2);
+    expect(raw.version).toBe(STATE_VERSION);
   });
 
   it('a win (stars, once-bonus, badges) survives a reload, and a replay after reload grants no game XP', async () => {

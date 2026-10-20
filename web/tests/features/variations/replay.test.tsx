@@ -154,11 +154,11 @@ describe('replay after the clear', () => {
     expect(announcements().filter((a) => a === CASE_FILE.loadedAnnounce)).toHaveLength(1);
   });
 
-  it('the seen list survives a reload (persisted v2 state)', async () => {
+  it('the seen list survives a reload (persisted v3 state)', async () => {
     await open(M1G2_DONE);
     await settle();
     const raw = JSON.parse((await AsyncStorage.getItem(STATE_STORAGE_KEY)) ?? '{}') as { version: number; seenScenarios: unknown };
-    expect(raw.version).toBe(2);
+    expect(raw.version).toBe(3);
     expect(raw.seenScenarios).toEqual({ m1g2: ['m1g2-v1aaaa'] });
     // Cold start: wipe memory (this also writes a fresh state), put the saved text back, re-read.
     const disk = await AsyncStorage.getItem(STATE_STORAGE_KEY);
@@ -216,13 +216,13 @@ describe('fallback to the classic case file', () => {
   });
 });
 
-describe('win strip', () => {
-  it('no longer advertises fresh case files; Mistake recap stays a SOON stub', async () => {
+describe('win screen (Phase 3: no stubs left)', () => {
+  it('the COMING SOON strip is gone; the mistake recap is mounted in its place', async () => {
     await open(M1G2_OPEN);
     await winFibs([1, 3, 5]);
-    const strip = screen.getByTestId('win-soon-strip');
-    expect(strip).toHaveTextContent(/COMING SOON: Mistake recap/);
-    expect(strip).not.toHaveTextContent(/Fresh case files/);
-    expect(GAME.soonStrip).toBe('COMING SOON: Mistake recap');
+    expect(screen.queryByTestId('win-soon-strip')).toBeNull();
+    expect(screen.getByTestId('win-screen')).not.toHaveTextContent(/COMING SOON/);
+    expect(screen.getByTestId('recap')).toBeTruthy();
+    expect(GAME).not.toHaveProperty('soonStrip');
   });
 });

@@ -67,3 +67,44 @@ describe('createTestGameApi', () => {
     expect(api.over).toBe(true);
   });
 });
+
+describe('createTestGameApi · Phase 3 mistakes (same rule as the frame)', () => {
+  const m = {
+    itemId: 'e1', answer: 'ok', correct: 'spam', concept: 'Training data' as const,
+    itemText: 'WIN A FREE PHONE!!!', answerLabel: 'NOT SPAM', correctLabel: 'SPAM',
+  };
+
+  it('calls.mistakes runs parallel to calls.miss; recorded holds accepted payload misses only', () => {
+    const api = createTestGameApi();
+    api.miss('Wrong bin.', m);
+    api.miss('No payload.');
+    expect(api.calls.miss).toEqual(['Wrong bin.', 'No payload.']);
+    expect(api.calls.mistakes).toEqual([m, undefined]);
+    expect(api.recorded).toEqual([{ mistake: m, shielded: false }]);
+    expect(api.hearts).toBe(1); // behaviour of miss itself unchanged
+  });
+
+  it('a shielded payload miss is recorded with shielded: true', () => {
+    const api = createTestGameApi({ shield: true });
+    api.miss('Wrong bin.', m);
+    expect(api.recorded).toEqual([{ mistake: m, shielded: true }]);
+    expect(api.hearts).toBe(3);
+  });
+
+  it('misses after the game is over are ignored — not in calls, not recorded', () => {
+    const api = createTestGameApi();
+    api.win();
+    api.miss('late', m);
+    expect(api.calls.miss).toEqual([]);
+    expect(api.calls.mistakes).toEqual([]);
+    expect(api.recorded).toEqual([]);
+  });
+
+  it('powers never record a mistake (X-RAY auto-solve)', () => {
+    const api = createTestGameApi({ hero: 'scout' });
+    api.registerPowers({ scan: () => true });
+    expect(api.usePower()).toBe(true);
+    expect(api.recorded).toEqual([]);
+    expect(api.calls.mistakes).toEqual([]);
+  });
+});

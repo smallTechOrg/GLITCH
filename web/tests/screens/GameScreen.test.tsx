@@ -1,6 +1,8 @@
 // Game Frame: hearts, powers (2 uses, consumed only when they act), shield, speech bubble,
-// miss / out-of-hearts / win, stars + XP + once-bonuses, Phase-1 stubs (game-runtime.md).
-// The game registry is replaced by a tiny probe game so the frame is tested in isolation.
+// miss / out-of-hearts / win, stars + XP + once-bonuses (game-runtime.md), and the Phase-3
+// mistake recording + mount points (spec/architecture.md → Contracts → Phase 3).
+// The game registry is replaced by a tiny probe game, and the tutor / recap / memory mount
+// points by probes that expose the props the frame passes, so the frame is tested in isolation.
 import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import type { HeroId } from '@/contracts/ids';
@@ -17,6 +19,47 @@ import { setCaseFileClientForTests } from '@/features/variations';
 jest.mock('expo-router', () => ({
   router: { navigate: jest.fn(), replace: jest.fn(), push: jest.fn(), back: jest.fn() },
 }));
+
+const mockMistake = {
+  itemId: 's0', answer: 'fib', correct: 'true', concept: 'Machine learning' as const,
+  itemText: 'Labels are the right answers.', answerLabel: 'FIB', correctLabel: 'TRUE',
+};
+const mockMemory = { remembered: [] as unknown[], won: [] as unknown[][] };
+
+jest.mock('@/features/memory', () => ({
+  rememberMistake: (m: unknown) => {
+    mockMemory.remembered.push(m);
+  },
+  onGameWon: (...a: unknown[]) => {
+    mockMemory.won.push(a);
+  },
+}));
+
+jest.mock('@/features/tutor/AskNovaWhy', () => {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const React = require('react');
+  const { Pressable, Text } = require('react-native');
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  function AskNovaWhy(p: import('@/features/tutor/AskNovaWhy').AskNovaWhyProps) {
+    return React.createElement(
+      Pressable,
+      { testID: 'ask-probe', onPress: () => p.onExplained(`${p.mistake.itemId}|${p.mistake.answer}`, { text: 'Because.', tip: 'Look first.' }) },
+      React.createElement(Text, null, `chip ${p.chipVisible ? 'on' : 'off'} ${p.mistake.itemId} ${p.mistake.message}`),
+    );
+  }
+  return { AskNovaWhy };
+});
+
+jest.mock('@/features/recap/MistakeRecap', () => {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const React = require('react');
+  const { Text } = require('react-native');
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  function MistakeRecap(p: import('@/features/recap/MistakeRecap').MistakeRecapProps) {
+    return React.createElement(Text, { testID: 'recap' }, JSON.stringify({ n: p.mistakes.length, keys: p.mistakes.map((m) => `${m.itemId}|${m.answer}`), ex: p.explanations }));
+  }
+  return { MistakeRecap };
+});
 
 interface MockCtl {
   scan: boolean;
@@ -51,6 +94,9 @@ jest.mock('@/games/registry', () => {
       { testID: 'probe-game' },
       btn('probe-miss', () => api.miss('Wrong bin.')),
       btn('probe-miss-default', () => api.miss()),
+      btn('probe-miss-payload', () => api.miss('Wrong bin.', mockMistake)),
+      btn('probe-miss-payload-default', () => api.miss(undefined, { ...mockMistake, itemId: 's1' })),
+      btn('probe-miss-noexplain', () => api.miss('Weak prompt.', { ...mockMistake, itemId: 'fw.fw1', answer: 'weak', explain: false })),
       btn('probe-win', () => api.win('Examples teach patterns.')),
       btn('probe-say', () => api.say('Probe says hi.', 'good')),
       btn('probe-toast', () => api.toast('PROBE TOAST')),
@@ -82,6 +128,8 @@ beforeEach(() => {
   });
   setReducedMotionOverride(true);
   Object.assign(mockCtl, { scan: false, hint: false, undos: 0, mounts: 0, api: null });
+  mockMemory.remembered = [];
+  mockMemory.won = [];
   (router.navigate as jest.Mock).mockClear();
 });
 afterEach(() => {
@@ -112,6 +160,7 @@ describe('GameScreen · session start', () => {
     expect(screen.getByTestId('power-button')).toHaveTextContent(/x2/);
     expect(screen.queryByTestId('shield-indicator')).toBeNull();
     expect(screen.queryByTestId('ask-nova-why-stub')).toBeNull();
+    expect(screen.queryByTestId('ask-probe')).toBeNull();
     expect(screen.getByTestId('game-body')).toBeTruthy();
   });
 
@@ -169,16 +218,12 @@ describe('GameScreen · session start', () => {
 });
 
 describe('GameScreen · mistakes', () => {
-  it('a miss costs a heart, shows the message in a bad bubble and the ASK NOVA WHY stub', async () => {
+  it('a miss costs a heart and shows the message in a bad bubble; the Phase-1 SOON stub is gone', async () => {
     await open();
     await press('probe-miss');
     expect(label('hearts')).toBe('Hearts 2 of 3');
     expect(screen.getByTestId('say-bubble')).toHaveTextContent('Wrong bin.');
-    const stub = screen.getByTestId('ask-nova-why-stub');
-    expect(stub.props.accessibilityState).toEqual({ disabled: true });
-    expect(stub.props.accessibilityHint).toBe('Coming in a future update');
-    expect(stub).toHaveTextContent(/ASK NOVA WHY/);
-    expect(stub).toHaveTextContent(/SOON/);
+    expect(screen.queryByTestId('ask-nova-why-stub')).toBeNull();
     expect(screen.getByTestId('probe-hearts')).toHaveTextContent('api hearts 2 over no');
   });
 
@@ -288,7 +333,7 @@ describe('GameScreen · powers', () => {
 });
 
 describe('GameScreen · winning', () => {
-  it('first flawless win: 3 stars, +30 XP and FLAWLESS +25 tags, summary, stub strip, step done, bubble "Level clear!"', async () => {
+  it('first flawless win: 3 stars, +30 XP and FLAWLESS +25 tags, summary, recap (no stub strip), step done, bubble "Level clear!"', async () => {
     await open();
     const xp0 = useGlitchStore.getState().xp;
     await press('probe-win');
@@ -299,9 +344,10 @@ describe('GameScreen · winning', () => {
     expect(label('win-stars')).toBe('3 stars');
     expect(screen.getByTestId('win-xp-tag')).toHaveTextContent('+30 XP');
     expect(screen.getByTestId('win-flawless-tag')).toHaveTextContent('FLAWLESS +25');
-    const strip = screen.getByTestId('win-soon-strip');
-    expect(strip).toHaveTextContent(/COMING SOON: Mistake recap/);
-    expect(strip.props.accessibilityState).toEqual({ disabled: true });
+    expect(screen.queryByTestId('win-soon-strip')).toBeNull();
+    expect(win).not.toHaveTextContent(/COMING SOON/);
+    expect(screen.getByTestId('recap')).toHaveTextContent(/"n":0/);
+    expect(mockMemory.won).toEqual([['m1g1', 3]]);
     expect(screen.getByTestId('say-bubble')).toHaveTextContent('Level clear!');
     expect(screen.getByTestId('win-continue')).toHaveTextContent('Continue ▶');
     const s = useGlitchStore.getState();
@@ -394,3 +440,122 @@ describe('GameScreen · stale callbacks', () => {
 });
 
 afterEach(() => resetToasts()); // no toast timer outlives a test
+
+describe('GameScreen · Phase 3 mistake recording', () => {
+  const recap = (): { n: number; keys: string[]; ex: Record<string, unknown> } =>
+    JSON.parse(String(screen.getByTestId('recap').props.children)) as { n: number; keys: string[]; ex: Record<string, unknown> };
+
+  it('an accepted miss with a payload is recorded (v3, message, not shielded) and offered to ASK NOVA WHY', async () => {
+    await open();
+    const before = Date.now();
+    await press('probe-miss-payload');
+    expect(mockMemory.remembered).toHaveLength(1);
+    const rec = mockMemory.remembered[0] as Record<string, unknown>;
+    expect(rec).toMatchObject({ ...mockMistake, gameId: 'm1g1', variationId: 'v3', message: 'Wrong bin.', shielded: false });
+    expect(Date.parse(rec.at as string)).toBeGreaterThanOrEqual(before - 1000);
+    expect(screen.getByTestId('ask-probe')).toHaveTextContent('chip on s0 Wrong bin.');
+  });
+
+  it('no message → the record carries DEFAULT_MISS ("Not quite.")', async () => {
+    await open();
+    await press('probe-miss-payload-default');
+    expect(mockMemory.remembered[0]).toMatchObject({ itemId: 's1', message: 'Not quite.' });
+  });
+
+  it('a shielded miss is recorded with shielded: true and still offers the chip', async () => {
+    await open('guard');
+    await press('power-button');
+    await press('probe-miss-payload');
+    expect(label('hearts')).toBe('Hearts 3 of 3');
+    expect(screen.getByTestId('say-bubble')).toHaveTextContent('SHIELDED! Wrong bin.');
+    expect(mockMemory.remembered[0]).toMatchObject({ shielded: true, message: 'Wrong bin.' });
+    expect(screen.getByTestId('ask-probe')).toHaveTextContent(/chip on s0/);
+  });
+
+  it('a miss without a payload records nothing and mounts no chip', async () => {
+    await open();
+    await press('probe-miss');
+    expect(mockMemory.remembered).toHaveLength(0);
+    expect(screen.queryByTestId('ask-probe')).toBeNull();
+  });
+
+  it('a power auto-solve (X-RAY) never records a mistake', async () => {
+    mockCtl.scan = true;
+    await open('scout');
+    await press('power-button');
+    expect(label('power-button')).toBe('X-RAY power, 1 use left');
+    expect(mockMemory.remembered).toHaveLength(0);
+    expect(screen.queryByTestId('ask-probe')).toBeNull();
+  });
+
+  it('a miss after the game is over is ignored (not recorded)', async () => {
+    await open();
+    await press('probe-win');
+    await act(async () => {
+      mockCtl.api?.miss('late', mockMistake);
+    });
+    expect(mockMemory.remembered).toHaveLength(0);
+    expect(recap().n).toBe(0);
+  });
+
+  it('explain: false is recorded but never offered to ASK NOVA WHY', async () => {
+    await open();
+    await press('probe-miss-noexplain');
+    expect(mockMemory.remembered[0]).toMatchObject({ itemId: 'fw.fw1', explain: false });
+    expect(screen.queryByTestId('ask-probe')).toBeNull();
+  });
+
+  it('the chip hides as soon as the bubble changes (next say), the panel mount stays for the latest mistake', async () => {
+    await open();
+    await press('probe-miss-payload');
+    expect(screen.getByTestId('ask-probe')).toHaveTextContent(/chip on/);
+    await press('probe-say');
+    expect(screen.getByTestId('ask-probe')).toHaveTextContent(/chip off/);
+  });
+
+  it('the chip window closes after ASK_WINDOW_MS (10 s)', async () => {
+    jest.useFakeTimers();
+    try {
+      await open();
+      await press('probe-miss-payload');
+      expect(screen.getByTestId('ask-probe')).toHaveTextContent(/chip on/);
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(9_900);
+      });
+      expect(screen.getByTestId('ask-probe')).toHaveTextContent(/chip on/);
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(200);
+      });
+      expect(screen.getByTestId('ask-probe')).toHaveTextContent(/chip off/);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('every accepted payload miss reaches the fail-screen recap with the fetched explanations', async () => {
+    await open();
+    await press('probe-miss-payload');
+    await press('ask-probe'); // onExplained(s0|fib)
+    await press('probe-miss-payload-default');
+    await press('probe-miss');
+    expect(screen.getByTestId('fail-screen')).toBeTruthy();
+    const r = recap();
+    expect(r.n).toBe(2);
+    expect(r.keys).toEqual(['s0|fib', 's1|fib']);
+    expect(r.ex).toEqual({ 's0|fib': { text: 'Because.', tip: 'Look first.' } });
+  });
+
+  it('restart clears the run: mistakes, latest mistake (chip) and explanations', async () => {
+    await open();
+    await press('probe-miss-payload');
+    await press('ask-probe');
+    await press('probe-miss-payload');
+    await press('probe-miss-payload');
+    expect(recap().n).toBe(3);
+    await press('fail-retry');
+    expect(screen.queryByTestId('ask-probe')).toBeNull();
+    await press('probe-win');
+    expect(recap()).toEqual({ n: 0, keys: [], ex: {} });
+    expect(mockMemory.remembered).toHaveLength(3); // device memory is not a run list
+  });
+});

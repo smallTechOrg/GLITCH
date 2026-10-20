@@ -1,9 +1,9 @@
 // GLITCH API client. Every call resolves to ApiResult<T> and NEVER throws/rejects:
 // server envelopes pass through; network failure → NETWORK; abort after timeout → TIMEOUT.
 import {
-  CLIENT_TIMEOUT_MS, SCENARIO_TIMEOUT_MS,
+  CLIENT_TIMEOUT_MS, EXPLAIN_TIMEOUT_MS, SCENARIO_TIMEOUT_MS,
   type ApiErrorCode, type ApiResult, type ClientErr, type EnergyData, type EnergyDTO,
-  type FreewriteEvaluateData, type FreewriteEvaluateRequest, type HealthDTO, type ScenarioNextData,
+  type ExplainData, type ExplainRequest, type FreewriteEvaluateData, type FreewriteEvaluateRequest, type HealthDTO, type ScenarioNextData,
 } from '../contracts/api';
 import { GAME_IDS, LEVER_IDS, type GameId } from '../contracts/ids';
 import { getDeviceId } from '../state/deviceId';
@@ -83,6 +83,19 @@ export const isScenarioNext = (d: unknown): d is ScenarioNextData =>
   d.data !== undefined &&
   typeof d.cached === 'boolean';
 
+export const isExplainData = (d: unknown): d is ExplainData =>
+  isObj(d) &&
+  typeof d.text === 'string' &&
+  d.text.trim().length > 0 &&
+  typeof d.tip === 'string' &&
+  typeof d.cached === 'boolean' &&
+  (d.provider === 'fake' || d.provider === 'openrouter');
+
+/** The exact wire body: only the four closed-id keys (never free text, never extra fields). */
+export function explainBody(req: ExplainRequest): ExplainRequest {
+  return { gameId: req.gameId, variationId: req.variationId, itemId: req.itemId, answer: req.answer };
+}
+
 /** `/v1/scenarios/<gameId>/next?seen=a,b` — ids are URL-safe; each is still encoded. */
 export function scenarioNextPath(gameId: GameId, seen: readonly string[]): string {
   return `/v1/scenarios/${encodeURIComponent(gameId)}/next?seen=${seen.map(encodeURIComponent).join(',')}`;
@@ -93,6 +106,7 @@ export interface ApiClient {
   getEnergy(signal?: AbortSignal): Promise<ApiResult<EnergyData>>;
   evaluateFreewrite(req: FreewriteEvaluateRequest, opts?: RequestOptions): Promise<ApiResult<FreewriteEvaluateData>>;
   getNextScenario(gameId: GameId, seen: readonly string[], opts?: RequestOptions): Promise<ApiResult<ScenarioNextData>>;
+  explainMistake(req: ExplainRequest, opts?: RequestOptions): Promise<ApiResult<ExplainData>>;
 }
 
 export function createApiClient(o: ApiClientOptions = {}): ApiClient {
@@ -152,6 +166,8 @@ export function createApiClient(o: ApiClientOptions = {}): ApiClient {
     evaluateFreewrite: (req, opts = {}) => call('POST', '/v1/freewrite/evaluate', isFreewriteData, { ...opts, body: req, withDevice: true }),
     getNextScenario: (gameId, seen, opts = {}) =>
       call('GET', scenarioNextPath(gameId, seen), isScenarioNext, { ...opts, timeoutMs: opts.timeoutMs ?? SCENARIO_TIMEOUT_MS, withDevice: true }),
+    explainMistake: (req, opts = {}) =>
+      call('POST', '/v1/explain', isExplainData, { ...opts, timeoutMs: opts.timeoutMs ?? EXPLAIN_TIMEOUT_MS, body: explainBody(req), withDevice: true }),
   };
 }
 
@@ -173,6 +189,11 @@ export function evaluateFreewrite(
 /** GET /v1/scenarios/{gameId}/next — never throws; times out after SCENARIO_TIMEOUT_MS. */
 export function getNextScenario(gameId: GameId, seen: readonly string[], opts?: RequestOptions): Promise<ApiResult<ScenarioNextData>> {
   return defaultClient.getNextScenario(gameId, seen, opts);
+}
+
+/** POST /v1/explain (Phase 3) — never throws; times out after EXPLAIN_TIMEOUT_MS (8 s). */
+export function explainMistake(req: ExplainRequest, opts?: RequestOptions): Promise<ApiResult<ExplainData>> {
+  return defaultClient.explainMistake(req, opts);
 }
 
 /** GET /healthz — provider/model info (demo tag, E2E checks). */

@@ -101,3 +101,24 @@ export interface ScenarioNextData {
  * always answers — variation or error — before the client gives up.
  */
 export const SCENARIO_TIMEOUT_MS = 8000;
+
+/**
+ * POST /v1/explain (Phase 3, ask-nova-why.md). The body has exactly these four keys; the
+ * server resolves the item, the correct answer and the canned message itself.
+ */
+export interface ExplainRequest {
+  gameId: GameId;
+  variationId: string; // 'v3' or a served variation id
+  itemId: string;
+  answer: string;
+}
+
+export interface ExplainData {
+  text: string; // ≤ 60 words, plain text
+  tip: string; // ≤ 25 words, plain text
+  cached: boolean; // true = served from the global cache, no energy charged
+  provider: ProviderName;
+}
+
+/** Client wait for an explanation before the offline line + canned message is shown. */
+export const EXPLAIN_TIMEOUT_MS = 8000;
