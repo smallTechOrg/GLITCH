@@ -131,8 +131,9 @@ caps; Phase 2+ "generate once, cache forever".
 **Evaluation & monitoring (#19):** structured `request` / `llm_call` / `cap` logs
 (fields in `architecture.md` → Logging fields); `/v1/metrics` counters incl.
 `cache_hit_rate`; live tests in `api/tests/live/` act as the regression eval set: a
-fixture of 8 prompts (one-word, vague, 5-lever strong, 3-lever medium, injection attempt,
-non-English, 600-char, rude) with expected pass/fail bands — the gate asserts the strong
+fixture of 5 prompts (one-word, 5-lever strong, injection attempt, non-English, 600-char)
+with expected pass/fail bands, keeping each live run to 5 calls. (Vague, 3-lever medium and
+rude prompts are not yet in the live set — a later eval expansion, ~3 more calls per run.) — the gate asserts the strong
 ones pass, the one-word and injection ones fail, and every response survives every guard.
 
 ## Composition 2 — Generate-once content (Phases 2 and 4)

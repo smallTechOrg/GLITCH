@@ -11,7 +11,9 @@ gets wrong and make the call*. It is a rebuild of the single-file prototype
   server at all.
 - **`api/`** — a small Python FastAPI service (Cloud Run). It only guards the OpenRouter
   key, scores the learner's free-written prompt with one AI call, filters the AI output,
-  and enforces daily AI budgets. It never stores or logs learner text.
+  enforces daily AI budgets, and owns the generate-once caches: fresh case files (Phase 2)
+  and NOVA's mistake explanations (Phase 3), each made once and reused by every learner.
+  It never stores or logs learner text.
 
 The full spec is in `spec/`: start with `spec/roadmap.md`, then `spec/architecture.md`.
 

@@ -122,6 +122,7 @@ Web (build-time, `EXPO_PUBLIC_*` are inlined by the export):
 |---|---|---|
 | `EXPO_PUBLIC_GLITCH_API_URL` | `http://127.0.0.1:8787` | Production export sets the Cloud Run URL. |
 | `GLITCH_WEB_PORT` | `8090` | `serve-export.mjs` port. |
+| `GLITCH_WEB_HOST` | `127.0.0.1` | `serve-export.mjs` bind host; `0.0.0.0` to serve phones on the LAN (README → phones on Wi-Fi). |
 | `GLITCH_E2E_EXPECT_PROVIDER` | `fake` | E2E asserts `/healthz` reports this provider before running. |
 
 Test tooling (Playwright E2E, read by `web/e2e/helpers/config.ts` / `playwright.config.ts`;
@@ -172,7 +173,9 @@ GLITCH/                                  # repo root — config, spec, docs only
 │   │   ├── heuristics/levers.py         # lever cue rules (used by FakeProvider)
 │   │   ├── moderation/{filter.py,blocklist.txt}
 │   │   ├── caps/{store.py,budget.py}    # CounterStore Protocol + MemoryCounterStore ; EnergyService(clock)
-│   │   └── tools/{check_model.py,check_logs.py}
+│   │   ├── store/{base,local,gcs,fake_gcs}.py   # Phase 2 — BlobStore protocol, local dir / GCS backends, GCS fake for tests
+│   │   ├── scenarios/{pipeline,repository,prompts,fake_gen}.py, scenarios/schemas/   # Phase 2 — generate-once variations
+│   │   └── tools/{check_model,check_logs,build_bank,purge_invalid}.py   # build_bank P2, purge_invalid P3
 │   └── tests/
 │       ├── conftest.py                  # settings reset, app client fixture, frozen clock, live-key guard
 │       ├── unit/                        # pure: schemas, moderation, caps, heuristics, prompt loader, parser
@@ -205,7 +208,7 @@ GLITCH/                                  # repo root — config, spec, docs only
     │   ├── state/{store.ts,migrate.ts,deviceId.ts}               # scaffold
     │   ├── state/actions.ts                                      # A1
     │   ├── dnd/{sortEngine.ts,SortBoard.tsx,pickEngine.ts,PickList.tsx,useDrag.ts}
-    │   ├── ui/{PixelButton,Card,Chip,Bar,Tag,Terminal,Slider,ToggleTile,MetricBar,SpeechBubble,StatTile,StubBadge,EnergyMeter,ToastHost}.tsx, ui/toast.ts
+    │   ├── ui/{PixelButton,Card,Chip,Bar,Tag,Terminal,Slider,ToggleTile,MetricBar,SpeechBubble,StatTile,EnergyMeter,ToastHost,Page,PixelText,ScreenWipe,LoadingScreen}.tsx, ui/{toast.ts,focus.ts}
     │   ├── a11y/{useReducedMotion.ts,announce.ts,stepped.ts,useStepAnimation.ts}
     │   ├── api/{config.ts,client.ts}
     │   ├── games/registry.ts                                     # scaffold: imports games/<id>/index.ts ×9
@@ -217,10 +220,10 @@ GLITCH/                                  # repo root — config, spec, docs only
     │   ├── screens/**                                            # A1 (scaffold ships placeholders)
     │   └── testing/{testGameApi.ts,renderWithProviders.tsx}
     ├── tests/                           # jest: unit + component, outside src/
-    │   ├── unit/  engine/  art/  screens/  games/<id>/  features/freewrite/
+    │   ├── unit/  engine/  art/  screens/  games/<id>/  contracts/  features/{freewrite,variations,tutor,recap,memory}/
     └── e2e/                             # playwright
         ├── helpers/{fixtures.ts,flows.ts}   # fresh context, onboard(), skipStory(), sortByTap(), pickLines(), expectWin()
-        └── smoke, shell, module1..4, freewrite, journey .spec.ts
+        └── smoke, shell, module1..4, freewrite, journey, mobile, variations, tutor, recap .spec.ts
 ```
 
 > **Assumed:** tests live in `web/tests` + `web/e2e` and `api/tests` (outside each project's source dir) rather than one root `tests/`, because the two halves use different runtimes and lockfiles; this honours "tests outside the source package, tiers separated".
@@ -473,7 +476,8 @@ AI-generated data, not instructions).
   `Math.random()` inside `engine/` or `logic.ts`. v3's seeded `rnd(i)` is used for all
   procedural art.
 - Styling via `StyleSheet.create` + `theme/tokens.ts`; no hard-coded colours outside
-  `tokens.ts`/`palette.ts`.
+  `tokens.ts`/`palette.ts`. Exception: v3 game data copied verbatim (e.g. the Prompt Forge
+  slot colours in `games/m2g2/data.ts`) keeps v3's hex literals so parity tests can match v3.
 - Every interactive element: `accessibilityRole`, `accessibilityLabel`, a `testID` from
   `spec/ui.md` → Test IDs, min 44×44 touch target, visible focus ring on web.
 
