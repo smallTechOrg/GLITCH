@@ -24,6 +24,7 @@ header was sent.
 | `AI_INVALID_OUTPUT` | 502 | Output unparseable / failed schema or domain validation / duplicate of a seen scenario | true |
 | `MODERATED` | 502 | Output blocked by the safety filter | true |
 | `INTERNAL` | 500 | Anything unexpected | true |
+| `NO_CASE_FILE` | 404 | First-play draw (`?first=1`) landed on v3, or nothing is cached: play v3, no note | false |
 
 ## `GET /health` (alias `/healthz`)
 `/health` is canonical — Cloud Run's front end reserves `/healthz` and answers it with its own 404. `/healthz` stays for local tools and tests.
@@ -59,6 +60,12 @@ from Phase 2 every `GET /v1/scenarios/{gameId}/next` records one hit or one miss
 Header `X-Glitch-Device`. `gameId` ∈ `m1g1`, `m1g2`, `m3g1`, `m4g1`, `m4g2` (else
 `BAD_REQUEST`). `seen` = the device's `seenScenarios[gameId]`, comma-separated, ≤ 200 ids
 of `[A-Za-z0-9_-]{1,64}`; absent/empty = none seen (else `BAD_REQUEST`).
+
+`first=1` (a device's first play of the game): the server draws uniformly from the v3 case and
+the cached variations not in `seen`. It **never generates and never charges energy**. A drawn
+variation is the normal `200` (`cached: true`). Drawing v3, having nothing cached, or
+`GLITCH_FIRST_PLAY_RANDOM=false` answers `404 NO_CASE_FILE` (`retryable: false`, with
+`energy`), and the client plays v3 silently.
 
 Success `200`:
 ```json

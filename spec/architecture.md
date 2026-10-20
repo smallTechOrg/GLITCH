@@ -111,6 +111,7 @@ whitespace; the key is a `SecretStr`, never printed):
 | `GLITCH_LOG_LEVEL` | `INFO` | |
 | `GLITCH_LOG_FILE` | empty | If set, JSON lines also appended here (E2E sets `web/test-results/api.log`, or `web/test-results/<port>/api.log` when `GLITCH_E2E_API_PORT` ≠ 8787). |
 | `GLITCH_FAKE_LATENCY_MS` | `0` | Fake provider delay (tests only). |
+| `GLITCH_FIRST_PLAY_RANDOM` | `true` | First play of a content game draws uniformly from v3 + the cached unseen case files (`?first=1`; never generates, never charges). E2E sets `false`. |
 | `GLITCH_BLOB_BACKEND` *(Phase 2)* | `local` | `local` \| `gcs` (`store/local.py` / `store/gcs.py`, one `BlobStore` protocol in `store/base.py`). `GLITCH_ENV=prod` requires `gcs` (startup error otherwise). |
 | `GLITCH_CACHE_DIR` *(Phase 2)* | `api/.cache` | Local blob root (gitignored); a relative path resolves from the repo root. |
 | `GLITCH_GCS_BUCKET` *(Phase 2)* | — | Required when backend = `gcs`, hence in prod (startup error otherwise); auth = Application Default Credentials. |

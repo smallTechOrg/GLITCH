@@ -19,6 +19,7 @@ client plays v3.
 
 from __future__ import annotations
 
+import random
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -378,3 +379,39 @@ async def run_scenario(
         if s.reserved_day is not None:
             await release_reservation(s, energy)
     return s
+
+
+async def pick_first_play(
+    game_id: str,
+    seen_ids: frozenset[str] | set[str],
+    *,
+    repo: ScenarioRepository,
+    rng: random.Random | None = None,
+    request_id: str | None = None,
+) -> ScenarioResult | None:
+    """First play of a content game: a uniform draw over the classic v3 case + every cached,
+    unseen variation. ``None`` = play v3 (drawn, nothing cached, or the cache is unreadable).
+
+    Never generates and never charges energy — it only chooses among what already exists.
+    """
+    if game_id not in GAMES:
+        raise KeyError(f"unknown content game {game_id!r}")
+    ids: list[str] = []
+    try:
+        ids = await repo.unseen_ids(game_id, seen_ids)
+        draw = (rng or random).randrange(len(ids) + 1)  # len(ids) = the classic v3 case
+        variation = await repo.get(game_id, ids[draw]) if draw < len(ids) else None
+    except StoreError:
+        get_logger().warning("store_error", request_id=request_id, op="first_play", game_id=game_id)
+        variation = None
+    get_logger().info(
+        "first_play",
+        request_id=request_id,
+        game_id=game_id,
+        pool=len(ids) + 1,
+        outcome="variation" if variation is not None else "classic",
+    )
+    if variation is None:
+        return None
+    get_metrics().record_cache(True)
+    return ScenarioResult(variation.id, game_id, SCHEMA_VERSION, True, variation.data)

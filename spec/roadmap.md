@@ -24,9 +24,10 @@ and full accessibility.
 
 ## Core principles
 
-1. **v3 first, always.** The hand-authored v3 content is every learner's first
-   playthrough and the always-available fallback. The game never depends on the AI to be
-   playable.
+1. **v3 always available.** The hand-authored v3 content is the always-available fallback,
+   and the game never depends on the AI to be playable. A first playthrough draws at random
+   from v3 and the already-cached case files, with no AI call (changed 2026-10-20 at the
+   user's request; it was "v3 first, always").
 2. **Zero-token architecture.** AI tokens are spent only (a) to generate a new scenario
    variation ONCE, which is then reused by every learner forever; (b) by an offline bank
    script admins run to pre-generate variations; (c) for genuinely subjective feedback

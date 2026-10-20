@@ -24,6 +24,7 @@ ErrorCode = Literal[
     "AI_INVALID_OUTPUT",
     "MODERATED",
     "INTERNAL",
+    "NO_CASE_FILE",
 ]
 
 # code → (http status, retryable, default message)   — spec/api.md error table
@@ -37,6 +38,8 @@ ERROR_TABLE: dict[str, tuple[int, bool, str]] = {
     "AI_INVALID_OUTPUT": (502, True, "The AI answer could not be read."),
     "MODERATED": (502, True, "The AI answer was blocked by the safety filter."),
     "INTERNAL": (500, True, "Something went wrong on the server."),
+    # First-play draw landed on the classic v3 case (or nothing is cached): play v3, no note.
+    "NO_CASE_FILE": (404, False, "Play the classic case file."),
 }
 
 

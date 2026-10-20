@@ -26,8 +26,13 @@ Detective, m4g2 Confidence Court.
 | GLITCH server | next unseen variation (cache first, generate on a miss); client timeout **8 s** | network error, timeout, cap, or unparseable/seen variation → play the v3 scenario with "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE" |
 
 ## Business Rules
-- First playthrough of a game is always the v3 scenario; variations only on replay after
-  the game is cleared.
+- First playthrough of a content game (`?first=1`) draws uniformly at random from the v3
+  case + every cached variation the device has not seen. It never generates and never charges
+  energy. Drawing v3, nothing cached, or any failure (incl. a 3 s `FIRST_PLAY_TIMEOUT_MS`) →
+  v3 silently, with no offline note. A drawn variation is tagged and marked seen like a
+  replay's. `GLITCH_FIRST_PLAY_RANDOM=false` forces v3 (E2E). Retry after a fail keeps the
+  same case file. *(Changed 2026-10-20; previously "always v3".)*
+- A replay after the game is cleared asks for a fresh case file (below).
 - The server returns a cached variation not in the device's seen list; only if none is
   available does it generate one (one AI call for the whole scenario).
 - A served cached variation costs **no energy**; a generation costs 1 device energy and 1
@@ -76,7 +81,7 @@ Detective, m4g2 Confidence Court.
   never re-receives a variation it has already played.
 
 ## Success Criteria
-- [ ] First play serves v3; replay after clear requests a variation.
+- [ ] First play draws among v3 + cached unseen variations (never generates); replay after clear requests a variation.
 - [ ] A device never receives a variation id already in its seen list.
 - [ ] Second device requesting the same game receives the cached variation with
       `cache: hit` logged and no energy spent.

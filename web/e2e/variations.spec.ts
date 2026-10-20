@@ -52,10 +52,13 @@ async function seed(page: Page, opts: { m1g2Done?: boolean; version?: 1 | 2; see
 }
 
 /** Every scenario request the page makes. */
-function trackScenarioRequests(page: Page): string[] {
+/** Scenario request URLs: replays (fresh case file) by default, or first-play draws (`first=1`). */
+function trackScenarioRequests(page: Page, kind: 'replay' | 'first' = 'replay'): string[] {
   const urls: string[] = [];
   page.on('request', (r) => {
-    if (r.url().includes('/v1/scenarios/')) urls.push(r.url());
+    if (!r.url().includes('/v1/scenarios/')) return;
+    const isFirst = new URL(r.url()).searchParams.get('first') === '1';
+    if (isFirst === (kind === 'first')) urls.push(r.url());
   });
   return urls;
 }
@@ -147,8 +150,9 @@ async function replayOnSecondDevice(browser: Browser, expected: NonNullable<Serv
 
 
 test.describe('Fresh case files · Fact or Fib', () => {
-  test('a fresh device: first play is always the v3 case file and asks the server for nothing', async ({ page }) => {
+  test('a fresh device: first play draws once (v3 here: E2E sets GLITCH_FIRST_PLAY_RANDOM=false) and never asks for a fresh case file', async ({ page }) => {
     const requests = trackScenarioRequests(page);
+    const draws = trackScenarioRequests(page, 'first');
     await seed(page);
     await openFactOrFib(page);
     await expect(page.getByTestId('pick-line-0')).toHaveAttribute('aria-label', V3_LINE0);
@@ -161,6 +165,7 @@ test.describe('Fresh case files · Fact or Fib', () => {
     await expect(page.getByTestId('win-screen')).not.toContainText('COMING SOON');
     await expect(page.getByTestId('recap')).toHaveCount(1);
     expect(requests).toEqual([]);
+    expect(draws).toHaveLength(1);
   });
 
   test('clear it, replay → NEW CASE FILE with different lines; replay again → a different one; a second device gets the same one from the cache; no repeats after reload', async ({ page, browser }) => {

@@ -11,7 +11,9 @@ export type ApiErrorCode =
   | 'AI_UNAVAILABLE'
   | 'AI_INVALID_OUTPUT'
   | 'MODERATED'
-  | 'INTERNAL';
+  | 'INTERNAL'
+  /** First-play draw landed on the classic v3 case (or nothing is cached): play v3, no note. */
+  | 'NO_CASE_FILE';
 
 /** Client-side failures (no server envelope). */
 export type ClientErrorCode = 'NETWORK' | 'TIMEOUT';
@@ -101,6 +103,12 @@ export interface ScenarioNextData {
  * always answers — variation or error — before the client gives up.
  */
 export const SCENARIO_TIMEOUT_MS = 8000;
+
+/**
+ * First play (`?first=1`) only reads the cache, so it is fast; past this the classic v3 case
+ * plays silently rather than keeping a first-time player waiting on a cold server.
+ */
+export const FIRST_PLAY_TIMEOUT_MS = 3000;
 
 /**
  * POST /v1/explain (Phase 3, ask-nova-why.md). The body has exactly these four keys; the

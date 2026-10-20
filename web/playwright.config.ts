@@ -89,6 +89,8 @@ export default defineConfig({
         GLITCH_BLOB_BACKEND: 'local',
         GLITCH_CACHE_DIR: blobCache,
         GLITCH_BLOB_PREFIX: '',
+        // First plays stay the classic v3 case so specs can assert v3 content.
+        GLITCH_FIRST_PLAY_RANDOM: 'false',
       },
     },
     {

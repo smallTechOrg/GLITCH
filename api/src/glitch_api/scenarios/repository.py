@@ -142,6 +142,10 @@ class ScenarioRepository:
                 return variation
         return None
 
+    async def unseen_ids(self, game_id: str, seen: frozenset[str] | set[str]) -> list[str]:
+        """Ids of every cached variation not in ``seen``, oldest first."""
+        return [entry.id for entry in await self.index(game_id) if entry.id not in seen]
+
     async def find_by_hash(self, game_id: str, digest: str) -> str | None:
         for entry in await self.index(game_id):
             if entry.content_hash == digest:

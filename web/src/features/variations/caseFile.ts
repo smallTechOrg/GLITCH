@@ -1,9 +1,11 @@
 // Which case file a game session plays (scenario-variations.md → Business Rules):
-//  - first playthrough of a game on this device → always the classic v3 scenario (no request);
+//  - first playthrough of a content game on this device → the server draws at random among the
+//    classic v3 case and the cached unseen variations (`first`: never generates, never charges);
+//    v3 drawn / nothing cached / any failure → v3 silently (no note);
 //  - replay of a cleared content game → ask the server for the next unseen variation;
-//  - ANY failure (offline, timeout, cap, invalid/duplicate/seen variation) → v3 classic + an
-//    in-world note. Never throws.
-import type { ApiClient, RequestOptions } from '../../api/client';
+//  - ANY replay failure (offline, timeout, cap, invalid/duplicate/seen variation) → v3 classic +
+//    an in-world note. Never throws.
+import type { ApiClient, ScenarioRequestOptions } from '../../api/client';
 import { createApiClient } from '../../api/client';
 import type { GameId } from '../../contracts/ids';
 import type { PersistedState } from '../../contracts/state';
@@ -36,22 +38,23 @@ export function setCaseFileClientForTests(c: Pick<ApiClient, 'getNextScenario'>)
   };
 }
 
-/** Ask the server for the next unseen variation of `gameId`; v3 classic on any problem. */
-export async function fetchCaseFile(gameId: GameId, seen: readonly string[], opts: RequestOptions = {}): Promise<CaseFile> {
+/** Ask the server for a case file for `gameId`; v3 classic on any problem (silently on a first play). */
+export async function fetchCaseFile(gameId: GameId, seen: readonly string[], opts: ScenarioRequestOptions = {}): Promise<CaseFile> {
   if (!isContentGame(gameId)) return { kind: 'classic', note: false, reason: 'not-content' };
+  const fallback = (reason: ClassicReason): CaseFile => (opts.first ? CLASSIC_FIRST_PLAY : { kind: 'classic', note: true, reason });
   let r;
   try {
     r = await client.getNextScenario(gameId, seen, opts);
   } catch {
-    return { kind: 'classic', note: true, reason: 'unavailable' };
+    return fallback('unavailable');
   }
-  if (!r.ok) return { kind: 'classic', note: true, reason: 'unavailable' };
+  if (!r.ok) return fallback('unavailable');
   const d = r.data;
   // Defensive: the server must never return another game's, a malformed, or an already-seen id.
   if (d.gameId !== gameId || !isVariationId(d.variationId) || seen.includes(d.variationId)) {
-    return { kind: 'classic', note: true, reason: 'invalid' };
+    return fallback('invalid');
   }
   const game = parseScenario(gameId, d.data);
-  if (!game) return { kind: 'classic', note: true, reason: 'invalid' };
+  if (!game) return fallback('invalid');
   return { kind: 'variation', variationId: d.variationId, cached: d.cached, game };
 }

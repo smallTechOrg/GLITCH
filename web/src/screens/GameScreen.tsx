@@ -306,7 +306,7 @@ function GameFrame({ mod, gameId }: { mod: ModuleId; gameId: GameId }): React.JS
         ) : won ? (
           <WinView gameId={gameId} mod={mod} win={won} onReplay={replay} mistakes={mistakes} explanations={explanations} />
         ) : !file ? (
-          <CaseFileLoading />
+          <CaseFileLoading first={caseFile.state.status === 'loading' && caseFile.state.first} />
         ) : (
           <View style={styles.play}>
             <CaseFileBadge file={file} />

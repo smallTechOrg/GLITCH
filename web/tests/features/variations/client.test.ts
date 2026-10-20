@@ -8,6 +8,7 @@ describe('getNextScenario', () => {
   it('builds /v1/scenarios/<id>/next?seen=a,b (empty seen → seen=)', () => {
     expect(scenarioNextPath('m1g2', [])).toBe('/v1/scenarios/m1g2/next?seen=');
     expect(scenarioNextPath('m1g2', ['abc', 'd_e-f'])).toBe('/v1/scenarios/m1g2/next?seen=abc,d_e-f');
+    expect(scenarioNextPath('m1g2', ['abc'], true)).toBe('/v1/scenarios/m1g2/next?seen=abc&first=1');
     expect(scenarioNextPath('m1g2', ['a,b'])).toBe('/v1/scenarios/m1g2/next?seen=a%2Cb');
   });
 

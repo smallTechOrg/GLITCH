@@ -36,25 +36,26 @@ export function CaseFileBadge({ file }: { file: CaseFile }): React.JSX.Element |
  * brief's AI timeout; the server's whole scenario pipeline is capped at 7 s). No NEW CASE FILE
  * tag here: that tag is shown only once a variation is actually served.
  */
-export function CaseFileLoading(): React.JSX.Element {
+export function CaseFileLoading({ first = false }: { first?: boolean }): React.JSX.Element {
+  const label = first ? CASE_FILE.opening : CASE_FILE.fetching;
   const still = useReducedMotion();
   const dots = useFrameCycle(3, NOVA_THINK_FPS, !still);
   useEffect(() => {
-    announce(CASE_FILE.fetching);
-  }, []);
+    announce(label);
+  }, [label]);
   return (
     <View
       testID="case-file-loading"
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel={CASE_FILE.fetching}
+      accessibilityLabel={label}
       aria-busy
       style={styles.loading}
     >
       <View style={styles.row}>
         <Sprite id="n" frame="think" scale={3} />
         <View style={styles.text}>
-          <PixelText size={fontSize.small} color={colors.bl}>{CASE_FILE.fetching}</PixelText>
+          <PixelText size={fontSize.small} color={colors.bl}>{label}</PixelText>
           {still ? null : (
             <View style={styles.dots} accessible={false}>
               {[0, 1, 2].map((i) => (

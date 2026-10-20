@@ -64,7 +64,9 @@ game (`capabilities/scenario-variations.md`): while fetching, NOVA's thinking ca
 the client waits at most 8 s, `SCENARIO_TIMEOUT_MS`); only a served variation shows the
 "NEW CASE FILE" tag; any fallback (timeout, network error, cap, unparseable variation) shows
 the note "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE". The outcome is announced politely
-once per fetch ("New case file loaded" / the offline note). First plays show none of these.
+once per fetch ("New case file loaded" / the offline note). A first play shows "OPENING THE
+CASE FILE…" while it draws (≤ 3 s), the NEW CASE FILE tag only if it drew a cached variation,
+and never the offline note.
 
 **Home energy meter (Phase 2, REAL)** — `capabilities/durable-ai-budget.md`: Home shows the
 same `EnergyMeter` component as the free-write round, directly under the four stat tiles

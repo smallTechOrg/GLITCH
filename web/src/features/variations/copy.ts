@@ -6,6 +6,8 @@ export const CASE_FILE = {
   offlineNote: "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE",
   /** Shown while the next case file is fetched. */
   fetching: 'NOVA IS PULLING A NEW CASE FILE…',
+  /** Shown while a first play's case file is drawn (it may well be the classic one). */
+  opening: 'OPENING THE CASE FILE…',
   /** Polite screen-reader announcement once a variation is served (the offline note announces itself). */
   loadedAnnounce: 'New case file loaded',
 } as const;

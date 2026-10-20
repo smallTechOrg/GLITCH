@@ -1,4 +1,8 @@
-"""``GET /v1/scenarios/{gameId}/next?seen=<comma ids>`` — next unseen case file (spec/api.md).
+"""``GET /v1/scenarios/{gameId}/next?seen=<comma ids>[&first=1]`` — next unseen case file (spec/api.md).
+
+With ``first=1`` (a device's first play of the game) the server only draws at random among the
+classic v3 case and the cached unseen variations: no generation, no energy. Drawing v3 (or
+having nothing cached, or ``GLITCH_FIRST_PLAY_RANDOM=false``) answers ``NO_CASE_FILE``.
 
 Order: device header (``BAD_DEVICE``) → game id / ``seen`` (``BAD_REQUEST``, with energy) →
 ``run_scenario``: a cached variation not in ``seen`` (free) or ONE generation (1 device
@@ -19,7 +23,7 @@ from glitch_api.device import Device, require_device
 from glitch_api.envelope import ApiError, ok
 from glitch_api.llm.factory import provider_for
 from glitch_api.scenarios import repository_for
-from glitch_api.scenarios.pipeline import ScenarioOptions, run_scenario
+from glitch_api.scenarios.pipeline import ScenarioOptions, pick_first_play, run_scenario
 from glitch_api.scenarios.schemas import GAME_IDS
 
 router = APIRouter()
@@ -60,6 +64,20 @@ async def next_scenario(game_id: str, request: Request, device: Device = Depends
         seen = parse_seen(request.query_params.get("seen"))
     except ValueError:
         raise ApiError("BAD_REQUEST", message=BAD_SEEN_MESSAGE, energy=await energy.energy(device.hash)) from None
+
+    if request.query_params.get("first") == "1":
+        result = None
+        if request.app.state.settings.first_play_random:
+            provider = provider_for(request.app)
+            result = await pick_first_play(
+                game_id,
+                seen,
+                repo=repository_for(request.app, provider),
+                request_id=request.scope.get("state", {}).get("request_id"),
+            )
+        if result is None:
+            raise ApiError("NO_CASE_FILE", energy=await energy.energy(device.hash))
+        return ok(result.to_json(), energy=await energy.energy(device.hash))
 
     provider = provider_for(request.app)
     state = await run_scenario(

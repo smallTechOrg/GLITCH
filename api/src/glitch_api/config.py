@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_file: str | None = None
     fake_latency_ms: int = 0
+    # First play of a content game draws at random from v3 + the cached case files (no
+    # generation, no energy). E2E turns it off so first plays stay deterministic v3.
+    first_play_random: bool = True
     # Phase 2: shared blob store (scenario cache; durable counters from slice P2-D2).
     blob_backend: Literal["local", "gcs"] = "local"
     cache_dir: str = "api/.cache"  # relative paths resolve against the repo root

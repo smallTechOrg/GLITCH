@@ -84,7 +84,9 @@ export interface FakeScenarioServer {
   mode: ScenarioMode;
   /** Variation bank per game: [variationId, wire data]. */
   bank: Partial<Record<ContentGameId, [string, unknown][]>>;
-  requests: { url: string; gameId: string; seen: string[]; device: string | undefined }[];
+  /** How a first play (`?first=1`) draws: the classic v3 case (NO_CASE_FILE) or a cached variation. */
+  firstPlay: 'classic' | 'variation';
+  requests: { url: string; gameId: string; seen: string[]; first: boolean; device: string | undefined }[];
   client: ReturnType<typeof createApiClient>;
 }
 
@@ -108,6 +110,7 @@ export function createFakeScenarioServer(): FakeScenarioServer {
   for (const g of Object.keys(WIRE) as ContentGameId[]) bank[g] = [[`${g}-v1aaaa`, WIRE[g]], [`${g}-v2bbbb`, reversed(WIRE[g])]];
   const s: FakeScenarioServer = {
     mode: { kind: 'serve' },
+    firstPlay: 'classic',
     bank,
     requests: [],
     fetch: async (url, init) => {
@@ -118,7 +121,8 @@ export function createFakeScenarioServer(): FakeScenarioServer {
       const seenRaw = u.searchParams.get('seen') ?? '';
       const seen = seenRaw ? seenRaw.split(',') : [];
       const headers = (init?.headers ?? {}) as Record<string, string>;
-      s.requests.push({ url, gameId, seen, device: headers['X-Glitch-Device'] });
+      const first = u.searchParams.get('first') === '1';
+      s.requests.push({ url, gameId, seen, first, device: headers['X-Glitch-Device'] });
       const mode = s.mode;
       if (mode.kind === 'network') throw new TypeError('Failed to fetch');
       if (mode.kind === 'hang') {
@@ -127,6 +131,7 @@ export function createFakeScenarioServer(): FakeScenarioServer {
         });
       }
       if (mode.kind === 'error') return res(mode.status, { ok: false, error: { code: mode.code, message: mode.code, retryable: false } });
+      if (first && s.firstPlay === 'classic') return res(404, { ok: false, error: { code: 'NO_CASE_FILE', message: 'Play the classic case file.', retryable: false } });
       const list = s.bank[gameId as ContentGameId] ?? [];
       if (mode.kind === 'garbage') return res(200, { ok: true, data: { variationId: 'bad1', gameId, data: { sentences: [] }, cached: true } });
       const pick = mode.kind === 'repeat' ? list[0] : list.find(([id]) => !seen.includes(id));

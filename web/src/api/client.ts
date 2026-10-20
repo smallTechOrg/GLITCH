@@ -23,7 +23,7 @@ export interface RequestOptions {
 }
 
 const API_CODES: readonly ApiErrorCode[] = [
-  'BAD_REQUEST', 'BAD_DEVICE', 'CAP_DEVICE', 'CAP_GLOBAL', 'AI_TIMEOUT', 'AI_UNAVAILABLE', 'AI_INVALID_OUTPUT', 'MODERATED', 'INTERNAL',
+  'BAD_REQUEST', 'BAD_DEVICE', 'CAP_DEVICE', 'CAP_GLOBAL', 'AI_TIMEOUT', 'AI_UNAVAILABLE', 'AI_INVALID_OUTPUT', 'MODERATED', 'INTERNAL', 'NO_CASE_FILE',
 ];
 
 const clientErr = (code: ClientErr['error']['code'], message: string): ClientErr => ({ ok: false, error: { code, message, retryable: true } });
@@ -96,16 +96,21 @@ export function explainBody(req: ExplainRequest): ExplainRequest {
   return { gameId: req.gameId, variationId: req.variationId, itemId: req.itemId, answer: req.answer };
 }
 
-/** `/v1/scenarios/<gameId>/next?seen=a,b` — ids are URL-safe; each is still encoded. */
-export function scenarioNextPath(gameId: GameId, seen: readonly string[]): string {
-  return `/v1/scenarios/${encodeURIComponent(gameId)}/next?seen=${seen.map(encodeURIComponent).join(',')}`;
+/** `/v1/scenarios/<gameId>/next?seen=a,b[&first=1]` — ids are URL-safe; each is still encoded. */
+export function scenarioNextPath(gameId: GameId, seen: readonly string[], first = false): string {
+  return `/v1/scenarios/${encodeURIComponent(gameId)}/next?seen=${seen.map(encodeURIComponent).join(',')}${first ? '&first=1' : ''}`;
+}
+
+/** `first`: a device's first play — the server only draws among v3 + cached case files. */
+export interface ScenarioRequestOptions extends RequestOptions {
+  first?: boolean;
 }
 
 export interface ApiClient {
   getHealth(opts?: RequestOptions): Promise<ApiResult<HealthDTO>>;
   getEnergy(signal?: AbortSignal): Promise<ApiResult<EnergyData>>;
   evaluateFreewrite(req: FreewriteEvaluateRequest, opts?: RequestOptions): Promise<ApiResult<FreewriteEvaluateData>>;
-  getNextScenario(gameId: GameId, seen: readonly string[], opts?: RequestOptions): Promise<ApiResult<ScenarioNextData>>;
+  getNextScenario(gameId: GameId, seen: readonly string[], opts?: ScenarioRequestOptions): Promise<ApiResult<ScenarioNextData>>;
   explainMistake(req: ExplainRequest, opts?: RequestOptions): Promise<ApiResult<ExplainData>>;
 }
 
@@ -165,7 +170,7 @@ export function createApiClient(o: ApiClientOptions = {}): ApiClient {
     getEnergy: (signal) => call('GET', '/v1/energy', isEmptyObj, { signal, withDevice: true }),
     evaluateFreewrite: (req, opts = {}) => call('POST', '/v1/freewrite/evaluate', isFreewriteData, { ...opts, body: req, withDevice: true }),
     getNextScenario: (gameId, seen, opts = {}) =>
-      call('GET', scenarioNextPath(gameId, seen), isScenarioNext, { ...opts, timeoutMs: opts.timeoutMs ?? SCENARIO_TIMEOUT_MS, withDevice: true }),
+      call('GET', scenarioNextPath(gameId, seen, opts.first), isScenarioNext, { signal: opts.signal, timeoutMs: opts.timeoutMs ?? SCENARIO_TIMEOUT_MS, withDevice: true }),
     explainMistake: (req, opts = {}) =>
       call('POST', '/v1/explain', isExplainData, { ...opts, timeoutMs: opts.timeoutMs ?? EXPLAIN_TIMEOUT_MS, body: explainBody(req), withDevice: true }),
   };
@@ -187,7 +192,7 @@ export function evaluateFreewrite(
 }
 
 /** GET /v1/scenarios/{gameId}/next — never throws; times out after SCENARIO_TIMEOUT_MS. */
-export function getNextScenario(gameId: GameId, seen: readonly string[], opts?: RequestOptions): Promise<ApiResult<ScenarioNextData>> {
+export function getNextScenario(gameId: GameId, seen: readonly string[], opts?: ScenarioRequestOptions): Promise<ApiResult<ScenarioNextData>> {
   return defaultClient.getNextScenario(gameId, seen, opts);
 }
 

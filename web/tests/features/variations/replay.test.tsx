@@ -1,11 +1,12 @@
 // Replay vs first play through the real GameScreen + Fact or Fib (scenario-variations.md):
-// first play is always v3 with no request; a replay after the clear shows NOVA thinking, then a
+// a first play draws among v3 + cached case files (`first=1`; v3 or any failure → v3 silently);
+// a replay after the clear shows NOVA thinking, then a
 // "NEW CASE FILE" with different lines, recorded as seen (survives a reload); replay again →
 // a different one; backend down / timeout / everything seen → v3 classic + in-world note.
 import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { SCENARIO_TIMEOUT_MS } from '@/contracts/api';
+import { FIRST_PLAY_TIMEOUT_MS, SCENARIO_TIMEOUT_MS } from '@/contracts/api';
 import { STATE_STORAGE_KEY, type PersistedState } from '@/contracts/state';
 import { CASE_FILE, setCaseFileClientForTests } from '@/features/variations';
 import { SENTENCES } from '@/games/m1g2/data';
@@ -65,35 +66,66 @@ async function winFibs(indices: number[]): Promise<void> {
   expect(screen.getByTestId('win-screen')).toBeTruthy();
 }
 
+const replays = (): FakeScenarioServer['requests'] => srv.requests.filter((r) => !r.first);
+
 describe('first play', () => {
-  it('is always the v3 case file: no request, no tag, no note', async () => {
+  it('asks for a first-play draw; drawing the classic case plays v3 with no tag and no note', async () => {
     await open(M1G2_OPEN);
     await settle();
     expect(line0()).toBe(V3_LINE0);
     expect(screen.queryByTestId('case-file-tag')).toBeNull();
     expect(screen.queryByTestId('case-file-offline')).toBeNull();
-    expect(screen.queryByTestId('case-file-loading')).toBeNull();
-    expect(srv.requests).toHaveLength(0);
-    // A plain first play announces no case-file outcome.
+    expect(srv.requests.map((r) => [r.first, r.seen])).toEqual([[true, []]]);
+    expect(useGlitchStore.getState().seenScenarios.m1g2 ?? []).toEqual([]);
     expect(announcements()).not.toContain(CASE_FILE.loadedAnnounce);
     expect(announcements()).not.toContain(CASE_FILE.offlineNote);
   });
 
-  it('a fail + retry on first play stays v3 and never requests', async () => {
+  it('can draw a cached case file: tagged NEW CASE FILE and recorded as seen', async () => {
+    srv.firstPlay = 'variation';
     await open(M1G2_OPEN);
+    await settle();
+    expect(line0()).toBe(VAR_LINE0);
+    expect(screen.getByTestId('case-file-tag')).toHaveTextContent(CASE_FILE.newTag);
+    expect(useGlitchStore.getState().seenScenarios.m1g2).toEqual(['m1g2-v1aaaa']);
+  });
+
+  it('backend down on a first play → v3 silently (no offline note)', async () => {
+    srv.mode = { kind: 'network' };
+    await open(M1G2_OPEN);
+    await settle();
+    expect(line0()).toBe(V3_LINE0);
+    expect(screen.queryByTestId('case-file-offline')).toBeNull();
+  });
+
+  it('a slow server on a first play shows "opening", then v3 silently after FIRST_PLAY_TIMEOUT_MS', async () => {
+    srv.mode = { kind: 'hang' };
+    await open(M1G2_OPEN);
+    expect(screen.getByTestId('case-file-loading')).toHaveTextContent(new RegExp(CASE_FILE.opening));
+    await settle(FIRST_PLAY_TIMEOUT_MS);
+    expect(line0()).toBe(V3_LINE0);
+    expect(screen.queryByTestId('case-file-offline')).toBeNull();
+  });
+
+  it('a fail + retry on first play keeps the same case file (no new draw)', async () => {
+    srv.firstPlay = 'variation';
+    await open(M1G2_OPEN);
+    await settle();
+    expect(line0()).toBe(VAR_LINE0);
     for (const i of [0, 2, 4]) await press(`pick-line-${i}`);
     await press('fail-retry');
     await settle();
-    expect(line0()).toBe(V3_LINE0);
-    expect(srv.requests).toHaveLength(0);
+    expect(line0()).toBe(VAR_LINE0);
+    expect(srv.requests).toHaveLength(1);
   });
 });
 
 describe('replay after the clear', () => {
   it('v3 win → REPLAY → NOVA thinking → NEW CASE FILE with different lines, marked seen', async () => {
     await open(M1G2_OPEN);
+    await settle();
     await winFibs([1, 3, 5]);
-    expect(srv.requests).toHaveLength(0);
+    expect(replays()).toHaveLength(0);
     srv.mode = { kind: 'hang' };
     await press('win-replay');
     expect(screen.getByTestId('case-file-loading')).toHaveTextContent(new RegExp(CASE_FILE.fetching));
@@ -104,11 +136,12 @@ describe('replay after the clear', () => {
     expect(announcements()).not.toContain(CASE_FILE.loadedAnnounce);
     expect(screen.getByTestId('power-button').props.accessibilityState).toMatchObject({ disabled: true });
     expect(screen.queryByTestId('pick-line-0')).toBeNull();
-    expect(srv.requests).toHaveLength(1);
+    expect(replays()).toHaveLength(1);
   });
 
   it('serves the variation, tags it, records it as seen; replay again → a different one', async () => {
     await open(M1G2_OPEN);
+    await settle();
     await winFibs([1, 3, 5]);
     await press('win-replay');
     await settle();
@@ -116,7 +149,7 @@ describe('replay after the clear', () => {
     expect(announcements().at(-1)).toBe(CASE_FILE.loadedAnnounce);
     expect(line0()).toBe(VAR_LINE0);
     expect(line0()).not.toBe(V3_LINE0);
-    expect(srv.requests.map((r) => r.seen)).toEqual([[]]);
+    expect(replays().map((r) => r.seen)).toEqual([[]]);
     expect(useGlitchStore.getState().seenScenarios.m1g2).toEqual(['m1g2-v1aaaa']);
 
     // Variation scores against its own key (fibs 1, 3, 5) and grants no second game-clear XP.
@@ -127,7 +160,7 @@ describe('replay after the clear', () => {
 
     await press('win-replay');
     await settle();
-    expect(srv.requests.map((r) => r.seen)).toEqual([[], ['m1g2-v1aaaa']]);
+    expect(replays().map((r) => r.seen)).toEqual([[], ['m1g2-v1aaaa']]);
     expect(line0()).toBe(VAR2_LINE0);
     expect(screen.getByTestId('case-file-tag')).toBeTruthy();
     expect(useGlitchStore.getState().seenScenarios.m1g2).toEqual(['m1g2-v1aaaa', 'm1g2-v2bbbb']);
@@ -136,7 +169,7 @@ describe('replay after the clear', () => {
   it('opening an already-cleared game is a replay: requests on open with the stored seen list', async () => {
     await open({ ...M1G2_DONE, seenScenarios: { m1g2: ['m1g2-v1aaaa'] } });
     await settle();
-    expect(srv.requests[0]?.seen).toEqual(['m1g2-v1aaaa']);
+    expect(replays()[0]?.seen).toEqual(['m1g2-v1aaaa']);
     expect(line0()).toBe(VAR2_LINE0);
   });
 
@@ -149,7 +182,7 @@ describe('replay after the clear', () => {
     await press('fail-retry');
     await settle();
     expect(line0()).toBe(VAR_LINE0);
-    expect(srv.requests).toHaveLength(1);
+    expect(replays()).toHaveLength(1);
     // The same case file is announced once, not again on the retry.
     expect(announcements().filter((a) => a === CASE_FILE.loadedAnnounce)).toHaveLength(1);
   });
@@ -211,7 +244,7 @@ describe('fallback to the classic case file', () => {
       now: NOW,
     });
     await settle();
-    expect(srv.requests).toHaveLength(0);
+    expect(replays()).toHaveLength(0);
     expect(screen.queryByTestId('case-file-loading')).toBeNull();
   });
 });
@@ -219,6 +252,7 @@ describe('fallback to the classic case file', () => {
 describe('win screen (Phase 3: no stubs left)', () => {
   it('the COMING SOON strip is gone; the mistake recap is mounted in its place', async () => {
     await open(M1G2_OPEN);
+    await settle();
     await winFibs([1, 3, 5]);
     expect(screen.queryByTestId('win-soon-strip')).toBeNull();
     expect(screen.getByTestId('win-screen')).not.toHaveTextContent(/COMING SOON/);
