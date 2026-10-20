@@ -362,6 +362,20 @@ Production refuses to boot without a bucket: `GLITCH_ENV=prod` requires
 `GLITCH_BLOB_BACKEND=gcs` and `GLITCH_GCS_BUCKET`. Cloud Run's disk is wiped on every cold
 start, so a `local` backend would lose the energy counters and the caches.
 
+### Case-file stock (Cloud Run job `glitch-bank`)
+First plays draw at random from the original v3 case plus the saved case files, so a stocked
+bucket means varied first plays at zero AI cost. The job runs `tools/build_bank` in production
+with the API's image, settings and service account. It makes only the missing case files, up
+to `--count` per game, and stops at `--max-calls`:
+
+```bash
+gcloud run jobs execute glitch-bank --project ai-agent-boilerplate0 --region us-central1 --wait
+# change the target, e.g. 10 per game:
+gcloud run jobs update glitch-bank --project ai-agent-boilerplate0 --region us-central1 \
+  --args run,--frozen,--no-dev,python,-m,glitch_api.tools.build_bank,--game,all,--count,10,--max-calls,60
+```
+After a CI deploy, point the job at the new image (`--image …:<sha>`) if the case-file schema changed.
+
 ### Changing config
 CI deploys with `--image` only, so env vars, the secret mount and the service account
 stay as configured on the service. To change them:
