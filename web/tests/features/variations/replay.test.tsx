@@ -12,6 +12,7 @@ import { SENTENCES } from '@/games/m1g2/data';
 import { GameScreen } from '@/screens/GameScreen';
 import { GAME } from '@/screens/copy';
 import { setReducedMotionOverride } from '@/a11y/useReducedMotion';
+import { announcements, clearAnnouncements } from '@/a11y/announce';
 import { hydrateStore, resetHydrationForTests, resetStoreForTests, useGlitchStore } from '@/state/store';
 import { renderWithProviders } from '@/testing/renderWithProviders';
 import { createFakeScenarioServer, type FakeScenarioServer } from './fixtures';
@@ -36,6 +37,7 @@ let restore: () => void;
 beforeEach(() => {
   jest.useFakeTimers();
   setReducedMotionOverride(true);
+  clearAnnouncements();
   srv = createFakeScenarioServer();
   restore = setCaseFileClientForTests(srv.client);
 });
@@ -72,6 +74,9 @@ describe('first play', () => {
     expect(screen.queryByTestId('case-file-offline')).toBeNull();
     expect(screen.queryByTestId('case-file-loading')).toBeNull();
     expect(srv.requests).toHaveLength(0);
+    // A plain first play announces no case-file outcome.
+    expect(announcements()).not.toContain(CASE_FILE.loadedAnnounce);
+    expect(announcements()).not.toContain(CASE_FILE.offlineNote);
   });
 
   it('a fail + retry on first play stays v3 and never requests', async () => {
@@ -92,7 +97,11 @@ describe('replay after the clear', () => {
     srv.mode = { kind: 'hang' };
     await press('win-replay');
     expect(screen.getByTestId('case-file-loading')).toHaveTextContent(new RegExp(CASE_FILE.fetching));
-    expect(screen.getByTestId('case-file-loading')).toHaveTextContent(new RegExp(CASE_FILE.newTag));
+    // The NEW CASE FILE tag belongs to a served variation only — never to the loading card.
+    expect(screen.queryByText(CASE_FILE.newTag)).toBeNull();
+    expect(screen.queryByTestId('case-file-tag')).toBeNull();
+    expect(announcements()).toContain(CASE_FILE.fetching);
+    expect(announcements()).not.toContain(CASE_FILE.loadedAnnounce);
     expect(screen.getByTestId('power-button').props.accessibilityState).toMatchObject({ disabled: true });
     expect(screen.queryByTestId('pick-line-0')).toBeNull();
     expect(srv.requests).toHaveLength(1);
@@ -104,6 +113,7 @@ describe('replay after the clear', () => {
     await press('win-replay');
     await settle();
     expect(screen.getByTestId('case-file-tag')).toHaveTextContent(CASE_FILE.newTag);
+    expect(announcements().at(-1)).toBe(CASE_FILE.loadedAnnounce);
     expect(line0()).toBe(VAR_LINE0);
     expect(line0()).not.toBe(V3_LINE0);
     expect(srv.requests.map((r) => r.seen)).toEqual([[]]);
@@ -140,6 +150,8 @@ describe('replay after the clear', () => {
     await settle();
     expect(line0()).toBe(VAR_LINE0);
     expect(srv.requests).toHaveLength(1);
+    // The same case file is announced once, not again on the retry.
+    expect(announcements().filter((a) => a === CASE_FILE.loadedAnnounce)).toHaveLength(1);
   });
 
   it('the seen list survives a reload (persisted v2 state)', async () => {
@@ -166,6 +178,8 @@ describe('fallback to the classic case file', () => {
     await open(M1G2_DONE);
     await settle();
     expect(screen.getByTestId('case-file-offline')).toHaveTextContent(CASE_FILE.offlineNote);
+    expect(announcements().at(-1)).toBe(CASE_FILE.offlineNote);
+    expect(announcements()).not.toContain(CASE_FILE.loadedAnnounce);
     expect(screen.queryByTestId('case-file-tag')).toBeNull();
     expect(line0()).toBe(V3_LINE0);
     expect(useGlitchStore.getState().seenScenarios).toEqual({});
@@ -176,8 +190,10 @@ describe('fallback to the classic case file', () => {
     await open(M1G2_DONE);
     await settle(SCENARIO_TIMEOUT_MS - 1);
     expect(screen.getByTestId('case-file-loading')).toBeTruthy();
+    expect(announcements()).not.toContain(CASE_FILE.offlineNote);
     await settle(1);
     expect(screen.getByTestId('case-file-offline')).toBeTruthy();
+    expect(announcements().at(-1)).toBe(CASE_FILE.offlineNote);
     expect(line0()).toBe(V3_LINE0);
   });
 

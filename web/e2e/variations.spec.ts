@@ -10,6 +10,7 @@ import { expectWin, pickLines } from './helpers/flows';
 const V3_LINE0 = '1. Machine learning finds patterns in training data.';
 const V3_FIBS = [1, 3, 5];
 const NEW_TAG = 'NEW CASE FILE';
+const CASE_LOADED = 'New case file loaded';
 const OFFLINE_NOTE = "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE";
 
 interface ServedSentence {
@@ -82,6 +83,8 @@ async function expectNewCaseFile(page: Page, served: Promise<Response>): Promise
   expect(v.data.sentences.filter((s) => s.fib)).toHaveLength(3);
   await expect(page.getByTestId('case-file-tag')).toHaveText(NEW_TAG);
   await expect(page.getByTestId('case-file-offline')).toHaveCount(0);
+  // Polite screen-reader announcement of the outcome (aria-live region from a11y/announce).
+  await expect(page.getByTestId('a11y-announcer')).toHaveText(CASE_LOADED);
   await expect(page.getByTestId('pick-line-0')).toHaveAttribute('aria-label', `1. ${v.data.sentences[0]!.text}`);
   return v;
 }
@@ -152,6 +155,7 @@ test.describe('Fresh case files · Fact or Fib', () => {
     await seed(page, { m1g2Done: true, version: 2 });
     await openFactOrFib(page);
     await expect(page.getByTestId('case-file-offline')).toHaveText(OFFLINE_NOTE);
+    await expect(page.getByTestId('a11y-announcer')).toHaveText(OFFLINE_NOTE);
     await expect(page.getByTestId('case-file-tag')).toHaveCount(0);
     await expect(page.getByTestId('pick-line-0')).toHaveAttribute('aria-label', V3_LINE0);
     // The classic case still plays to a win.

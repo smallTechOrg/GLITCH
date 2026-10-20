@@ -95,7 +95,9 @@ export interface ScenarioNextData {
 }
 
 /**
- * Bounded wait for a fresh case file before the classic (v3) one is played. Longer than
- * CLIENT_TIMEOUT_MS because a cache miss is one full-scenario generation (+1 retry).
+ * Bounded wait for a fresh case file before the classic (v3) one is played: the brief's ~8 s
+ * AI timeout. The server caps the whole scenario pipeline (cache miss → generation, incl. its
+ * one regeneration) at 7 s (`deadline_s` in api/src/glitch_api/scenarios/pipeline.py), so it
+ * always answers — variation or error — before the client gives up.
  */
-export const SCENARIO_TIMEOUT_MS = 15000;
+export const SCENARIO_TIMEOUT_MS = 8000;

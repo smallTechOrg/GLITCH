@@ -72,9 +72,9 @@ which directory it is started from. The important ones:
 | `GLITCH_CORS_ORIGINS` | GH Pages + `127.0.0.1`/`localhost` on 8090 and 8092 | Exact origins, comma-separated |
 | `GLITCH_DEVICE_DAILY_CAP` / `GLITCH_GLOBAL_DAILY_CAP` | `10` / `500` | Daily AI budgets (UTC day) |
 | `GLITCH_LOG_FILE` | empty | Also append JSON log lines to this file |
-| `GLITCH_BLOB_BACKEND` | `local` | Where the shared scenario cache lives: `local` (a directory) or `gcs` (a bucket) |
+| `GLITCH_BLOB_BACKEND` | `local` | Where the energy counters and scenario cache live: `local` (a directory) or `gcs` (a bucket). `GLITCH_ENV=prod` requires `gcs` |
 | `GLITCH_CACHE_DIR` | `api/.cache` | Local cache directory (gitignored); relative paths are from the repo root |
-| `GLITCH_GCS_BUCKET` | empty | Bucket name, required when `GLITCH_BLOB_BACKEND=gcs` (uses Application Default Credentials) |
+| `GLITCH_GCS_BUCKET` | empty | Bucket name, required when `GLITCH_BLOB_BACKEND=gcs`, and so in prod (uses Application Default Credentials) |
 | `GLITCH_BLOB_PREFIX` | empty | Optional key prefix inside the cache dir / bucket |
 | `EXPO_PUBLIC_GLITCH_API_URL` | `http://127.0.0.1:8787` | Web build-time: the API base URL baked into the export |
 
@@ -138,7 +138,7 @@ cd api && uv run python -m glitch_api.tools.check_model
 # Without a key it prints "GLITCH_OPENROUTER_API_KEY missing — add it to .env" and exits non-zero.
 
 # observability + privacy check of the API log written by the E2E run
-# (Playwright starts the API with GLITCH_LOG_FILE=web/test-results/api.log;
+# (Playwright starts the API with GLITCH_LOG_FILE=web/test-results/api.log, or web/test-results/<port>/api.log when GLITCH_E2E_API_PORT is not 8787;
 #  run the web E2E tests below first)
 cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log
 # → LOGS OK …   (exits 1 and lists each failure otherwise)
@@ -274,19 +274,39 @@ export is built, so rebuild the export whenever it changes.
 **API → Cloud Run** (`api/Dockerfile`: `python:3.12-slim` + uv, listens on Cloud Run's
 `PORT`, one instance max):
 
+Production refuses to boot without a bucket: `GLITCH_ENV=prod` requires
+`GLITCH_BLOB_BACKEND=gcs` and `GLITCH_GCS_BUCKET`. Cloud Run's disk is wiped on every cold
+start, so a `local` backend would lose the energy counters and the scenario cache.
+
 ```bash
+PROJECT=<gcp-project-id>
+BUCKET=<bucket-name>   # globally unique, e.g. glitch-cache-<project-id>
+
 # once: store the key in Secret Manager
 printf %s "$KEY" | gcloud secrets create glitch-openrouter-key --data-file=-
 
+# once: create the private bucket for counters (caps/) + scenario cache
+gcloud storage buckets create "gs://$BUCKET" --project "$PROJECT" --location us-central1 --uniform-bucket-level-access --public-access-prevention
+
+# once: delete caps/ counter objects after 7 days (backs up the server's own pruning;
+# if you set GLITCH_BLOB_PREFIX=<p>, use "<p>/caps/" as the prefix)
+printf '%s' '{"rule":[{"action":{"type":"Delete"},"condition":{"age":7,"matchesPrefix":["caps/"]}}]}' > /tmp/glitch-lifecycle.json
+gcloud storage buckets update "gs://$BUCKET" --lifecycle-file=/tmp/glitch-lifecycle.json
+
+# once: let the Cloud Run service account read/write objects in the bucket
+# (default = the project's compute service account; use yours if you deploy with --service-account)
+SA="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')-compute@developer.gserviceaccount.com"
+gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member "serviceAccount:$SA" --role roles/storage.objectAdmin
+
 # deploy from the api/ directory
-cd api && gcloud run deploy glitch-api --source . --region us-central1 --allow-unauthenticated --max-instances 1 --set-env-vars GLITCH_ENV=prod,GLITCH_LLM_PROVIDER=openrouter,GLITCH_CORS_ORIGINS=https://smalltechorg.github.io --set-secrets GLITCH_OPENROUTER_API_KEY=glitch-openrouter-key:latest
+cd api && gcloud run deploy glitch-api --source . --region us-central1 --allow-unauthenticated --max-instances 1 --set-env-vars GLITCH_ENV=prod,GLITCH_LLM_PROVIDER=openrouter,GLITCH_BLOB_BACKEND=gcs,GLITCH_GCS_BUCKET=$BUCKET,GLITCH_CORS_ORIGINS=https://smalltechorg.github.io --set-secrets GLITCH_OPENROUTER_API_KEY=glitch-openrouter-key:latest
 
 # verify
 curl -sf https://<service-url>/healthz
 ```
 
-Also set a credit limit on the OpenRouter key. It is the hard spend backstop, because
-Phase 1 keeps the daily counters in memory and a cold start resets them.
+Also set a credit limit on the OpenRouter key. It is the hard spend backstop on top of
+the daily counters, which live in the bucket and survive cold starts.
 
 **Web → GitHub Pages** (`.github/workflows/pages.yml`):
 set the repository variable `GLITCH_API_URL` to the Cloud Run URL, set Pages source to

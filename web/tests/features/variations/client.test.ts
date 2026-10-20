@@ -47,16 +47,20 @@ describe('getNextScenario', () => {
     }
   });
 
-  it(`times out after SCENARIO_TIMEOUT_MS (${SCENARIO_TIMEOUT_MS} ms), not the 8 s free-write limit`, async () => {
+  it(`times out after SCENARIO_TIMEOUT_MS (${SCENARIO_TIMEOUT_MS} ms = the brief's ~8 s, above the server's 7 s pipeline deadline)`, async () => {
+    expect(SCENARIO_TIMEOUT_MS).toBe(8000);
     jest.useFakeTimers();
     try {
       const srv = createFakeScenarioServer();
       srv.mode = { kind: 'hang' };
       let result: unknown = null;
       void srv.client.getNextScenario('m1g2', []).then((r) => (result = r));
-      await jest.advanceTimersByTimeAsync(8000);
+      // The server gives up at 7 s and answers (fallback/error); the client must still be waiting then.
+      await jest.advanceTimersByTimeAsync(7000);
       expect(result).toBeNull();
-      await jest.advanceTimersByTimeAsync(SCENARIO_TIMEOUT_MS - 8000);
+      await jest.advanceTimersByTimeAsync(SCENARIO_TIMEOUT_MS - 7000 - 1);
+      expect(result).toBeNull();
+      await jest.advanceTimersByTimeAsync(1);
       expect(result).toMatchObject({ ok: false, error: { code: 'TIMEOUT' } });
     } finally {
       jest.useRealTimers();

@@ -23,7 +23,7 @@ Detective, m4g2 Confidence Court.
 ## External Calls
 | System | Operation | On Failure |
 |---|---|---|
-| GLITCH server | next unseen variation (cache first, generate on a miss); client timeout **15 s** | network error, timeout, cap, or unparseable/seen variation → play the v3 scenario with "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE" |
+| GLITCH server | next unseen variation (cache first, generate on a miss); client timeout **8 s** | network error, timeout, cap, or unparseable/seen variation → play the v3 scenario with "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE" |
 
 ## Business Rules
 - First playthrough of a game is always the v3 scenario; variations only on replay after
@@ -45,11 +45,15 @@ Detective, m4g2 Confidence Court.
   XP is once per game, not per variation).
 - If every cached variation has been seen and generation fails or energy is 0, the v3
   scenario is replayed.
-- The client waits at most **15 s** for the next variation (≥ the server's
-  `GLITCH_SCENARIO_TIMEOUT_S` 7 s generation budget plus one validator-fed
-  regeneration). While waiting it shows NOVA's thinking card ("NEW CASE FILE" tag +
-  "NOVA IS PULLING A NEW CASE FILE…"); on timeout it falls back to v3 with the offline
-  note above.
+- The client waits at most **8 s** for the next variation (the brief's ~8 s AI timeout;
+  `SCENARIO_TIMEOUT_MS` in `web/src/contracts/api.ts`). The server caps the whole scenario
+  pipeline — cache lookup, generation and its one validator-fed regeneration — at **7 s**
+  (`deadline_s` in `api/src/glitch_api/scenarios/pipeline.py`), so it always answers before
+  the client gives up. While waiting the client shows NOVA's thinking card ("NOVA IS PULLING
+  A NEW CASE FILE…", no tag — the "NEW CASE FILE" tag appears only once a variation is
+  served); on timeout it falls back to v3 with the offline note above.
+- When the case file resolves the outcome is announced politely to screen readers: "New case
+  file loaded" for a served variation, the offline note for a v3 fallback (once per fetch).
 - A variation the client cannot parse into the game's data shape is treated as a
   failure: v3 is played with the offline note and the id is not recorded as seen.
 - Reset progress keeps `seenScenarios` (see `spec/data.md`), so a reset device still
@@ -61,7 +65,7 @@ Detective, m4g2 Confidence Court.
 - [ ] Second device requesting the same game receives the cached variation with
       `cache: hit` logged and no energy spent.
 - [ ] Malformed generations (wrong fib count, unsafe text) are never cached.
-- [ ] A fetch that does not answer within 15 s, or answers with an unparseable
+- [ ] A fetch that does not answer within 8 s, or answers with an unparseable
       variation, plays v3 with "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE".
 - [ ] [live] One real generation per content game passes every validator and is playable
       end-to-end.

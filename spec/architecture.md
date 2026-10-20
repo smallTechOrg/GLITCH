@@ -75,7 +75,7 @@ Playwright against the exported build.
 | Blob cache (Phase 2+) | **google-cloud-storage**; `LocalBlobStore` for dev/tests, same protocol | Binding. |
 | Counters | Phase 1: in-memory `MemoryCounterStore`, Cloud Run `--max-instances 1`. Phase 2: `BlobCounterStore` (GCS, generation-match writes) | Simplest thing correct at beta scale (tens of students, one instance). Known gap: a cold start resets counters — the backstop is a per-key credit limit on the OpenRouter key; Phase 2 fixes it. |
 | Moderation | Deterministic output filter (word-list file + patterns), fail-closed | Zero tokens, zero extra calls, testable; output-only per brief. |
-| Deploy | `api/Dockerfile` → `gcloud run deploy --source api`; `.github/workflows/pages.yml` → GH Pages | Deploy story real from Phase 1; user runs it. |
+| Deploy | `api/Dockerfile` → `gcloud run deploy --source api` (prod: `GLITCH_BLOB_BACKEND=gcs` + bucket); `.github/workflows/pages.yml` → GH Pages | Deploy story real from Phase 1; user runs it. |
 
 > **Assumed:** default model `GLITCH_OPENROUTER_MODEL=google/gemini-2.5-flash-lite` (cheap ~$0.10/M in, $0.40/M out, supports structured JSON output), fallback `GLITCH_OPENROUTER_FALLBACK_MODELS=openai/gpt-4o-mini`. Both slugs MUST be verified live at the scaffold gate with `check_model`; if either fails, replace it with the cheapest current JSON-schema-capable slug from `GET https://openrouter.ai/api/v1/models` and update this line and `.env.example`.
 > **Assumed:** `:free` OpenRouter models are not the default because of strict request caps (≈50/day on low-credit accounts, 20/min) and inconsistent JSON-schema support, which would break a classroom of tens. Any `:free` slug can be set via env with no code change; set `GLITCH_OPENROUTER_RESPONSE_FORMAT=json_object` for models without schema support (the parser salvages JSON either way).
@@ -111,9 +111,9 @@ whitespace; the key is a `SecretStr`, never printed):
 | `GLITCH_LOG_LEVEL` | `INFO` | |
 | `GLITCH_LOG_FILE` | empty | If set, JSON lines also appended here (E2E sets `web/test-results/api.log`). |
 | `GLITCH_FAKE_LATENCY_MS` | `0` | Fake provider delay (tests only). |
-| `GLITCH_BLOB_BACKEND` *(Phase 2)* | `local` | `local` \| `gcs` (`store/local.py` / `store/gcs.py`, one `BlobStore` protocol in `store/base.py`). |
+| `GLITCH_BLOB_BACKEND` *(Phase 2)* | `local` | `local` \| `gcs` (`store/local.py` / `store/gcs.py`, one `BlobStore` protocol in `store/base.py`). `GLITCH_ENV=prod` requires `gcs` (startup error otherwise). |
 | `GLITCH_CACHE_DIR` *(Phase 2)* | `api/.cache` | Local blob root (gitignored); a relative path resolves from the repo root. |
-| `GLITCH_GCS_BUCKET` *(Phase 2)* | — | Required when backend = `gcs` (startup error otherwise); auth = Application Default Credentials. |
+| `GLITCH_GCS_BUCKET` *(Phase 2)* | — | Required when backend = `gcs`, hence in prod (startup error otherwise); auth = Application Default Credentials. |
 | `GLITCH_BLOB_PREFIX` *(Phase 2)* | empty | Optional key prefix inside the bucket / cache dir (e.g. `staging`; tests use a unique prefix). |
 
 Web (build-time, `EXPO_PUBLIC_*` are inlined by the export):
@@ -381,8 +381,18 @@ A2 lands.
 
 ## Deploy (user-run; documented in README)
 
-- API: `cd api && gcloud run deploy glitch-api --source . --region us-central1 --allow-unauthenticated --max-instances 1 --set-env-vars GLITCH_ENV=prod,GLITCH_LLM_PROVIDER=openrouter,GLITCH_CORS_ORIGINS=https://smalltechorg.github.io --set-secrets GLITCH_OPENROUTER_API_KEY=glitch-openrouter-key:latest`
-  (create the secret first: `printf %s "$KEY" | gcloud secrets create glitch-openrouter-key --data-file=-`).
+- API: `GLITCH_ENV=prod` requires `GLITCH_BLOB_BACKEND=gcs` + `GLITCH_GCS_BUCKET` (startup
+  `ConfigError` otherwise — Cloud Run's disk is ephemeral, so a local backend would lose the
+  counters and scenario cache on every cold start). One-time setup:
+  `gcloud storage buckets create gs://$BUCKET --location us-central1 --uniform-bucket-level-access --public-access-prevention`;
+  lifecycle rule deleting `caps/` objects older than 7 days
+  (`gcloud storage buckets update gs://$BUCKET --lifecycle-file=<file>` with
+  `{"rule":[{"action":{"type":"Delete"},"condition":{"age":7,"matchesPrefix":["caps/"]}}]}`;
+  prefix `<GLITCH_BLOB_PREFIX>/caps/` when a prefix is set);
+  grant the Cloud Run service account `roles/storage.objectAdmin` on the bucket
+  (`gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member serviceAccount:$SA --role roles/storage.objectAdmin`);
+  create the secret: `printf %s "$KEY" | gcloud secrets create glitch-openrouter-key --data-file=-`.
+  Deploy: `cd api && gcloud run deploy glitch-api --source . --region us-central1 --allow-unauthenticated --max-instances 1 --set-env-vars GLITCH_ENV=prod,GLITCH_LLM_PROVIDER=openrouter,GLITCH_BLOB_BACKEND=gcs,GLITCH_GCS_BUCKET=$BUCKET,GLITCH_CORS_ORIGINS=https://smalltechorg.github.io --set-secrets GLITCH_OPENROUTER_API_KEY=glitch-openrouter-key:latest`.
   Verify: `curl -sf https://<service-url>/healthz`.
 - Web: set repo variable `GLITCH_API_URL` to the Cloud Run URL, set Pages source to
   "GitHub Actions", push to `main` → `pages.yml` builds and deploys

@@ -2,9 +2,17 @@
 // on replay. The seen list is read at request time and the served id is recorded on load
 // (state v2 `seenScenarios`), so a device never gets the same variation twice.
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { announce } from '../../a11y/announce';
 import type { GameId } from '../../contracts/ids';
 import { useGlitchStore } from '../../state/store';
 import { CLASSIC_FIRST_PLAY, fetchCaseFile, wantsVariation, type CaseFile } from './caseFile';
+import { CASE_FILE } from './copy';
+
+/** Polite screen-reader line for a fetched case file (null when there is nothing to tell). */
+export function caseFileAnnouncement(file: CaseFile): string | null {
+  if (file.kind === 'variation') return CASE_FILE.loadedAnnounce;
+  return file.note ? CASE_FILE.offlineNote : null;
+}
 
 export type CaseFileState = { status: 'loading' } | { status: 'ready'; file: CaseFile };
 
@@ -39,6 +47,9 @@ export function useCaseFile(gameId: GameId): UseCaseFile {
       if (reqRef.current !== my) return; // superseded or unmounted
       if (file.kind === 'variation') useGlitchStore.getState().markScenarioSeen(gameId, file.variationId);
       setState({ status: 'ready', file });
+      // Announced once per fetch (a fail + retry keeps the file and does not re-announce).
+      const message = caseFileAnnouncement(file);
+      if (message) announce(message);
     });
   }, [gameId]);
 

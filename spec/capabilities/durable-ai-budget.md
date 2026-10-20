@@ -27,6 +27,9 @@ cold starts, and the learner sees AI energy on the home screen.
   writers never lose an increment.
 - Counter objects store only hashed device ids and counts — no learner data.
 - Objects older than 7 days may be deleted (lifecycle rule documented for the bucket).
+- Production (`GLITCH_ENV=prod`) must use the GCS backend (`GLITCH_BLOB_BACKEND=gcs` +
+  `GLITCH_GCS_BUCKET`); the server refuses to start otherwise, since a local directory on
+  Cloud Run is lost on every cold start.
 - Home shows the energy meter (same component as the free-write round).
 
 ## Success Criteria

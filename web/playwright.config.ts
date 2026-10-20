@@ -1,7 +1,7 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
-import { E2E_API_PORT, E2E_HOST, E2E_WEB_PORT, EXPECTED_PROVIDER, REUSE_SERVERS, WEB_DIST_ENV, WEB_ORIGIN, WEB_URL, API_URL } from './e2e/helpers/config';
+import { API_LOG, ARTEFACT_DIR, BLOB_CACHE_DIR, DEFAULT_E2E_API_PORT, E2E_API_PORT, E2E_HOST, E2E_WEB_PORT, EXPECTED_PROVIDER, REUSE_SERVERS, WEB_DIST_ENV, WEB_ORIGIN, WEB_URL, API_URL } from './e2e/helpers/config';
 
 /**
  * E2E against the static export (web/dist) served under /GLITCH/ exactly like GitHub Pages,
@@ -14,38 +14,43 @@ import { E2E_API_PORT, E2E_HOST, E2E_WEB_PORT, EXPECTED_PROVIDER, REUSE_SERVERS,
  * GLITCH_E2E_EXPECT_PROVIDER (default `fake`) selects the backend provider; the global setup
  * asserts /healthz reports it. Servers are never reused (unless GLITCH_E2E_REUSE_SERVERS=1)
  * so a port already taken fails the run instead of silently testing someone else's server.
- * Backend JSON logs go to web/test-results/api.log (read by check_logs).
+ * Backend JSON logs go to web/test-results/api.log (read by check_logs) on the default API
+ * port 8787, and to web/test-results/<apiPort>/api.log on any other port — likewise the blob
+ * cache and Playwright output — so concurrent runs on different ports never wipe each other.
  */
 const provider = EXPECTED_PROVIDER;
-const apiLog = resolve(__dirname, 'test-results', 'api.log');
+const apiLog = API_LOG;
 // Phase 2: the E2E backend gets its OWN local blob store (scenario cache), fresh per run, so a
 // run never reads or writes the cache of a dev server (default api/.cache) and every run starts
 // with an empty cache (first replay = generation, later devices = cache hits).
-const blobCache = resolve(__dirname, 'test-results', 'blob-cache');
-mkdirSync(resolve(__dirname, 'test-results'), { recursive: true });
+const blobCache = BLOB_CACHE_DIR;
+mkdirSync(ARTEFACT_DIR, { recursive: true });
 // Fresh api.log per run so check_logs judges only the latest run. The config is evaluated by
 // the runner BEFORE the webServers start (globalSetup runs after them, too late), and again in
 // every worker process — the env flag (inherited by workers) makes only the first load truncate.
-if (!process.env.GLITCH_E2E_LOG_TRUNCATED) {
+// The flag is per API port so a nested/other-port run in the same env still truncates its own.
+const truncatedFlag = `GLITCH_E2E_LOG_TRUNCATED_${E2E_API_PORT}`;
+if (!process.env[truncatedFlag]) {
   writeFileSync(apiLog, '');
   rmSync(blobCache, { recursive: true, force: true });
   mkdirSync(blobCache, { recursive: true });
-  process.env.GLITCH_E2E_LOG_TRUNCATED = '1';
+  process.env[truncatedFlag] = '1';
 }
 
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.ts',
   globalSetup: './e2e/helpers/globalSetup.ts',
-  // Playwright wipes outputDir on start; keep it below test-results so api.log survives.
-  outputDir: './test-results/playwright',
+  // Playwright wipes outputDir on start; keep it below the artefact dir so api.log survives.
+  outputDir: `./${relative(__dirname, resolve(ARTEFACT_DIR, 'playwright'))}`,
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: 0,
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
+  // The HTML report is per port too (default: playwright-report; else playwright-report/<apiPort>).
+  reporter: [['list'], ['html', { outputFolder: E2E_API_PORT === DEFAULT_E2E_API_PORT ? 'playwright-report' : `playwright-report/${E2E_API_PORT}`, open: 'never' }]],
   use: {
     baseURL: WEB_URL,
     trace: 'retain-on-failure',

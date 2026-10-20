@@ -49,7 +49,9 @@ Random UUID v4 created on first launch; never reset by Reset progress; sent only
 - Toast queue, cutscene position, sort/pick board state, free-write draft.
 
 ### Later versions
-- v2 (Phase 2): `seenScenarios: { [GameId]: variationId[] }` (max 100 per game).
+- v2 (Phase 2): `seenScenarios: { [GameId]: variationId[] }` (max 100 per game). Kept by
+  Reset progress (with settings and the device id), so a reset device never re-receives a
+  variation it has played.
 - v3 (Phase 3): `mistakes: MistakeRecord[]` (game, variation, item, answer, concept, at;
   max 200).
 - v4 (Phase 4): seen ids for forges, goals, simulations, stories (same map).

@@ -13,7 +13,10 @@ import { Tag } from '../../ui/Tag';
 import type { CaseFile } from './caseFile';
 import { CASE_FILE } from './copy';
 
-/** Tag/note for the case file in play (nothing for a plain first play). */
+/**
+ * Tag/note for the case file in play (nothing for a plain first play). The outcome is announced
+ * to screen readers by useCaseFile when the fetch resolves (once per fetch, not per remount).
+ */
 export function CaseFileBadge({ file }: { file: CaseFile }): React.JSX.Element | null {
   if (file.kind === 'variation') {
     return <Tag testID="case-file-tag" label={CASE_FILE.newTag} variant="soon" />;
@@ -28,7 +31,11 @@ export function CaseFileBadge({ file }: { file: CaseFile }): React.JSX.Element |
   return null;
 }
 
-/** NOVA thinking while the next case file is fetched (bounded by SCENARIO_TIMEOUT_MS). */
+/**
+ * NOVA thinking while the next case file is fetched — bounded by SCENARIO_TIMEOUT_MS (8 s, the
+ * brief's AI timeout; the server's whole scenario pipeline is capped at 7 s). No NEW CASE FILE
+ * tag here: that tag is shown only once a variation is actually served.
+ */
 export function CaseFileLoading(): React.JSX.Element {
   const still = useReducedMotion();
   const dots = useFrameCycle(3, NOVA_THINK_FPS, !still);
@@ -44,7 +51,6 @@ export function CaseFileLoading(): React.JSX.Element {
       aria-busy
       style={styles.loading}
     >
-      <Tag label={CASE_FILE.newTag} variant="soon" />
       <View style={styles.row}>
         <Sprite id="n" frame="think" scale={3} />
         <View style={styles.text}>

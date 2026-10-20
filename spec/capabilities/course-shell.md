@@ -131,7 +131,8 @@ heroes/NPCs 209–222; screen wipe `go()` 293; top bar/toasts 295–301. The v3 
   plain readable font at ≥16 px); privacy note "Everything saves on this device. NOVA's
   server never keeps what you type."; "Reset progress" needs a second tap ("Tap again to
   erase XP, badges and progress"). Reset keeps streak, best, last-play day, nickname,
-  readable-font setting and device id; clears everything else including prompt history.
+  readable-font setting, device id and `seenScenarios` (so no variation is ever re-served);
+  clears everything else including prompt history.
 
 > **Assumed:** a Settings screen replaces v3's LOG OUT; the readable-font toggle is added for accessibility; reset also clears prompt history.
 
