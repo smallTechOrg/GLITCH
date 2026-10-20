@@ -9,8 +9,9 @@ OPTIONS`; allowed header `Content-Type, X-Glitch-Device`.
 { "ok": true,  "data": { … }, "energy": { "remaining": 9, "limit": 10, "resetsAt": "2026-10-20T00:00:00Z" } }
 { "ok": false, "error": { "code": "CAP_DEVICE", "message": "…", "retryable": false }, "energy": { … } }
 ```
-`energy` is present on `/v1/energy`, `/v1/freewrite/evaluate` and
-`/v1/scenarios/{gameId}/next` responses whenever a valid device header was sent.
+`energy` is present on `/v1/energy`, `/v1/freewrite/evaluate`,
+`/v1/scenarios/{gameId}/next` and (Phase 3) `/v1/explain` responses whenever a valid device
+header was sent.
 
 | Code | HTTP | When | retryable |
 |---|---|---|---|
@@ -150,6 +151,59 @@ at least one TRUST with confidence < 80 and at least one VERIFY with confidence 
 statement 8–80 chars (all different), evidence 3–60 chars. v3 mapping:
 `[id, statement, confidence, evidence, trust ? 1 : 0]`.
 
-## Phase 3+ (contract sketch; finalised by the phase's spec update)
-- `POST /v1/explain` `{gameId, variationId, itemId, answer}` (Phase 3) → `data: { text, tip, cached }`.
-- Same envelope, energy and error codes; cache hits never charge energy.
+## `POST /v1/explain` (Phase 3)
+Header `X-Glitch-Device`. The body has exactly these keys (any other key → `BAD_REQUEST`):
+```json
+{ "gameId": "m1g2", "variationId": "v3", "itemId": "s0", "answer": "fib" }
+```
+| Field | Rule |
+|---|---|
+| `gameId` | one of the 9 `GameId`s |
+| `variationId` | `"v3"`, or `^<gameId>-[0-9a-f]{12}$` naming a variation in the scenario store (only the 5 content games have variations in Phase 3) |
+| `itemId` | `^[A-Za-z0-9._-]{1,40}$` and present in that content (per-game table: `spec/architecture.md` → Contracts → Phase 3) |
+| `answer` | in that item's answer vocabulary and **≠** the item's correct answer |
+
+Success `200`:
+```json
+{ "ok": true,
+  "data": { "text": "That sentence is true: labels are the right answers attached to training examples. A fib sounds too sure or mixes up training and testing.",
+            "tip": "Before you flag a line, ask: is it too absolute to be true?",
+            "cached": false, "provider": "openrouter" },
+  "energy": { "remaining": 9, "limit": 10, "resetsAt": "…" } }
+```
+Rules:
+- `text`: 1–60 words (whitespace split) and ≤ 420 chars. `tip`: 1–25 words and ≤ 180 chars.
+  Both are plain text: newlines are collapsed to spaces, and any URL / `www.` or a markdown
+  marker (`#`, `*`, `` ` ``, `[`) is rejected (`AI_INVALID_OUTPUT`).
+- Item resolution happens on the server only. `v3` items come from the bundled
+  `api/src/glitch_api/content/v3/<gameId>.json` (`spec/data.md` → v3 content JSON).
+  Variation items come from `ScenarioRepository.get(gameId, variationId)` in the same
+  namespace the scenarios route uses (`scenarios`, or `scenarios-demo` under the fake
+  provider). An unknown variation, unknown item, out-of-vocabulary answer, an answer equal
+  to the correct one, or an item with `explain: false` (`fw.*`) → `BAD_REQUEST`, with no
+  provider call and no energy change.
+- **Cache.** The key is the four request fields. The object lives at
+  `explanations/<gameId>/<variationId>/<itemId>/<answer>.json`
+  (`explanations-demo/…` under the fake provider). On a hit the stored object is
+  re-validated (limits + moderation) and served with `cached: true`: no provider call, **no
+  energy**, nothing reserved. An invalid stored object counts as a miss and is overwritten.
+- **Miss.** `reserve_device` (0 left → `CAP_DEVICE` 429), then `ensure_global` (spent →
+  `CAP_GLOBAL` 503, refund), then `charge_global`. Then ONE provider call (purpose
+  `explain`, `max_tokens` 200, temperature 0.3, timeout `GLITCH_LLM_TIMEOUT_S`, strict
+  JSON schema `{text: string, tip: string}`, no app-level retry, no regeneration). Then
+  parse → validate → moderate (`moderation/filter.py`) → store (`put`) → serve with
+  `cached: false`. Any failure after reserving refunds the device unit (the global unit
+  stays spent once the provider was called) and returns the error envelope with `energy`.
+- **Single flight.** Concurrent requests for the same key in one process await the first
+  request's result; the followers are served as hits (`cached: true`, no charge).
+  Cloud Run is `--max-instances 1`.
+- **Fake provider** (deterministic, `explain/fake.py`, no network):
+  `text` = `"<canned> The right call here: <correct label>."` (truncated to 60 words) and
+  `tip` = `"Slow down: find the clue first, then make the call."`; `provider: "fake"`.
+  `<canned>` and `<correct label>` are the server-side values from the content JSON
+  (rules in `spec/data.md`).
+- **Logs/metrics.** One `request` line. One `llm_call` line per request, with
+  `purpose: "explain"`, `game_id` and `cache` set to `hit` (0 tokens, no provider) or
+  `miss`. `item_id`, `answer` and `variation_id` are **never logged**. Metrics
+  `cache_hits` / `cache_misses` count explain lookups as well.
+- Error codes: the existing table. `BAD_REQUEST` also covers the explain rules above.

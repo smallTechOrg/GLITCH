@@ -289,23 +289,100 @@ energy count is unchanged.
 same question costs tokens once), sees a short recap of their mistakes at the end of each
 game, and the home screen remembers which ideas they struggle with.
 
-**Capabilities:** `ask-nova-why`, `mistake-recap`, `mistake-memory`.
+**Capabilities:** `ask-nova-why`, `mistake-recap`, `mistake-memory`. The frozen design
+is in `spec/architecture.md` → Contracts → Phase 3 (Mistake payload, frame recording,
+per-game mistake table, mount points), `spec/api.md` → `POST /v1/explain`,
+`spec/data.md` → v3 state and v3 content JSON, and `spec/ui.md` → Tutor NOVA.
 
-**Independent slices:** P3-D1 explanation endpoint + cache (`api/src/glitch_api/explain/**`,
-`routes/explain.py`, `prompts/explain_*.md`); P3-W1 Ask-NOVA-why UI replacing the stub
-(`web/src/features/tutor/**`); P3-W2 recap + mistake memory (`web/src/features/recap/**`,
-state migration v2→v3 `mistakes`). W1 and W2 depend only on the API contract and the
-`GameApi.miss` mistake payload extension, which lands in a 1-file contract PR first
-(**declared dependency**).
+**Real vs stub:** everything is REAL. Both remaining stubs (`ask-nova-why-stub`,
+`win-soon-strip`) are removed.
 
-**Gate:** `cd api && uv run pytest -q` ; `cd web && npx tsc --noEmit && npx jest --ci` ;
-`[live]` `cd api && uv run pytest -q -m live` (explanation generated, moderated, cached,
-second ask is a free hit) ; `[gcs]` `cd api && uv run pytest -q -m gcs` ;
-`[live]` `cd web && GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/tutor.spec.ts`.
+**Slices.** P3-C is serial and lands first. Then the four others run in parallel, each
+depending ONLY on P3-C. No slice edits another slice's paths, and none of the four edits
+P3-C's paths.
 
-**How the user tests it:** make a mistake in Fact or Fib → tap "ASK NOVA WHY" → NOVA
-explains in ≤60 words + one tip; win → recap lists your mistakes; home shows "REVIEW"
-with the concepts you missed.
+| Slice | Owns (paths) | Delivers |
+|---|---|---|
+| **P3-C · Contract (serial, first)** | `web/src/contracts/{game,api,state}.ts`, `web/src/api/client.ts`, `web/src/state/{migrate,store}.ts`, `web/src/testing/testGameApi.ts`, `web/src/content/concepts.ts`, `web/src/engine/session.ts` (only if needed), `web/src/screens/GameScreen.tsx`, `web/src/screens/HomeScreen.tsx`, `web/src/screens/copy.ts`, placeholder `web/src/features/tutor/{AskNovaWhy.tsx,copy.ts}` (copy exports `ASK_WINDOW_MS`), `web/src/features/recap/MistakeRecap.tsx`, `web/src/features/memory/{index.ts,ReviewPanel.tsx}`, `api/src/glitch_api/routes/explain.py` (stub), `api/src/glitch_api/main.py` (mount); tests `web/tests/unit/{concepts,testGameApi,migrate*,client*}.test.ts`, `web/tests/screens/**`, `web/tests/features/variations/replay.test.tsx`, `web/tests/unit/ui.test.tsx`, `web/e2e/variations.spec.ts` (stub asserts updated) | `Concept`/`Mistake`/`SessionMistake`/`mistakeKey`; `miss(message?, mistake?)`; frame recording + ask-chip window + recap/REVIEW mounting; `testGameApi` `calls.mistakes`/`recorded`; `ExplainRequest`/`ExplainData`/`explainMistake`; state v3 + `migrateV2toV3` + sanitize + reset; `CONCEPTS`, `conceptOf`, `CONCEPTS_BY_GAME`; explain route stub. Frame tests use a fake game that calls `miss(msg, mistake)` (recorded, shielded flag, ignored-when-over, no payload → not recorded, restart clears). |
+| **P3-D1 · Explain endpoint + cache + v3 content** | `api/src/glitch_api/explain/**`, `api/src/glitch_api/content/**` (the 9 v3 JSON files), `api/src/glitch_api/routes/explain.py` (replaces the stub), `api/src/glitch_api/prompts/explain_{system,user}.md`, `api/src/glitch_api/tools/check_logs.py` (explain route → hit+miss required), `api/tests/**/*explain*`, `web/tests/contracts/explainContent.test.ts` | Endpoint per `spec/api.md`: validation, server-side item resolution (v3 JSON + `ScenarioRepository.get`), cache in `explanations[-demo]/…`, single flight, reserve/refund energy, one bounded call, schema + moderation, fake output, logs/metrics without item/answer; content parity test; `tests/live/test_explain_live.py` (exactly 2 provider calls). |
+| **P3-G · Games emit mistakes** | `web/src/games/**` (logic/data/Game, never `index.ts` contracts), `web/src/dnd/{sortEngine.ts,SortBoard.tsx,pickEngine.ts,PickList.tsx}`, `web/src/features/freewrite/FreeWriteForge.tsx`, `web/tests/games/**`, `web/tests/unit/{SortBoard,PickList}.test.tsx`, `web/tests/features/freewrite/FreeWriteForge.test.tsx`, `web/tests/features/variations/games.test.tsx` | Every row of the per-game mistake table, for v3 and for variations (ids by position). New label copy goes in each game's `data.ts`. Tests assert `api.recorded` for each event (itemId, answer, correct, concept, labels), and that X-RAY/FOCUS record nothing. |
+| **P3-W1 · Ask NOVA why UI** | `web/src/features/tutor/**` (replaces the placeholder), `web/tests/features/tutor/**`, `web/e2e/tutor.spec.ts` | Chip → thinking → panel (text, tip, cost, demo tag) / offline / no-energy lines; 8 s timeout; per-page memo; `onExplained`; a11y announcements. `tutor.spec.ts`: demo-mode tests are skipped unless the expected provider is `fake`; one test tagged `@live` is skipped unless it is `openrouter`. |
+| **P3-W2 · Recap + memory + REVIEW** | `web/src/features/recap/**`, `web/src/features/memory/**` (replace the placeholders), `web/tests/features/{recap,memory}/**`, `web/e2e/recap.spec.ts` | Recap rules (dedupe, ×n, max 5, +n more, SHIELDED, explanation-or-canned, clean run); `rememberMistake` (prepend, cap 200, via `patch`); `onGameWon` 3-star mastery removal; tallies/ranking; ReviewPanel with replay buttons. |
+
+**True dependencies (declared):** P3-D1, P3-G, P3-W1 and P3-W2 → P3-C only. The E2E specs
+(`tutor.spec.ts`, `recap.spec.ts`) run only at the phase gate, after all slices land,
+because they need the real game payloads from P3-G and the endpoint from P3-D1. W1 builds
+against the `ExplainData` DTO with a fake fetch, and W2 builds against `SessionMistake`
+fixtures.
+
+**Slice-level gates:**
+- P3-C: `cd web && npx tsc --noEmit && npx jest --ci` and `cd api && uv run pytest -q` (the
+  whole suite, because the contract touches every consumer).
+- P3-D1: `cd api && uv run pytest -q` and `cd web && npx jest --ci tests/contracts`.
+- P3-G: `cd web && npx tsc --noEmit && npx jest --ci tests/games tests/unit/SortBoard.test.tsx tests/unit/PickList.test.tsx tests/features/freewrite tests/features/variations`.
+- P3-W1: `cd web && npx tsc --noEmit && npx jest --ci tests/features/tutor`.
+- P3-W2: `cd web && npx tsc --noEmit && npx jest --ci tests/features/recap tests/features/memory`.
+
+**Phase 3 gate.** The E2E runs on side ports **8798 (API) / 8097 (web)** with the
+`dist-e2e` export, so a dev server on 8787/8090 and its `web/dist` + `api/.cache` are left
+untouched. Side-port runs use the scratch blob cache `web/test-results/8798/blob-cache`,
+and the live pytest run uses its own temporary cache. **Live budget: ≤ 4 explain provider
+calls in the whole gate** (step 5: 2, step 7: 1, and 1 spare for a flaky retry; no other
+live suites run in this gate).
+1. Install clean: `cd api && uv sync --frozen` and `cd web && npm ci`.
+2. `cd api && uv run pytest -q` (fake provider; it includes the content parity load test,
+   the cache hit/miss + single-flight + refund tests, and `BAD_REQUEST` with no charge).
+3. `cd web && npx tsc --noEmit && npx jest --ci` (includes `tests/contracts/explainContent.test.ts`).
+4. Export for the side ports:
+   `cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8798 npx expo export --platform web --output-dir dist-e2e`.
+5. `[live]` `cd api && uv run pytest -q -m live tests/live/test_explain_live.py`. Real
+   explanations for an m1g2 v3 mistake (`s0`/`fib`) and the m4g3 `ship`/`well` mistake are
+   generated, word-limited, moderated and stored, and the repeat ask of each is
+   `cached: true` with energy unchanged. Exactly 2 provider calls. PENDING-KEY until the
+   key exists.
+6. Demo-mode E2E (all specs, no key):
+   `cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8798 GLITCH_WEB_PORT=8097 GLITCH_E2E_EXPECT_PROVIDER=fake npx playwright test`.
+   - `tutor.spec`: a wrong tap in Fact or Fib → chip → panel with the deterministic demo
+     text containing the canned message, plus the DEMO tag. A second fresh context asks the
+     same → "FREE · NOVA ALREADY KNEW THIS" and the same energy. `/v1/explain` aborted →
+     offline line + canned message. The chip is gone after 10 s.
+   - `recap.spec`: three wrong drops in Train the Model → win → three rows with the right
+     zone labels; a clean run → "No mistakes. Clean run!". Two missed proxies + a 2-star
+     Proxy Hunt win → Home REVIEW "Proxy variables · 2 misses" → reload → still there →
+     "Replay Proxy Hunt" → 3-star clear → the row is gone. All with `/v1/**` reachable, and
+     the recap is re-checked with `/v1/**` aborted.
+7. `[live]` `cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8798 GLITCH_WEB_PORT=8097 GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/tutor.spec.ts --grep @live`
+   (one real explanation, ≤ 60 words, and a second context gets a cache hit: 1 provider call).
+   PENDING-KEY.
+8. `[gcs]` `cd api && uv run pytest -q -m gcs` (adds an explanation round trip under the
+   unique test prefix). PENDING-CREDS.
+9. Observability:
+   `cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/8798/api.log --route /v1/explain`
+   requires ≥ 1 `llm_call` with `purpose: "explain"` and cache `hit`, ≥ 1 with cache `miss`,
+   and no item id / answer / variation id field in any explain line.
+   `/v1/metrics` `cache_hit_rate` is between 0 and 1.
+10. Working tree clean, committed, pushed; README updated (the commands above); human
+    test-handoff approved.
+
+**How the user tests it (handoff seed):**
+1. Open `http://127.0.0.1:8090/GLITCH/` against a backend with the key (or demo mode).
+2. Fact or Fib: tap a TRUE line. NOVA's bad-mood bubble shows "ASK NOVA WHY". Tap it →
+   NOVA thinks → an explanation of at most 60 words + "TIP: …" + "−1 AI ENERGY". The Home
+   energy drops by 1.
+3. In a second browser (or after a reload), make the same mistake and ask again →
+   "FREE · NOVA ALREADY KNEW THIS", and the energy does not change.
+4. Wait 10 s after a mistake without tapping → the chip disappears. The free-write weak
+   prompt never shows the chip.
+5. Finish the game → MISTAKE RECAP lists each mistake with "YOU SAID / IT WAS" and NOVA's
+   explanation (or the classic hint). Use GUARDIAN's SHIELD in Train the Model, then make
+   a wrong drop → that row is tagged SHIELDED. A clean run says "No mistakes. Clean run!".
+   Lose all hearts → the recap shows on the Out-of-hearts screen too.
+6. Home → REVIEW shows up to 3 ideas you missed, with "Replay <game>". Win that game
+   with 3 stars → the idea leaves REVIEW. Reload → REVIEW persists. Reset progress → it
+   is gone.
+7. Stop the backend and ask → "NOVA'S OFFLINE — here's the short version: <classic hint>".
+   The recap and REVIEW still work.
+8. There are no labelled stubs left in the app.
 
 ### Phase 4 — Remixed forges, simulations and stories
 

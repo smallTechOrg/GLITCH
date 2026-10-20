@@ -30,6 +30,33 @@ locked. Finish the earlier steps first." + Home button — never a crash.
 2. Win-screen strip "COMING SOON: Fresh case files on replay · Mistake recap"
    (testID `win-soon-strip`). **From Phase 2** fresh case files are real, so the strip
    reads only "COMING SOON: Mistake recap".
+**From Phase 3 both stubs are gone** (`ask-nova-why-stub` and `win-soon-strip` no longer
+render), and the app has no stubs left.
+
+**Tutor NOVA (Phase 3, REAL)**
+- *Ask chip* — `ask-nova-why`: a secondary PixelButton "ASK NOVA WHY" under the speech
+  bubble, outside its live region, with hint "May use 1 AI energy". Visibility rules are in
+  `capabilities/ask-nova-why.md`. Tapping it replaces the chip with the *panel*
+  `nova-why-panel` (deep card, NOVA head icon, ≤ 320 px tall, no scroll trap):
+  - loading: `nova-why-thinking` (role progressbar, label "NOVA is thinking").
+  - answer: `nova-why-text`, then `nova-why-tip` (prefixed "TIP: ") and `nova-why-cost`
+    ("FREE · NOVA ALREADY KNEW THIS" when `cached`, else "−1 AI ENERGY"), plus
+    `nova-why-demo-tag` "DEMO" when `provider` is `fake`.
+  - failure: `nova-why-offline` (the offline or no-energy line plus the canned message).
+  - `nova-why-close` "CLOSE" (returns focus to the game body).
+  The panel content is announced politely once.
+- *Recap* — `recap` on the win screen (below the tags, above the buttons) and on the fail
+  screen (above the buttons). Heading "MISTAKE RECAP". Rows `recap-row-<i>` (0-based)
+  contain `recap-item-<i>`, `recap-said-<i>` ("YOU SAID: …"), `recap-was-<i>` ("IT WAS: …"),
+  `recap-why-<i>`, optional `recap-shielded-<i>` (tag "SHIELDED") and `recap-count-<i>`
+  ("×n", only when n > 1). Then `recap-more` ("+n more") when needed. Clean run:
+  `recap-clean` "No mistakes. Clean run!". Each row is one accessible group labelled
+  "<itemText>. You said <answerLabel>. It was <correctLabel>. <why>".
+- *REVIEW* — `home-review` on Home, directly under `home-energy`. It is rendered only when
+  there is at least one mistake record. Heading "REVIEW · IDEAS TO PRACTISE". Up to 3 rows
+  `review-concept-<slug>` (slug = the concept in lower case with non-alphanumerics → `-`,
+  e.g. `review-concept-proxy-variables`), text "<Concept> · n miss(es)", each with the
+  button `review-replay-<slug>` "Replay <game title>" (→ `gameHref`).
 
 **Case-file chrome (Phase 2, REAL)** — in the game frame on a replay of a cleared content
 game (`capabilities/scenario-variations.md`): while fetching, NOVA's thinking card
@@ -54,6 +81,9 @@ when the server is unreachable (Home stays fully usable), r/10 otherwise (red at
 | Prompt log | "No prompts yet. Your sends will appear here." | — | — | last 5 |
 | Free-write evaluate | goal + empty box with placeholder "e.g. Act as…" | NOVA thinking animation | offline banners (`freewrite-forge.md`) | reply + levers + tip |
 | Energy meter (free-write round `fw-energy`, Home `home-energy`) | — | "…" segments | "?" offline | r/10 |
+| Ask NOVA why panel (Phase 3) | — | `nova-why-thinking` | `nova-why-offline` + canned message | text + tip + cost |
+| Mistake recap (Phase 3) | `recap-clean` | — | — (device-only) | ≤ 5 rows |
+| REVIEW (Phase 3) | not rendered | — | — (device-only) | ≤ 3 concepts |
 
 ## Responsive
 - Mobile-first single column; max content width 960 px (v3 `#wp`).
@@ -116,6 +146,12 @@ Case file (Phase 2): `case-file-loading` (NOVA thinking card, role progressbar, 
 "NOVA IS PULLING A NEW CASE FILE…"; no tag while loading), `case-file-tag` (text "NEW CASE
 FILE"; only on a served variation),
 `case-file-offline` (text "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE").
+Tutor (Phase 3; replaces `ask-nova-why-stub` / `win-soon-strip`): `ask-nova-why`,
+`nova-why-panel`, `nova-why-thinking`, `nova-why-text`, `nova-why-tip`, `nova-why-cost`,
+`nova-why-demo-tag`, `nova-why-offline`, `nova-why-close`; recap `recap`, `recap-row-<i>`,
+`recap-item-<i>`, `recap-said-<i>`, `recap-was-<i>`, `recap-why-<i>`, `recap-shielded-<i>`,
+`recap-count-<i>`, `recap-more`, `recap-clean`; Home `home-review`,
+`review-concept-<slug>`, `review-replay-<slug>`.
 Sort: `dnd-pool`, `dnd-item-<itemId>`, `dnd-zone-<zoneId>`. Pick: `pick-line-<index>`
 (0-based, v3 order), `pick-found`. Slider: `slider-<id>`, `slider-<id>-dec`,
 `slider-<id>-inc`, `slider-<id>-value`. Toggle: `toggle-<id>`. Metric: `metric-<id>`

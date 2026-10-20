@@ -170,13 +170,17 @@ _VERIFIES = [
 ]
 
 
+def _verify_kind(evidence: str) -> str:
+    return "unsourced" if evidence.startswith(("No ", "Paper not found")) else "contradicted"
+
+
 def _m4g2(n: int) -> dict[str, Any]:
     trust = [
-        {"statement": s, "confidence": c, "evidence": e, "trust": True}
+        {"statement": s, "confidence": c, "evidence": e, "evidenceKind": "verified_source", "trust": True}
         for (s, e), c in zip(_pick(_TRUSTS, n, 3), (74, 91, 99), strict=True)
     ]
     verify = [
-        {"statement": s, "confidence": c, "evidence": e, "trust": False}
+        {"statement": s, "confidence": c, "evidence": e, "evidenceKind": _verify_kind(e), "trust": False}
         for (s, e), c in zip(_pick(_VERIFIES, n, 3), (97, 93, 85), strict=True)
     ]
     return {"answers": _interleave(verify, trust) if n % 2 else _interleave(trust, verify)}

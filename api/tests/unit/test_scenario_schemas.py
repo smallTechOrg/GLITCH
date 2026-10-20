@@ -309,7 +309,7 @@ def test_m4g2_no_high_confidence_verify_rejected() -> None:
 
 def test_m4g2_unbalanced_rejected() -> None:
     bad = v3("m4g2")
-    bad["answers"][1]["trust"] = True
+    bad["answers"][1].update(trust=True, evidenceKind="verified_source")  # self-consistent, but 4 + 2
     assert any("3 TRUST" in e for e in errors_of("m4g2", bad))
 
 

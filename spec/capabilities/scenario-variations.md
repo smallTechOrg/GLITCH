@@ -35,10 +35,26 @@ Detective, m4g2 Confidence Court.
 - A generated scenario is cached only after: schema validation, domain validation (the
   same counts and answer balance as v3 — e.g. Fact or Fib: exactly 6 sentences, exactly 3
   fibs, each fib with an explanation ≤ 20 words; Proxy Hunt: 2 redacted, 5 proxies, 4
-  real; Source Detective: 5 citations, 2–3 fake; Confidence Court: 6 answers, ≥1
-  low-confidence TRUST and ≥1 high-confidence VERIFY; Train the Model: 6 + 4 emails,
-  model wrong on exactly 2 test emails), output moderation, and duplicate check (content
-  hash).
+  real; Source Detective: 5 citations, 2–3 fake; Confidence Court: 6 answers, 3 TRUST +
+  3 VERIFY, ≥1 low-confidence TRUST and ≥1 high-confidence VERIFY, and every answer's
+  verdict agrees with its own evidence (below); Train the Model: 6 + 4 emails, model wrong
+  on exactly 2 test emails), output moderation, and duplicate check (content hash).
+- Confidence Court verdict/evidence agreement, checked deterministically in the same single
+  generation call: each generated answer also carries a self-check `evidenceKind` from a
+  closed enum — TRUST kinds `official_record`, `verified_source`, `firsthand_confirmed`;
+  VERIFY kinds `unsourced`, `anecdotal`, `outdated`, `contradicted`, `overconfident_claim`,
+  `high_stakes_unchecked` — and `trust` must equal "kind is a TRUST kind". Evidence keyword
+  sanity also applies (at generation and on every cache read): evidence saying "no source",
+  "unverified", "unconfirmed", "rumour", "anonymous", "someone said" or "hearsay" must be
+  VERIFY; evidence with an un-negated "confirms" / "official" / "published" / "verified by"
+  marked VERIFY is a mismatch. A mismatch is a validation error (fed to the one
+  regeneration). `evidenceKind` is never stored or served — the served `data` shape is
+  unchanged.
+- Every cached variation is re-validated against the CURRENT validators when read; one that
+  fails is skipped (never served). `cd api && uv run python -m glitch_api.tools.purge_invalid`
+  lists cached variations (all games, both namespaces) that fail today's validators — id +
+  rule messages only, never generated text (dry run, the default); `--apply` moves them to
+  the `quarantine/` prefix and removes them from the game's index.
 - Invalid output → one regeneration with the validation errors fed back; still invalid →
   fallback to v3, nothing cached.
 - Variations display a "NEW CASE FILE" tag. Stars and XP rules are unchanged (game-clear

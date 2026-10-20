@@ -13,7 +13,7 @@
  └──────────────┬───────────────────────────────────────────────────────────────────────────────┘
                 │ HTTPS JSON (only: device id, goal, prompt text — prompt is never stored/logged)
  ┌──────────────▼──────────────── api/ — FastAPI on Cloud Run (max-instances 1) ───────────────┐
- │  routes: /healthz  /v1/energy  /v1/freewrite/evaluate  /v1/metrics   (Phase 2+: scenarios)   │
+ │  routes: /healthz  /v1/energy  /v1/freewrite/evaluate  /v1/metrics (P2 scenarios, P3 explain)│
  │  agent/freewrite.py  pipeline: budget → build → call → parse/validate → moderate → finalize  │
  │  llm/ provider protocol ─ OpenRouterProvider (httpx) │ FakeProvider (deterministic demo)    │
  │  caps/ EnergyService over CounterStore (Phase 1 memory; Phase 2 GCS-backed)                 │
@@ -158,7 +158,9 @@ GLITCH/                                  # repo root — config, spec, docs only
 │   │   ├── envelope.py                  # ok(data, energy=None), ApiError(code,http_status,message,retryable), handlers
 │   │   ├── metrics.py                   # Metrics singleton (counters) + snapshot() + reset()
 │   │   ├── device.py                    # parse X-Glitch-Device (UUID v4) ; device_hash() = sha256[:12]
-│   │   ├── routes/{health,metrics,energy,freewrite}.py
+│   │   ├── routes/{health,metrics,energy,freewrite}.py   (+ scenarios.py P2, explain.py P3)
+│   │   ├── explain/{content,items,schemas,pipeline,fake}.py   # Phase 3 P3-D1
+│   │   ├── content/v3/<gameId>.json      # Phase 3 P3-D1 — bundled v3 items (spec/data.md)
 │   │   ├── llm/
 │   │   │   ├── base.py                  # LLMProvider Protocol, ChatMessage, LLMRequest, LLMResult, LLMError hierarchy
 │   │   │   ├── openrouter.py            # OpenRouterProvider(httpx.AsyncClient)
@@ -209,6 +211,9 @@ GLITCH/                                  # repo root — config, spec, docs only
     │   ├── games/registry.ts                                     # scaffold: imports games/<id>/index.ts ×9
     │   ├── games/<id>/{index.ts,data.ts,logic.ts,Game.tsx}       # one folder per game, owned by its slice
     │   ├── features/freewrite/**                                 # E (scaffold ships FreeWriteRound.tsx stub)
+    │   ├── features/variations/**                                # Phase 2 W1
+    │   ├── features/{tutor,recap,memory}/**                      # Phase 3 W1 / W2 (P3-C ships placeholders)
+    │   ├── content/concepts.ts                                   # Phase 3 P3-C
     │   ├── screens/**                                            # A1 (scaffold ships placeholders)
     │   └── testing/{testGameApi.ts,renderWithProviders.tsx}
     ├── tests/                           # jest: unit + component, outside src/
@@ -319,6 +324,140 @@ A2 lands.
   non-target marked safe.
 - `ui/Slider.tsx` — accessible stepped slider (role adjustable, ←/→ ±1, PageUp/PageDown
   ±10, Home/End, and visible − / + buttons), `onChange(value)`.
+
+### Phase 3 contracts (slice P3-C lands these first; frozen for P3-D1 / P3-G / P3-W1 / P3-W2)
+
+**`web/src/contracts/game.ts`** (additive and backwards-compatible; every existing
+`miss(message)` call still compiles and behaves exactly as before):
+```ts
+export type Concept =
+  | 'Machine learning' | 'Training data' | 'Generalization'
+  | 'Weights and thresholds' | 'Classification' | 'Prompt engineering'
+  | 'Dataset bias' | 'Proxy variables' | 'Algorithmic discrimination'
+  | 'Hallucination' | 'Verification' | 'Human oversight';   // = the 12 module tags, in module order
+export interface Mistake {
+  itemId: string;        // ^[A-Za-z0-9._-]{1,40}$ — scheme per game below
+  answer: string;        // ^[a-z_]{1,24}$ — the learner's choice, closed vocabulary per game
+  correct: string;       // same vocabulary; the right choice
+  concept: Concept;      // = conceptOf(gameId, itemId)
+  itemText: string;      // ≤ 160 chars, the game's own content (never learner text) — recap only
+  answerLabel: string;   // on-screen label of `answer`, e.g. "NOT SPAM" — recap only
+  correctLabel: string;  // on-screen label of `correct` — recap only
+  explain?: boolean;     // default true; false = ASK NOVA WHY not offered
+}
+export interface SessionMistake extends Mistake {
+  gameId: GameId;
+  variationId: string;   // 'v3' or the served case file's variationId
+  message: string;       // the miss message as passed (no "SHIELDED! " prefix); DEFAULT_MISS when none
+  shielded: boolean;     // the shield absorbed it
+  at: string;            // ISO
+}
+export const mistakeKey = (m: Pick<Mistake, 'itemId' | 'answer'>): string => `${m.itemId}|${m.answer}`;
+// GameApi.miss becomes:
+miss(message?: string, mistake?: Mistake): void;
+```
+**Frame recording** (`screens/GameScreen.tsx`): on `miss(message, mistake)` the frame
+applies `applyMiss` as today. Only if that returns a line (the miss was accepted) **and** a
+`mistake` was passed, it appends a `SessionMistake` to this run's list (`shielded` = the
+shield state before the miss; `variationId` = `file.kind === 'variation' ? file.variationId : 'v3'`),
+calls `rememberMistake(record)` and makes it the "latest mistake" for the ask chip, tagged
+with the bubble version the miss produced. X-RAY/FOCUS never call `miss`, so auto-solves
+are never mistakes. REWIND does not remove records. After `winGame(...)` the frame calls
+`onGameWon(gameId, rewards.stars)`. `restart()` clears the list, the latest mistake and the
+run's explanations.
+
+**`web/src/content/concepts.ts`**: `CONCEPTS: readonly Concept[]` (module order, the 12
+tags), `conceptOf(gameId, itemId): Concept` (rules in the table below; a unit test asserts
+`CONCEPTS` equals the union of `content/modules.ts` tags), and
+`CONCEPTS_BY_GAME: Record<GameId, readonly Concept[]>`
+(m1g1 `[Training data, Generalization]`, m1g2 `[Machine learning]`, m2g1
+`[Weights and thresholds, Classification]`, m2g2 `[Prompt engineering]`, m3g1
+`[Proxy variables]`, m3g2 `[Algorithmic discrimination]`, m4g1
+`[Hallucination, Verification]`, m4g2 `[Verification]`, m4g3 `[Human oversight]`).
+
+**`web/src/testing/testGameApi.ts`**: `calls.miss` is unchanged (`(string|undefined)[]`).
+New `calls.mistakes: (Mistake | undefined)[]` runs parallel to `calls.miss`, and
+`readonly recorded: { mistake: Mistake; shielded: boolean }[]` holds the accepted misses
+that carried a payload (same rule as the frame).
+
+**`web/src/contracts/api.ts` + `web/src/api/client.ts`**:
+```ts
+export interface ExplainRequest { gameId: GameId; variationId: string; itemId: string; answer: string }
+export interface ExplainData { text: string; tip: string; cached: boolean; provider: ProviderName }
+export const EXPLAIN_TIMEOUT_MS = 8000;
+// client.ts: explainMistake(req: ExplainRequest, opts?: RequestOptions): Promise<ApiResult<ExplainData>>  — POST /v1/explain, never throws
+// + isExplainData guard
+```
+
+**`web/src/contracts/state.ts` + `state/migrate.ts` + `state/store.ts`**:
+`STATE_VERSION = 3`, `MISTAKES_MAX = 200`,
+`MistakeRecord = Pick<SessionMistake, 'gameId'|'variationId'|'itemId'|'answer'|'concept'|'shielded'|'at'>`,
+`PersistedStateV3 extends Omit<PersistedStateV2,'version'> { version: 3; mistakes: MistakeRecord[] }`
+(`PersistedState = PersistedStateV3`), `migrateV2toV3`, `cleanMistakes` in sanitize
+(`spec/data.md` → v3), `resetProgress()` sets `mistakes: []`. No new store action:
+`features/memory` writes through `patch`.
+
+**Mount points**: placeholder files that P3-C creates with their final signatures and
+wires into the screens. W1/W2 replace the bodies and never edit the screens:
+```ts
+// features/tutor/AskNovaWhy.tsx   (placeholder: disabled chip, testID "ask-nova-why")
+export interface Explanation { text: string; tip: string }
+export interface AskNovaWhyProps { mistake: SessionMistake; chipVisible: boolean; onExplained(key: string, e: Explanation): void }
+export function AskNovaWhy(p: AskNovaWhyProps): React.JSX.Element | null;
+export const ASK_WINDOW_MS = 10_000;   // exported from features/tutor/copy.ts (P3-C creates it)
+//   GameScreen mounts it under the bubble (where ask-nova-why-stub was) for the latest
+//   mistake whose explain !== false (key = that mistake's index; unmounted on restart).
+//   chipVisible = bubble.v === latest.bubbleV && now − latest.at < ASK_WINDOW_MS (the frame
+//   runs a timer to flip it). Not opened + !chipVisible → renders null. Once tapped, the
+//   panel stays open regardless of chipVisible until CLOSE or the next mistake (re-key).
+// features/recap/MistakeRecap.tsx (placeholder: <View testID="recap"/>)
+export interface MistakeRecapProps { mistakes: readonly SessionMistake[]; explanations: Readonly<Record<string, Explanation>> }
+//   rendered in WinView (replacing win-soon-strip) and FailView (above the buttons).
+// features/memory/index.ts        (placeholder: no-op bodies)
+export function rememberMistake(m: SessionMistake, now?: Date): void;
+export function onGameWon(gameId: GameId, stars: 1 | 2 | 3): void;
+// features/memory/ReviewPanel.tsx (placeholder: returns null)
+export function ReviewPanel(): React.JSX.Element | null;   // HomeScreen renders it directly under home-energy
+```
+**API mount point**: `api/src/glitch_api/routes/explain.py` stub (`POST /v1/explain` →
+`AI_UNAVAILABLE` envelope with energy), mounted in `main.py` by P3-C. P3-D1 replaces it.
+
+**Per-game mistake table** (P3-G emits these; P3-D1's extractor derives the same items,
+correct answers and canned messages server-side). "Index" = 0-based position in v3 /
+variation order (the same as `pick-line-<index>`). The canned message is the `message`
+the game passes to `miss`.
+
+| Game | Mistake event (call site) | `itemId` | `answer` vocabulary → `answerLabel` | `correct` (derivation) → `correctLabel` | Concept | Canned (server) | Ask? |
+|---|---|---|---|---|---|---|---|
+| m1g1 | wrong drop, step 1 (SortBoard) | `e1`–`e6` | `spam`,`ok` → zone label | item zone (`label` s→`spam`, n→`ok`) | Training data | `copy.trainWrong` | yes |
+| m1g1 | wrong drop, step 2 | `t1`–`t4` | `right`,`wrong` → zone label | `modelRight ? right : wrong` | Generalization | `copy.testWrong` | yes |
+| m1g2 | tap on a true line (PickList) | `s<index>` (`s0`–`s5`) | `fib` → "FIB" | `true` → "TRUE" | Machine learning | `copy.trueMiss` | yes |
+| m2g1 | LOCK IT IN fails (Game) | `r1`,`r2` | `missed` (A > ga) → "<ma> OVER GOAL"; `false_alarms` → "<mbl> OVER GOAL" | `pass` → "BOTH GOALS MET" | r1 Weights and thresholds; r2 Classification | `fa` / `fb` of that round | yes |
+| m2g2 | wrong drop in forge k (SortBoard) | `f<k>.b<i>` (k 1–2, i 0–7) | slot id `task`,`ctx`,`role`,`fmt`,`lim` → slot label | block slot, or `decoy` (slot null) → "NO SLOT · TOO VAGUE" | Prompt engineering | `decoy` ? `wrongDecoy` : `wrongSlot` | yes |
+| m2g2 | weak free-write prompt (FreeWriteForge) | `fw.<goalId>` | `weak` → "<n>/5 LEVERS" | `strong` → "4+/5 LEVERS" | Prompt engineering | — | **no** (`explain: false`) |
+| m3g1 | tap on a real line (PickList) | `l<index>` (`l2`–`l10`; `l0`/`l1` redacted) | `proxy` → "PROXY" | `real` → "OK" | Proxy variables | `copy.missMessage` | yes |
+| m3g2 | RUN AUDIT fails (Game) | `audit` | `gap` → "GAP <n> · GOAL ≤ 6"; `accuracy` → "ACCURACY <n>% · GOAL ≥ 80" | `pass` → "GAP ≤ 6 · ACCURACY ≥ 80" | Algorithmic discrimination | `copy.gapFail` / `copy.accuracyFail` | yes |
+| m4g1 | wrong drop (SortBoard) | `c1`–`c5` | `keep`,`cut` → zone label | `real ? keep : cut` | Hallucination | `copy.wrong` | yes |
+| m4g1 | "Ask NOVA" trap (Game) | `ask` | `ask_nova` → "ASKED NOVA" | `lookup` → "CHECK THE CATALOGUE" | Verification | `copy.askMiss` | yes |
+| m4g2 | wrong drop (SortBoard) | `a1`–`a6` | `trust`,`verify` → zone label | `trust ? trust : verify` | Verification | `copy.wrong` | yes |
+| m4g3 | SHIP IT fails (Game) | `ship` | first failing metric id `time`,`well`,`fr`,`pv`,`help` → "<METRIC LABEL> OFF TARGET" | `all_met` → "ALL 5 TARGETS MET" | Human oversight | `notYetPrefix + failure + "."` | yes |
+
+`itemText`: the email / sentence / resume line / block / citation / statement text; the
+round title (m2g1); "THE SCREENER AUDIT" (m3g2); "SHIP THE COMPANION" (m4g3); the goal
+text (free-write); "ASK NOVA TO CHECK ITS OWN SOURCES" (m4g1 `ask`). Plumbing: `SortConfig`
+gains `mistake?(item, zone): Mistake | undefined`, and `SortBoard` passes it as the second
+`miss` argument. `PickListProps` gains `mistakeFor?: (line: PickLine, index: number) => Mistake`.
+The game logic files build the payloads (P3-G).
+
+**Explain server modules (P3-D1)**: `explain/content.py` (load + cache the 9 JSON files),
+`explain/items.py` (`items_for(game_id, data, copy, concept_rules) -> dict[item_id, ExplainItem]`,
+where `ExplainItem = {item_id, concept, text, context, correct, correct_label, answers: {id: label}, canned: {answer: str}, explain: bool}`),
+`explain/schemas.py` (`ExplainRequest`, `ExplainData`, the LLM JSON schema, the
+validators), `explain/pipeline.py` (`spec/agent.md` → Composition 3),
+`explain/fake.py`, `prompts/explain_system.md` + `prompts/explain_user.md` (placeholders
+`{game_title}`, `{concept}`, `{item}`, `{context}`, `{learner_answer}`, `{correct_answer}`,
+`{canned}`; the content goes inside `<case_item>` delimiters because variation text is
+AI-generated data, not instructions).
 
 ## Conventions
 
