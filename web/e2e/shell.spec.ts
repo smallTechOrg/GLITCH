@@ -46,6 +46,20 @@ test.describe('onboarding + Home', () => {
     for (const n of [2, 3, 4]) await expect(page.getByTestId(`module-status-${n}`)).toHaveText('LOCKED');
     await expect(page.getByTestId('badges-count')).toHaveText('BADGES · 0/12');
     await expect(page.getByTestId('home-quest')).toContainText('START HERE');
+    // Phase 2 (durable-ai-budget.md): Home shows the AI energy meter, read from the server.
+    await expect(page.getByTestId('home-energy')).toHaveAttribute('aria-label', 'AI energy 10 of 10');
+    await expect(page.getByTestId('home-energy')).toContainText('10/10');
+  });
+
+  test('Home energy meter: server unreachable → "?" and Home still works', async ({ page }) => {
+    await page.route('**/v1/energy', (r) => r.abort('connectionrefused'));
+    await seed(page, {});
+    await page.goto('./');
+    await waitForApp(page);
+    await expect(page.getByTestId('home-energy')).toHaveAttribute('aria-label', 'AI energy unknown, NOVA is offline');
+    await expect(page.getByTestId('home-energy')).toContainText('?');
+    await page.getByTestId('home-quest-button').click();
+    await expect(page).toHaveURL(/\/module\/1\/hero$/);
   });
 
   test('nickname is used as the greeting and survives a reload', async ({ page }) => {

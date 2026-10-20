@@ -37,7 +37,7 @@ def _schema_errors(exc: ValidationError) -> list[str]:
 
 
 def parse_candidate(game_id: str, obj: Any) -> dict[str, Any]:
-    """LLM JSON object → validated ``data`` (schema → normalise → domain). Raises ScenarioInvalid."""
+    """LLM JSON object → validated ``data`` (schema → normalise → domain → arrange). Raises ScenarioInvalid."""
     spec = GAMES[game_id]
     if not isinstance(obj, dict):
         raise ScenarioInvalid(["output must be a JSON object"])
@@ -45,8 +45,12 @@ def parse_candidate(game_id: str, obj: Any) -> dict[str, Any]:
         out = spec.llm_model.model_validate(obj)
     except ValidationError as exc:
         raise ScenarioInvalid(_schema_errors(exc)) from None
-    data = spec.to_data(out)
-    return validate_data(game_id, data)
+    data = validate_data(game_id, spec.to_data(out))
+    if spec.arrange is not None:
+        # Server-chosen item order (after validation, before hashing/storing); re-validated
+        # so an arrange bug can never store an invalid case file.
+        data = validate_data(game_id, spec.arrange(data))
+    return data
 
 
 def validate_data(game_id: str, data: Any) -> dict[str, Any]:

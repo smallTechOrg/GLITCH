@@ -9,7 +9,8 @@ Served ``data``::
 
 v3 mapping: ResumeLine = [text, proxy === null ? null : proxy ? 1 : 0, note]. The two
 redacted lines are fixed by the server and always first (as in v3); the 9 generated
-lines follow in the model's (mixed) order. The hidden trait is always gender and the
+lines follow in a server-chosen order (``content_shuffle``, seeded from their text, after
+validation) so proxies do not sit where the model — copying the v3 exemplar — put them. The hidden trait is always gender and the
 candidate a girl/woman (v3 copy: "not who she is"); ``candidate`` is an upper-case first
 name for the paper tag ("<CANDIDATE> · RESUME · SCREENED BY AI").
 """
@@ -21,7 +22,17 @@ from typing import Any
 
 from pydantic import Field
 
-from glitch_api.scenarios.schemas.base import BOOLEAN, STRING, GameSpec, Strict, arr, duplicates, obj, word_count
+from glitch_api.scenarios.schemas.base import (
+    BOOLEAN,
+    STRING,
+    GameSpec,
+    Strict,
+    arr,
+    content_shuffle,
+    duplicates,
+    obj,
+    word_count,
+)
 
 TEXT_MIN, TEXT_MAX = 4, 50
 NOTE_MAX_CHARS, NOTE_MAX_WORDS = 70, 12
@@ -94,6 +105,12 @@ def domain_errors(data: dict[str, Any]) -> list[str]:
     return errors
 
 
+def arrange(data: dict[str, Any]) -> dict[str, Any]:
+    """Redacted NAME/GENDER stay first; the 9 generated lines get a content-seeded order."""
+    lines = data["lines"]
+    return {**data, "lines": [*lines[:2], *content_shuffle(lines[2:], lambda ln: ln["text"], "m3g1")]}
+
+
 def texts(data: dict[str, Any]) -> list[str]:
     return [data["candidate"], *(t for ln in data["lines"][2:] for t in (ln["text"], ln["note"]))]
 
@@ -123,4 +140,5 @@ SPEC = GameSpec(
     domain_errors=domain_errors,
     texts=texts,
     v3_llm=V3_LLM,
+    arrange=arrange,
 )

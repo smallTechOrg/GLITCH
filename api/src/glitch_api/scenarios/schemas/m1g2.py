@@ -6,6 +6,9 @@ Served ``data``::
 
 v3 mapping: Sentence = [text, fib ? 1 : 0, explanation (fibs only)]. ``explanation`` is a
 string on fibs and ``null`` on true sentences.
+
+Order: after validation the 6 sentences are re-ordered by ``content_shuffle`` (seeded from
+their text) so the fibs do not sit where the model — copying the v3 exemplar — put them.
 """
 
 from __future__ import annotations
@@ -14,7 +17,17 @@ from typing import Any
 
 from pydantic import Field
 
-from glitch_api.scenarios.schemas.base import BOOLEAN, STRING, GameSpec, Strict, arr, duplicates, obj, word_count
+from glitch_api.scenarios.schemas.base import (
+    BOOLEAN,
+    STRING,
+    GameSpec,
+    Strict,
+    arr,
+    content_shuffle,
+    duplicates,
+    obj,
+    word_count,
+)
 
 TEXT_MIN, TEXT_MAX = 10, 110
 EXPLANATION_MAX_CHARS = 140
@@ -81,6 +94,11 @@ def domain_errors(data: dict[str, Any]) -> list[str]:
     return errors
 
 
+def arrange(data: dict[str, Any]) -> dict[str, Any]:
+    """Deterministic content-seeded order of the sentences (answer keys travel with them)."""
+    return {**data, "sentences": content_shuffle(data["sentences"], lambda s: s["text"], "m1g2")}
+
+
 def texts(data: dict[str, Any]) -> list[str]:
     out: list[str] = []
     for s in data["sentences"]:
@@ -123,4 +141,5 @@ SPEC = GameSpec(
     domain_errors=domain_errors,
     texts=texts,
     v3_llm=V3_LLM,
+    arrange=arrange,
 )

@@ -228,3 +228,22 @@ async def test_logs_have_hit_and_miss_and_pass_check_logs(app, client_for, log_p
     sentence = fake_scenario("m1g2", 1)["sentences"][0]["text"]
     failures, stats = check_log_lines(raw.splitlines(), [sentence], route=ROUTE)
     assert failures == [] and stats["llm_call"] == 2 and stats["request"] == 2
+    assert stats["cache_hit"] == 1 and stats["cache_miss"] == 1
+
+
+async def test_check_logs_cli_requires_hit_and_miss_on_the_real_scenarios_log(app, client_for, log_path, capsys) -> None:
+    """Phase 2 gate step 6 against a log the app itself wrote (fake provider): the CLI with
+    ``--route`` = the scenarios route requires ≥1 cache hit AND ≥1 cache miss automatically."""
+    from glitch_api.tools.check_logs import main
+
+    async with client_for(app) as c:
+        assert (await c.get(url("m1g2"), headers=hdr())).json()["data"]["cached"] is False
+    assert main([str(log_path), "--route", ROUTE]) == 1  # generation only → no hit yet
+    assert "no llm_call cache=hit line for /v1/scenarios/{game_id}/next" in capsys.readouterr().err
+
+    async with client_for(app) as c:
+        assert (await c.get(url("m1g2"), headers=hdr(OTHER_DEVICES[0]))).json()["data"]["cached"] is True
+    assert main([str(log_path), "--route", ROUTE]) == 0  # E2E string literals scanned too
+    out = capsys.readouterr().out
+    assert "LOGS OK" in out and "2 /v1/scenarios/{game_id}/next request line(s)" in out
+    assert "1 cache hit / 1 cache miss" in out

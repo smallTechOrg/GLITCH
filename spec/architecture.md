@@ -109,7 +109,7 @@ whitespace; the key is a `SecretStr`, never printed):
 | `GLITCH_GLOBAL_DAILY_CAP` | `500` | Provider calls per UTC day, server-wide. |
 | `GLITCH_CORS_ORIGINS` | `https://smalltechorg.github.io,http://127.0.0.1:8090,http://localhost:8090,http://127.0.0.1:8092,http://localhost:8092` | Comma-separated exact origins. |
 | `GLITCH_LOG_LEVEL` | `INFO` | |
-| `GLITCH_LOG_FILE` | empty | If set, JSON lines also appended here (E2E sets `web/test-results/api.log`). |
+| `GLITCH_LOG_FILE` | empty | If set, JSON lines also appended here (E2E sets `web/test-results/api.log`, or `web/test-results/<port>/api.log` when `GLITCH_E2E_API_PORT` ≠ 8787). |
 | `GLITCH_FAKE_LATENCY_MS` | `0` | Fake provider delay (tests only). |
 | `GLITCH_BLOB_BACKEND` *(Phase 2)* | `local` | `local` \| `gcs` (`store/local.py` / `store/gcs.py`, one `BlobStore` protocol in `store/base.py`). `GLITCH_ENV=prod` requires `gcs` (startup error otherwise). |
 | `GLITCH_CACHE_DIR` *(Phase 2)* | `api/.cache` | Local blob root (gitignored); a relative path resolves from the repo root. |
@@ -123,6 +123,15 @@ Web (build-time, `EXPO_PUBLIC_*` are inlined by the export):
 | `EXPO_PUBLIC_GLITCH_API_URL` | `http://127.0.0.1:8787` | Production export sets the Cloud Run URL. |
 | `GLITCH_WEB_PORT` | `8090` | `serve-export.mjs` port. |
 | `GLITCH_E2E_EXPECT_PROVIDER` | `fake` | E2E asserts `/healthz` reports this provider before running. |
+
+Test tooling (Playwright E2E, read by `web/e2e/helpers/config.ts` / `playwright.config.ts`;
+commented out in `.env.example`):
+
+| Var | Default | Notes |
+|---|---|---|
+| `GLITCH_E2E_API_PORT` | `8787` | Port the E2E run starts its own API on. Any other port puts the run's artefacts (`api.log`, `blob-cache`, Playwright output) in `web/test-results/<port>/` (8787: `web/test-results/`) and the HTML report in `playwright-report/<port>/`. The export must be built with the matching `EXPO_PUBLIC_GLITCH_API_URL` (globalSetup fails on a mismatch). |
+| `GLITCH_WEB_DIST` | `dist` | Export dir served by `serve-export.mjs` (and so by the E2E), relative to `web/` or absolute — e.g. `dist-e2e`, built with `--output-dir dist-e2e`, so the E2E export never overwrites a served `dist`. |
+| `GLITCH_E2E_REUSE_SERVERS` | unset | `1` = reuse servers already listening on the E2E ports; otherwise never reused (a taken port fails the run). |
 
 ## Layout
 

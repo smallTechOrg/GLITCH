@@ -273,8 +273,11 @@ offline; AI budgets survive server restarts.
 4. `[live][gcs]` `cd api && uv run python -m glitch_api.tools.build_bank --game m1g2 --count 3 --backend gcs`
    then `--count 3` again prints `0 generated, 3 already present`.
 5. `[live]` `cd web && GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/variations.spec.ts`.
-6. Observability: `check_logs` asserts cache `hit` and `miss` lines and `/v1/metrics`
-   reports a `cache_hit_rate` between 0 and 1.
+6. Observability: `cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log --route "/v1/scenarios/{game_id}/next"`
+   (on a side-port run: `../web/test-results/<port>/api.log`) — for the scenarios route it
+   requires ≥1 `llm_call` line with cache `hit` and ≥1 with cache `miss` belonging to that
+   route's requests (`--require-cache-hit-and-miss`, automatic for this route) — and
+   `/v1/metrics` reports a `cache_hit_rate` between 0 and 1.
 
 **How the user tests it:** clear Module 1, replay Fact or Fib → six new sentences (three
 fibs) with a "NEW CASE FILE" tag; replay again → a different one; restart the backend →

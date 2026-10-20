@@ -99,7 +99,8 @@ async def test_demo_namespace_isolated(store: BlobStore) -> None:
 
 async def test_add_rejects_invalid_data(repo: ScenarioRepository) -> None:
     data = case("m1g2", 1)
-    data["sentences"][0]["fib"] = True
+    true_sentence = next(s for s in data["sentences"] if not s["fib"])  # order is server-shuffled
+    true_sentence["fib"] = True  # 4 fibs (and a fib with no explanation)
     with pytest.raises(ScenarioInvalid):
         await repo.add("m1g2", data, model="m")
     assert await repo.count("m1g2") == 0

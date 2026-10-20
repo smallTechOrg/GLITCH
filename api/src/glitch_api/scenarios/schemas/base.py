@@ -11,14 +11,20 @@ Each content game defines a ``GameSpec``:
 - ``domain_errors(data)`` — v3 counts/balance/answer-key rules; [] when valid.
 - ``texts(data)`` — every learner-visible string (moderation input).
 - ``v3_llm`` — the v3 original in LLM-output shape (prompt exemplar; must validate).
+- ``arrange(data)`` — optional: re-order a validated ``data`` deterministically before it
+  is hashed and stored (``content_shuffle``). Only for games without positional item ids
+  (m1g2 sentences, m3g1 non-redacted lines): generations tend to copy the v3 exemplar's
+  answer positions, so the server, not the model, decides the order. Cache reads never
+  re-arrange (``validate_data`` keeps the stored order).
 """
 
 from __future__ import annotations
 
+import hashlib
 import re
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
@@ -33,6 +39,31 @@ class Strict(BaseModel):
 
 def word_count(text: str) -> int:
     return len(text.split())
+
+
+T = TypeVar("T")
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip().lower())
+
+
+def content_shuffle(items: Sequence[T], text_of: Callable[[T], str], salt: str = "") -> list[T]:
+    """Deterministic pseudo-random order seeded from the items' content.
+
+    The seed is the hash of the *sorted* item texts, so the same set of items always comes
+    out in the same order whatever order the model returned them in (reproducible, and two
+    generations differing only in order hash the same). Hash-based, not ``random`` — stable
+    across Python versions. Items are expected to have distinct texts (validated before).
+    """
+    texts = [_norm(text_of(item)) for item in items]
+    seed = hashlib.sha256(("\n".join(sorted(texts)) + "\0" + salt).encode("utf-8")).hexdigest()
+
+    def rank(pair: tuple[str, T]) -> tuple[str, str]:
+        text = pair[0]
+        return hashlib.sha256(f"{seed}\n{text}".encode()).hexdigest(), text
+
+    return [item for _, item in sorted(zip(texts, items, strict=True), key=rank)]
 
 
 def duplicates(values: Iterable[str]) -> list[int]:
@@ -79,6 +110,7 @@ class GameSpec:
     domain_errors: Callable[[dict[str, Any]], list[str]]
     texts: Callable[[dict[str, Any]], list[str]]
     v3_llm: dict[str, Any]
+    arrange: Callable[[dict[str, Any]], dict[str, Any]] | None = None
 
     @property
     def schema_name(self) -> str:

@@ -1,7 +1,11 @@
 // Home (v3 menu): fresh device after Skip → PLAYER 1, LVL 1, 10 XP, streak 1, Module 1 open,
-// 2–4 LOCKED, 0/12 badges; quest box states; step statuses; badge labels; daily on focus.
+// 2–4 LOCKED, 0/12 badges; quest box states; step statuses; badge labels; daily on focus;
+// AI energy meter (durable-ai-budget.md: same component as the free-write round).
 import React from 'react';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { AppState, type AppStateStatus } from 'react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
+import { getEnergy } from '@/api/client';
+import type { ApiResult, EnergyData } from '@/contracts/api';
 import { router } from 'expo-router';
 import type { PersistedState } from '@/contracts/state';
 import { STEP_IDS } from '@/contracts/ids';
@@ -14,6 +18,12 @@ import { renderWithProviders } from '@/testing/renderWithProviders';
 jest.mock('expo-router', () => ({
   router: { navigate: jest.fn(), replace: jest.fn(), push: jest.fn(), back: jest.fn() },
 }));
+// Home reads AI energy on mount; no test talks to a real server.
+jest.mock('@/api/client', () => ({ getEnergy: jest.fn() }));
+const mockGetEnergy = getEnergy as jest.MockedFunction<typeof getEnergy>;
+const RESETS = '2026-10-21T00:00:00Z';
+const energyOk = (remaining: number): ApiResult<EnergyData> => ({ ok: true, data: {}, energy: { remaining, limit: 10, resetsAt: RESETS } });
+const UNREACHABLE: ApiResult<EnergyData> = { ok: false, error: { code: 'NETWORK', message: 'Failed to fetch', retryable: true } };
 
 const NOW = new Date();
 const ONBOARDED: Partial<PersistedState> = { profile: { nickname: null, onboarded: true, createdAt: NOW.toISOString() } };
@@ -21,6 +31,8 @@ const ALL_DONE = Object.fromEntries(STEP_IDS.map((s) => [s, true])) as Persisted
 
 beforeEach(() => {
   setReducedMotionOverride(true);
+  mockGetEnergy.mockReset();
+  mockGetEnergy.mockResolvedValue(energyOk(10));
   (router.navigate as jest.Mock).mockClear();
 });
 afterEach(() => setReducedMotionOverride(null));
@@ -110,6 +122,86 @@ describe('HomeScreen · in progress and complete', () => {
     expect(screen.getByTestId('home-stat-modules')).toHaveTextContent(/4\/4/);
     await fireEvent.press(screen.getByTestId('home-quest-button'));
     expect(router.navigate).toHaveBeenCalledWith('/module/1/story');
+  });
+});
+
+describe('HomeScreen · AI energy meter', () => {
+  it('reachable: reads GET /v1/energy (no charge) and shows "7/10" with the label "AI energy 7 of 10"', async () => {
+    mockGetEnergy.mockResolvedValue(energyOk(7));
+    await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
+    const meter = await screen.findByLabelText('AI energy 7 of 10');
+    expect(meter.props.testID).toBe('home-energy');
+    expect(screen.getByTestId('home-energy')).toHaveTextContent(/AI ENERGY/);
+    expect(screen.getByTestId('home-energy')).toHaveTextContent(/7\/10/);
+    expect(screen.queryByTestId('fw-energy')).toBeNull(); // Home's own testID, not the round's
+    expect(mockGetEnergy).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows "…" while loading, then the meter', async () => {
+    let resolve: (r: ApiResult<EnergyData>) => void = () => undefined;
+    mockGetEnergy.mockReturnValue(new Promise((r) => (resolve = r)));
+    await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
+    expect(screen.getByTestId('home-energy').props.accessibilityLabel).toBe('AI energy loading');
+    expect(screen.getByTestId('home-energy')).toHaveTextContent(/…/);
+    await act(async () => resolve(energyOk(3)));
+    expect(screen.getByTestId('home-energy').props.accessibilityLabel).toBe('AI energy 3 of 10');
+  });
+
+  it('unreachable server: "?" state, labelled unknown, and Home stays fully usable', async () => {
+    mockGetEnergy.mockResolvedValue(UNREACHABLE);
+    await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
+    await screen.findByLabelText('AI energy unknown, NOVA is offline');
+    expect(screen.getByTestId('home-energy')).toHaveTextContent(/\?/);
+    expect(screen.getByTestId('home-energy')).not.toHaveTextContent(/\d+\/10/);
+    await fireEvent.press(screen.getByTestId('home-quest-button'));
+    expect(router.navigate).toHaveBeenCalledWith('/module/1/hero');
+  });
+
+  it('a server error envelope that still carries energy shows that energy (cap reached → 0/10, recharge time)', async () => {
+    mockGetEnergy.mockResolvedValue({ ok: false, error: { code: 'CAP_DEVICE', message: 'cap', retryable: false }, energy: { remaining: 0, limit: 10, resetsAt: RESETS } });
+    await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
+    await screen.findByLabelText('AI energy 0 of 10');
+    expect(screen.getByTestId('home-energy')).toHaveTextContent(/RECHARGES IN \d+H/);
+  });
+
+  it('refreshes when the app regains focus (AppState → active), and recovers from offline', async () => {
+    const listeners: Array<(s: AppStateStatus) => void> = [];
+    const remove = jest.fn();
+    // Swap (not spyOn): the preset's AppState.addEventListener is already a jest.fn, and
+    // restoring a spy on a mock would wipe its implementation for later tests.
+    const original = AppState.addEventListener;
+    AppState.addEventListener = ((type: string, fn: (s: AppStateStatus) => void) => {
+      if (type === 'change') listeners.push(fn);
+      return { remove };
+    }) as unknown as typeof AppState.addEventListener;
+    try {
+      mockGetEnergy.mockResolvedValueOnce(UNREACHABLE).mockResolvedValueOnce(energyOk(6));
+      const view = await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
+      await screen.findByLabelText('AI energy unknown, NOVA is offline');
+      expect(listeners.length).toBeGreaterThan(0);
+      await act(async () => listeners.forEach((fn) => fn('background')));
+      expect(mockGetEnergy).toHaveBeenCalledTimes(1); // only 'active' refreshes
+      await act(async () => listeners.forEach((fn) => fn('active')));
+      await screen.findByLabelText('AI energy 6 of 10');
+      expect(mockGetEnergy).toHaveBeenCalledTimes(2);
+      await view.unmount();
+      expect(remove).toHaveBeenCalled();
+    } finally {
+      AppState.addEventListener = original;
+    }
+  });
+
+  it('a response arriving after Home unmounts is ignored (request aborted)', async () => {
+    let resolve: (r: ApiResult<EnergyData>) => void = () => undefined;
+    let signal: AbortSignal | undefined;
+    mockGetEnergy.mockImplementation((s) => {
+      signal = s;
+      return new Promise((r) => (resolve = r));
+    });
+    const view = await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
+    await view.unmount();
+    expect(signal?.aborted).toBe(true);
+    await act(async () => resolve(energyOk(5))); // no state update on an unmounted tree
   });
 });
 

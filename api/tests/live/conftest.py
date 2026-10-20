@@ -23,7 +23,7 @@ from glitch_api.llm.base import LLMProvider, LLMRequest, LLMResult
 from glitch_api.llm.factory import build_provider
 from glitch_api.main import create_app
 
-MAX_LIVE_CALLS = 10
+MAX_LIVE_CALLS = 15  # 5 free-write + 5 scenario generations + headroom for validator-fed regenerations
 _calls = {"n": 0}
 
 

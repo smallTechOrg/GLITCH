@@ -135,9 +135,12 @@ def test_m1g1_overlong_email_rejected() -> None:
 # ---- m1g2 Fact or Fib -------------------------------------------------------------------
 def test_m1g2_served_shape() -> None:
     data = parse_candidate("m1g2", v3("m1g2"))
-    assert [s["fib"] for s in data["sentences"]] == [False, True, False, True, False, True]
-    assert data["sentences"][0]["explanation"] is None
-    assert data["sentences"][1]["explanation"] == "Memorizing is not generalizing. New data is the real test."
+    by_text = {s["text"]: s for s in data["sentences"]}
+    assert len(by_text) == 6 and sum(s["fib"] for s in data["sentences"]) == 3
+    assert by_text["Machine learning finds patterns in training data."]["explanation"] is None
+    memorize = by_text["A model that memorizes its training data will always do well on new data."]
+    assert memorize["fib"] is True
+    assert memorize["explanation"] == "Memorizing is not generalizing. New data is the real test."
 
 
 @pytest.mark.parametrize("fibs", [2, 4])
@@ -375,3 +378,81 @@ def test_user_prompt_carries_tags_and_feedback() -> None:
     assert "<game>m1g2</game>" in user and "<case_number>4</case_number>" in user
     assert "<validation_errors>\n- exactly 3 sentences must be fibs (got 2)\n</validation_errors>" in user
     assert "<validation_errors>" not in user_prompt("m1g2", 4)
+
+
+# ---- server-side item shuffle (m1g2 sentences, m3g1 non-redacted lines) -----------------
+# Generated case files tend to copy the v3 exemplar's answer positions (fibs at 2/4/6), so
+# parse_candidate re-orders the items deterministically from their content, after
+# validation and before hashing. Answer keys travel with their item.
+def _items(game_id: str, data: dict[str, Any]) -> list[dict[str, Any]]:
+    return data["sentences"] if game_id == "m1g2" else data["lines"][2:]
+
+
+def _llm_items(game_id: str, obj: dict[str, Any]) -> list[dict[str, Any]]:
+    return obj["sentences"] if game_id == "m1g2" else obj["lines"]
+
+
+@pytest.mark.parametrize("game_id", ["m1g2", "m3g1"])
+def test_shuffle_keeps_answer_keys_attached_and_is_a_permutation(game_id: str) -> None:
+    for n in range(1, 9):
+        obj = fake_scenario(game_id, n)
+        served = _items(game_id, parse_candidate(game_id, copy.deepcopy(obj)))
+        if game_id == "m1g2":
+            expected = {(s["text"], s["fib"], s["explanation"] if s["fib"] else None) for s in obj["sentences"]}
+            got = {(s["text"], s["fib"], s["explanation"]) for s in served}
+        else:
+            expected = {(ln["text"], ln["proxy"], ln["note"]) for ln in obj["lines"]}
+            got = {(ln["text"], ln["proxy"], ln["note"]) for ln in served}
+        assert got == expected and len(served) == len(_llm_items(game_id, obj))
+
+
+@pytest.mark.parametrize("game_id", ["m1g2", "m3g1"])
+def test_shuffle_is_deterministic_and_independent_of_the_model_order(game_id: str) -> None:
+    obj = fake_scenario(game_id, 3)
+    first = parse_candidate(game_id, copy.deepcopy(obj))
+    assert parse_candidate(game_id, copy.deepcopy(obj)) == first
+    reversed_obj = copy.deepcopy(obj)
+    _llm_items(game_id, reversed_obj).reverse()
+    assert parse_candidate(game_id, reversed_obj) == first  # same items → same order → same hash
+    assert content_hash(parse_candidate(game_id, reversed_obj)) == content_hash(first)
+
+
+@pytest.mark.parametrize("game_id", ["m1g2", "m3g1"])
+def test_shuffle_moves_items_off_the_generated_positions(game_id: str) -> None:
+    key = "fib" if game_id == "m1g2" else "proxy"
+    v3_pattern = tuple(item[key] for item in _llm_items(game_id, v3(game_id)))
+    patterns, moved = set(), 0
+    for n in range(1, 9):
+        obj = fake_scenario(game_id, n)
+        served = _items(game_id, parse_candidate(game_id, copy.deepcopy(obj)))
+        patterns.add(tuple(item[key] for item in served))
+        moved += [item["text"] for item in served] != [item["text"] for item in _llm_items(game_id, obj)]
+    # The answer-key layout varies across case files and is not pinned to the v3 layout.
+    assert len(patterns) >= 3 and patterns != {v3_pattern}
+    assert moved >= 6  # the model's order is (almost always) not the served order
+
+
+def test_m3g1_shuffle_keeps_redacted_lines_first() -> None:
+    for n in range(1, 9):
+        data = parse_candidate("m3g1", fake_scenario("m3g1", n))
+        assert data["lines"][:2] == [
+            {"text": "NAME", "proxy": None, "note": "hid"},
+            {"text": "GENDER", "proxy": None, "note": "hid"},
+        ]
+
+
+@pytest.mark.parametrize("game_id", ["m1g2", "m3g1"])
+def test_validate_data_never_reorders_stored_items(game_id: str) -> None:
+    data = parse_candidate(game_id, fake_scenario(game_id, 2))
+    tampered = copy.deepcopy(data)
+    _items(game_id, tampered).reverse()
+    if game_id == "m3g1":
+        tampered["lines"][2:] = list(_items(game_id, tampered))
+    assert validate_data(game_id, tampered) == tampered  # cache reads keep the stored order
+
+
+@pytest.mark.parametrize(("game_id", "field", "text_key"), [("m1g1", "trainEmails", "text"), ("m4g1", "citations", "text"), ("m4g2", "answers", "statement")])
+def test_positional_id_games_keep_the_model_order(game_id: str, field: str, text_key: str) -> None:
+    obj = fake_scenario(game_id, 2)
+    data = parse_candidate(game_id, copy.deepcopy(obj))
+    assert [item[text_key] for item in data[field]] == [item[text_key] for item in obj[field]]

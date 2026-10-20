@@ -121,7 +121,8 @@ curl -sf http://127.0.0.1:8787/healthz
 cd api && uv run pytest -q
 
 # [live] tests against the real OpenRouter key in the root .env
-# (free-write: 5 calls; scenarios: exactly 1 generation per content game = 5 calls)
+# (free-write: 5 calls; scenarios: 1 generation per content game = 5 calls, +1 for any game whose
+#  first answer fails validation and is regenerated; the run fails loudly above 15 calls)
 cd api && uv run pytest -q -m live
 
 # [gcs] real-bucket round-trip (needs GLITCH_GCS_BUCKET + Application Default Credentials;
@@ -142,12 +143,18 @@ cd api && uv run python -m glitch_api.tools.check_model
 #  run the web E2E tests below first)
 cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log
 # → LOGS OK …   (exits 1 and lists each failure otherwise)
+# Phase 2: the scenarios route — also requires ≥1 cache "hit" AND ≥1 cache "miss" llm_call line
+# for that route (on automatically for this route; --require-cache-hit-and-miss forces it for any route)
+cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log --route "/v1/scenarios/{game_id}/next"
+# → LOGS OK …: … 1 cache hit / 1 cache miss, …
+# the same checks on a side-port E2E run's log (here GLITCH_E2E_API_PORT=8788)
+cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/8788/api.log --route "/v1/scenarios/{game_id}/next"
 ```
 
 Endpoints (`spec/api.md`): `GET /healthz`, `GET /v1/energy`,
 `POST /v1/freewrite/evaluate`, `GET /v1/scenarios/{gameId}/next?seen=<ids>` (Phase 2: a
 fresh, never-seen case file for a content game — served free from the shared cache, or
-generated once with one AI call and cached for everyone), `GET /v1/metrics`. Every response uses the envelope
+generated once — one AI call, or two when the first answer fails validation and is regenerated — and cached for everyone), `GET /v1/metrics`. Every response uses the envelope
 `{"ok": true, "data": …}` / `{"ok": false, "error": {"code", "message", "retryable"}}`.
 Each request writes one JSON log line to stdout with `route`, `method`, `status`,
 `latency_ms`, `request_id`, `device_hash` and `outcome`. Bodies, prompts and raw device
@@ -182,9 +189,10 @@ uv run python -m glitch_api.tools.build_bank --game m1g2 --count 3 --backend gcs
 - `--max-calls` (default 20) caps the AI calls in one run, counting retries and the
   one-time regeneration. When it is reached the run stops and exits 1; run it again to
   carry on.
-- Each case file costs one AI call. It goes through the same checks as live generation:
-  schema and content validation (one retry with the validator's feedback), the output
-  filter, and a duplicate check. Rejected candidates are listed with their reason and
+- Each case file costs one AI call, or two when the first answer fails validation and is
+  regenerated once with the validator's feedback (that retry counts towards `--max-calls`).
+  It goes through the same checks as live generation: schema and content validation, the
+  output filter, and a duplicate check. Rejected candidates are listed with their reason and
   never stored. Timeouts and 5xx/429 errors are retried 3 times with backoff before the
   candidate counts as rejected. A rejected key, missing credits or an unknown model stops
   the run.
@@ -221,16 +229,24 @@ cd web && npx expo start --web --port 8092
 cd web && npx tsc --noEmit && npx jest --ci
 
 # end-to-end tests (Playwright starts the API and the export server itself and never
-# reuses one already running). Ports: GLITCH_E2E_API_PORT (default 8787), GLITCH_WEB_PORT
-# (default 8090); GLITCH_WEB_DIST picks the export dir (default dist). The API URL is baked
-# into the export, so export against the same API port first (setup fails on a mismatch).
-# Side ports + a separate export dir leave a dev server on 8787 / 8090 untouched:
+# reuses one already running unless GLITCH_E2E_REUSE_SERVERS=1). Ports: GLITCH_E2E_API_PORT
+# (default 8787), GLITCH_WEB_PORT (default 8090); GLITCH_WEB_DIST picks the export dir
+# (default dist). The API URL is baked into the export, so export against the same API port
+# first (setup fails on a mismatch).
+# Side ports + a separate export dir (dist-e2e) leave a dev server on 8787 / 8090 and its
+# dist untouched. Artefacts (api.log for check_logs, the run's blob cache, Playwright output)
+# go to web/test-results/ on API port 8787 and to web/test-results/<port>/ on any other port
+# (here web/test-results/8788/), so runs on different ports never overwrite each other:
 cd web && npx playwright install chromium
 cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8788 npx expo export --platform web --output-dir dist-e2e
 cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8788 GLITCH_WEB_PORT=8091 GLITCH_E2E_EXPECT_PROVIDER=fake npx playwright test
 
-# [live] end-to-end with the real AI (needs the key in the root .env)
-cd web && GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/freewrite.spec.ts e2e/journey.spec.ts
+# [live] end-to-end with the real AI (needs the key in the root .env), same side-port export
+cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8788 GLITCH_WEB_PORT=8091 GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/freewrite.spec.ts e2e/journey.spec.ts e2e/variations.spec.ts
+
+# default ports instead (only when nothing else is serving 8787 / 8090; artefacts in web/test-results/)
+cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8787 npx expo export --platform web
+cd web && GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/freewrite.spec.ts e2e/journey.spec.ts e2e/variations.spec.ts
 ```
 
 ## Running the whole thing locally

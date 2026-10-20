@@ -2,13 +2,19 @@
 
     cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log
     cd api && uv run python -m glitch_api.tools.check_logs <log> --forbid "some prompt text" --forbid-file prompts.txt
+    cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log --route "/v1/scenarios/{game_id}/next"
 
 Asserts:
 1. every non-blank line is a JSON object;
 2. ≥1 ``request`` line for ``/v1/freewrite/evaluate`` (``--route`` to change);
 3. ≥1 ``llm_call`` line carrying ``latency_ms``, ``model``, ``prompt_tokens``,
    ``completion_tokens`` and ``cache``;
-4. privacy: no line has a learner-text / secret field (``prompt``, ``goal``, ``reply``,
+4. cache (``--require-cache-hit-and-miss``; ON by default for the scenarios route
+   ``/v1/scenarios/{game_id}/next``, off otherwise; ``--no-require-cache-hit-and-miss``
+   turns it off): ≥1 complete ``llm_call`` line with ``cache: "hit"`` AND ≥1 with
+   ``cache: "miss"`` whose ``request_id`` belongs to a ``request`` line for the route
+   (Phase 2 gate step 6 — a log of only generations, or only cache hits, fails);
+5. privacy: no line has a learner-text / secret field (``prompt``, ``goal``, ``reply``,
    ``tip``, ``messages``, ``content``, ``device_id``, ``authorization``, ``api_key`` …), no
    raw UUID (device ids), no OpenRouter key, and none of the forbidden strings appears
    anywhere (case-insensitive). Forbidden strings = the spec fixture prompts + ``--forbid``
@@ -31,6 +37,8 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[4]
 E2E_DIR = REPO_ROOT / "web" / "e2e"
 DEFAULT_ROUTE = "/v1/freewrite/evaluate"
+SCENARIOS_ROUTE = "/v1/scenarios/{game_id}/next"
+CACHE_ROUTES = frozenset({SCENARIOS_ROUTE})  # routes where hit + miss are required by default
 
 REQUIRED_LLM_FIELDS = ("latency_ms", "model", "prompt_tokens", "completion_tokens", "cache")
 FORBIDDEN_KEYS = frozenset(
@@ -79,9 +87,17 @@ def _walk_keys(obj: Any) -> Iterable[str]:
             yield from _walk_keys(v)
 
 
-def check(lines: Sequence[str], forbidden: Iterable[str], route: str = DEFAULT_ROUTE) -> tuple[list[str], dict[str, int]]:
+def check(
+    lines: Sequence[str],
+    forbidden: Iterable[str],
+    route: str = DEFAULT_ROUTE,
+    require_cache_hit_and_miss: bool | None = None,
+) -> tuple[list[str], dict[str, int]]:
+    """``require_cache_hit_and_miss=None`` = auto: required for the routes in ``CACHE_ROUTES``."""
     failures: list[str] = []
-    stats = {"lines": 0, "request": 0, "llm_call": 0, "forbidden_checked": 0}
+    stats = {"lines": 0, "request": 0, "llm_call": 0, "forbidden_checked": 0, "cache_hit": 0, "cache_miss": 0}
+    route_request_ids: set[str] = set()
+    cache_calls: list[tuple[str, str]] = []  # (request_id, cache) of complete llm_call lines
     needles = sorted({f.strip().lower() for f in forbidden if f and f.strip()})
     stats["forbidden_checked"] = len(needles)
 
@@ -114,6 +130,8 @@ def check(lines: Sequence[str], forbidden: Iterable[str], route: str = DEFAULT_R
         event = entry.get("event")
         if event == "request" and entry.get("route") == route:
             stats["request"] += 1
+            if isinstance(entry.get("request_id"), str):
+                route_request_ids.add(entry["request_id"])
         elif event == "llm_call":
             missing = [f for f in REQUIRED_LLM_FIELDS if f not in entry]
             if missing:
@@ -129,11 +147,24 @@ def check(lines: Sequence[str], forbidden: Iterable[str], route: str = DEFAULT_R
                 failures.append(f"line {n}: llm_call cache not none|hit|miss")
             else:
                 stats["llm_call"] += 1
+                if isinstance(entry.get("request_id"), str):
+                    cache_calls.append((entry["request_id"], entry["cache"]))
 
     if stats["request"] == 0:
         failures.append(f"no request line for {route}")
     if stats["llm_call"] == 0:
         failures.append(f"no complete llm_call line ({', '.join(REQUIRED_LLM_FIELDS)})")
+
+    # llm_call lines precede their request line (written when the request ends) → match after the pass.
+    for request_id, cache in cache_calls:
+        if request_id in route_request_ids and cache in ("hit", "miss"):
+            stats[f"cache_{cache}"] += 1
+    if require_cache_hit_and_miss is None:
+        require_cache_hit_and_miss = route in CACHE_ROUTES
+    if require_cache_hit_and_miss:
+        for cache in ("hit", "miss"):
+            if stats[f"cache_{cache}"] == 0:
+                failures.append(f"no llm_call cache={cache} line for {route}")
     return failures, stats
 
 
@@ -142,7 +173,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("logfile", type=Path)
     parser.add_argument("--forbid", action="append", default=[], help="text that must not appear (repeatable)")
     parser.add_argument("--forbid-file", type=Path, action="append", default=[], help="file of forbidden lines")
-    parser.add_argument("--route", default=DEFAULT_ROUTE)
+    parser.add_argument("--route", default=DEFAULT_ROUTE, help=f"request route template (default {DEFAULT_ROUTE})")
+    parser.add_argument(
+        "--require-cache-hit-and-miss",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=f"require >=1 cache hit and >=1 cache miss llm_call line for --route (default: on for {SCENARIOS_ROUTE})",
+    )
     parser.add_argument("--no-e2e-scan", action="store_true", help="do not read string literals from web/e2e")
     args = parser.parse_args(list(sys.argv[1:] if argv is None else argv))
 
@@ -156,14 +193,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         forbidden += e2e_strings()
 
     lines = args.logfile.read_text(encoding="utf-8", errors="replace").splitlines()
-    failures, stats = check(lines, forbidden, args.route)
+    failures, stats = check(lines, forbidden, args.route, args.require_cache_hit_and_miss)
     if failures:
         for failure in failures:
             print(f"LOGS FAIL: {failure}", file=sys.stderr)
         return 1
     print(
         f"LOGS OK {args.logfile}: {stats['lines']} lines, {stats['request']} {args.route} request line(s), "
-        f"{stats['llm_call']} llm_call line(s), {stats['forbidden_checked']} forbidden strings absent"
+        f"{stats['llm_call']} llm_call line(s), {stats['cache_hit']} cache hit / {stats['cache_miss']} cache miss, "
+        f"{stats['forbidden_checked']} forbidden strings absent"
     )
     return 0
 

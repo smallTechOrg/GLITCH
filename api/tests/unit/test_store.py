@@ -238,6 +238,61 @@ async def test_gcs_backend_errors_map_to_store_error() -> None:
         await store.list()
 
 
+def _transport_errors() -> list[Exception]:
+    import google.auth.exceptions as gauth
+    import requests
+
+    return [
+        gauth.TransportError("token endpoint unreachable"),
+        gauth.RefreshError("credentials expired"),
+        gauth.DefaultCredentialsError("no ADC"),
+        gexc.RetryError("deadline exceeded while retrying", cause=None),
+        requests.exceptions.ConnectionError("connection reset"),
+        requests.exceptions.Timeout("read timed out"),
+        requests.exceptions.ChunkedEncodingError("truncated body"),
+        ConnectionResetError("socket closed"),
+        TimeoutError("socket timeout"),
+    ]
+
+
+@pytest.mark.parametrize("exc", _transport_errors(), ids=lambda e: type(e).__name__)
+@pytest.mark.parametrize("op", ["get", "put", "create", "list", "delete"])
+async def test_gcs_transport_and_auth_errors_map_to_store_error(op: str, exc: Exception) -> None:
+    """Not only GoogleAPICallError: auth, retry-exhausted and requests transport failures are
+    StoreErrors too, so callers (durable caps, scenario cache) take their fail-closed path."""
+    client = FakeGcsClient()
+    store = GcsBlobStore("bkt", client=client)
+    await store.put("k.json", b"x")
+    client.fail_next = exc
+    with pytest.raises(StoreError) as info:
+        if op == "get":
+            await store.get("k.json")
+        elif op == "put":
+            await store.put("k.json", b"y")
+        elif op == "create":
+            await store.create("new.json", b"y")
+        elif op == "list":
+            await store.list()
+        else:
+            await store.delete("k.json")
+    assert type(exc).__name__ in str(info.value)
+    assert info.value.__cause__ is exc
+
+
+@pytest.mark.parametrize("exc", _transport_errors(), ids=lambda e: type(e).__name__)
+async def test_durable_caps_on_gcs_fail_closed_on_transport_errors(exc: Exception) -> None:
+    from glitch_api.caps.blob_store import FAIL_CLOSED_COUNT, BlobCounterStore
+
+    client = FakeGcsClient()
+    caps = BlobCounterStore(GcsBlobStore("bkt", client=client), retries=0)
+    key = "device:0123456789ab:2026-10-20"
+    client.fail_next = exc
+    assert await caps.get(key) == FAIL_CLOSED_COUNT
+    client.fail_next = exc
+    assert await caps.incr_if_below(key, 10) == (False, 10)
+    assert client.buckets["bkt"] == {}  # nothing written
+
+
 def test_gcs_requires_bucket() -> None:
     with pytest.raises(StoreError):
         GcsBlobStore("", client=FakeGcsClient())

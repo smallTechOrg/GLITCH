@@ -32,7 +32,7 @@ class FakeGcsClient:
         self._lock = threading.Lock()
         self.on_upload: Callable[[str, str], None] | None = None  # (bucket, name) before each upload
         self.calls: list[tuple[str, str]] = []  # (operation, object name)
-        self.fail_next: gexc.GoogleAPICallError | None = None
+        self.fail_next: Exception | None = None  # raised by the next client call (any error type)
 
     def bucket(self, name: str) -> FakeBucket:
         self.buckets.setdefault(name, {})

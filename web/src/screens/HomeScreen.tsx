@@ -1,5 +1,6 @@
 // Home course map (v3 `menu`, lines 347–365): hero + greeting, stats, NOVA quest box,
-// "COURSE · AI LITERACY" path of 4 module cards with steps, and the 12 badges.
+// "COURSE · AI LITERACY" path of 4 module cards with steps, and the 12 badges. Phase 2: the
+// AI energy meter under the stats (durable-ai-budget.md; same component as free-write).
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
@@ -20,6 +21,7 @@ import { PixelText } from '../ui/PixelText';
 import { StatTile } from '../ui/StatTile';
 import { BadgeTile } from './BadgeTile';
 import { HOME } from './copy';
+import { HomeEnergy } from './HomeEnergy';
 import { ModuleCard } from './ModuleCard';
 import { goTo } from './nav';
 
@@ -53,6 +55,9 @@ export function HomeScreen(): React.JSX.Element {
         <StatTile testID="home-stat-xp" value={String(s.xp)} label={HOME.totalXp} />
         <StatTile testID="home-stat-streak" icon="flame" value={String(s.streak.current)} label={HOME.streakLabel(s.streak.best)} />
         <StatTile testID="home-stat-modules" value={`${modulesDone(s)}/${MODULES.length}`} label={HOME.modulesLabel} />
+      </View>
+      <View style={styles.energy}>
+        <HomeEnergy />
       </View>
 
       <View testID="home-quest" style={styles.quest}>
@@ -88,6 +93,7 @@ const styles = StyleSheet.create({
   hero: { flexDirection: 'row', gap: 20, alignItems: 'center', marginVertical: 16 },
   hello: { flex: 1, gap: 4 },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginVertical: 14 },
+  energy: { marginTop: -4, marginBottom: 4 },
   quest: { flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap', backgroundColor: colors.ln, borderWidth: border.width, borderColor: colors.ac, paddingVertical: 12, paddingHorizontal: 16, marginVertical: 14 },
   qt: { flex: 1, minWidth: 200 },
   sec: { marginTop: 30, marginBottom: 4 },

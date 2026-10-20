@@ -87,3 +87,78 @@ def test_main_exit_codes(tmp_path: Path, capsys) -> None:
     assert "LOGS FAIL" in capsys.readouterr().err
 
     assert main([str(tmp_path / "missing.log")]) == 1
+
+
+# ---- cache hit + miss for a route (Phase 2 gate step 6) -----------------------------------
+SCENARIOS = "/v1/scenarios/{game_id}/next"
+
+
+def _scenario_request(rid: str) -> dict:
+    return {"event": "request", "route": SCENARIOS, "status": 200, "request_id": rid, "device_hash": "0123456789ab"}
+
+
+def _scenario_call(rid: str, cache: str) -> dict:
+    return {**LLM_CALL, "request_id": rid, "purpose": "scenario_gen", "game_id": "m1g2", "cache": cache}
+
+
+def test_scenarios_route_requires_hit_and_miss_automatically() -> None:
+    # llm_call lines are written before their request line (the request line closes the request)
+    ok = _lines(_scenario_call("r1", "miss"), _scenario_request("r1"), _scenario_call("r2", "hit"), _scenario_request("r2"))
+    failures, stats = check(ok, forbidden=[], route=SCENARIOS)
+    assert failures == []
+    assert stats["cache_hit"] == 1 and stats["cache_miss"] == 1
+
+    only_miss = _lines(_scenario_call("r1", "miss"), _scenario_request("r1"))
+    failures, stats = check(only_miss, forbidden=[], route=SCENARIOS)
+    assert failures == ["no llm_call cache=hit line for /v1/scenarios/{game_id}/next"]
+    assert stats["cache_hit"] == 0 and stats["cache_miss"] == 1
+
+    only_hit = _lines(_scenario_call("r2", "hit"), _scenario_request("r2"))
+    failures, _ = check(only_hit, forbidden=[], route=SCENARIOS)
+    assert failures == ["no llm_call cache=miss line for /v1/scenarios/{game_id}/next"]
+
+
+def test_cache_lines_count_only_for_the_routes_requests() -> None:
+    # A hit belonging to a request on another route (or to no request at all) does not count.
+    lines = _lines(
+        _scenario_call("r1", "miss"),
+        _scenario_request("r1"),
+        _scenario_call("fw", "hit"),
+        {**REQUEST, "request_id": "fw"},
+        _scenario_call("orphan", "hit"),
+        {k: v for k, v in _scenario_call("x", "hit").items() if k != "request_id"},
+    )
+    failures, stats = check(lines, forbidden=[], route=SCENARIOS)
+    assert any("no llm_call cache=hit line" in f for f in failures)
+    assert stats["cache_hit"] == 0 and stats["cache_miss"] == 1
+
+
+def test_cache_requirement_is_off_by_default_for_freewrite_and_can_be_forced() -> None:
+    lines = _lines(REQUEST, LLM_CALL)  # cache "none"
+    assert check(lines, forbidden=[])[0] == []
+    failures, _ = check(lines, forbidden=[], require_cache_hit_and_miss=True)
+    assert failures == [
+        "no llm_call cache=hit line for /v1/freewrite/evaluate",
+        "no llm_call cache=miss line for /v1/freewrite/evaluate",
+    ]
+    only_miss = _lines(_scenario_call("r1", "miss"), _scenario_request("r1"))
+    assert check(only_miss, forbidden=[], route=SCENARIOS, require_cache_hit_and_miss=False)[0] == []
+
+
+def test_main_cache_flags(tmp_path: Path, capsys) -> None:
+    log = tmp_path / "api.log"
+    log.write_text("\n".join(_lines(_scenario_call("r1", "miss"), _scenario_request("r1"))) + "\n")
+    assert main([str(log), "--no-e2e-scan", "--route", SCENARIOS]) == 1
+    assert "no llm_call cache=hit line" in capsys.readouterr().err
+    assert main([str(log), "--no-e2e-scan", "--route", SCENARIOS, "--no-require-cache-hit-and-miss"]) == 0
+    capsys.readouterr()
+
+    with log.open("a") as fh:
+        fh.write("\n".join(_lines(_scenario_call("r2", "hit"), _scenario_request("r2"))) + "\n")
+    assert main([str(log), "--no-e2e-scan", "--route", SCENARIOS]) == 0
+    out = capsys.readouterr().out
+    assert "LOGS OK" in out and "1 cache hit / 1 cache miss" in out
+
+    fw = tmp_path / "fw.log"
+    fw.write_text("\n".join(_lines(REQUEST, LLM_CALL)) + "\n")
+    assert main([str(fw), "--no-e2e-scan", "--require-cache-hit-and-miss"]) == 1

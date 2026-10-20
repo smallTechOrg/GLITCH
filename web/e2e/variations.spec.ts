@@ -2,9 +2,11 @@
 // Real backend (fake provider by default): GET /v1/scenarios/{gameId}/next generates once and
 // caches. Fact or Fib is the journey the user tests: clear it, replay → NEW CASE FILE with six
 // different lines (three fibs); replay again → a different one; backend down → the classic v3
-// case file with the in-world note; a fresh device's first play is always v3 (no request).
-import type { Page, Response } from '@playwright/test';
-import { test, expect, waitForApp } from './helpers/fixtures';
+// case file with the in-world note; a fresh device's first play is always v3 (no request);
+// a SECOND device replaying it gets the same variation from the cache with no energy spent.
+import type { Browser, Page, Response } from '@playwright/test';
+import { WEB_URL } from './helpers/config';
+import { test, expect, waitForApp, API_URL } from './helpers/fixtures';
 import { expectWin, pickLines } from './helpers/flows';
 
 const V3_LINE0 = '1. Machine learning finds patterns in training data.';
@@ -91,6 +93,59 @@ async function expectNewCaseFile(page: Page, served: Promise<Response>): Promise
 
 const fibsOf = (v: NonNullable<ServedScenario['data']>): number[] => v.data.sentences.flatMap((s, i) => (s.fib ? [i] : []));
 
+/** GET /v1/energy for one device (read-only, never charges). */
+async function energyOf(device: string): Promise<number> {
+  const res = await fetch(`${API_URL}/v1/energy`, { headers: { 'X-Glitch-Device': device } });
+  const body = (await res.json()) as { ok: boolean; energy?: { remaining: number; limit: number } };
+  expect(body.energy, `no energy in ${JSON.stringify(body)}`).toBeDefined();
+  return body.energy!.remaining;
+}
+
+/**
+ * Device B: a brand-new browser context (fresh storage → new device id) that has already
+ * cleared Fact or Fib, so opening it is a replay with an empty seen list. The server's cache
+ * serves the oldest unseen variation — the same one device A got for its own empty seen list
+ * — as a hit: `cached: true`, no generation, no energy spent.
+ */
+async function replayOnSecondDevice(browser: Browser, expected: NonNullable<ServedScenario['data']>, expectedLines: string[]): Promise<void> {
+  const ctx = await browser.newContext({ baseURL: WEB_URL });
+  const errors: string[] = [];
+  try {
+    const pageB = await ctx.newPage();
+    pageB.on('pageerror', (e) => errors.push(e.message));
+    const requests = trackScenarioRequests(pageB);
+    await seed(pageB, { m1g2Done: true, version: 2 });
+    const served = pageB.waitForResponse(isNext);
+    await openFactOrFib(pageB);
+    const res = await served;
+    const device = res.request().headers()['x-glitch-device'] ?? '';
+    expect(device, 'device B sent no device id').toMatch(/^[0-9a-f-]{36}$/);
+    const body = (await res.json()) as ServedScenario;
+    expect(body.ok, `device B scenario request failed: ${JSON.stringify(body)}`).toBe(true);
+    expect(body.data!.variationId).toBe(expected.variationId);
+    expect(body.data!.cached).toBe(true);
+    expect(new URL(requests[0]!).searchParams.get('seen')).toBe('');
+    await expect(pageB.getByTestId('case-file-tag')).toHaveText(NEW_TAG);
+    await expect(pageB.getByTestId('pick-line-0')).toHaveAttribute('aria-label', expectedLines[0]!);
+    expect(await lineLabels(pageB)).toEqual(expectedLines);
+    // It plays to a win with A's answer key.
+    await pickLines(pageB, fibsOf(expected));
+    await expectWin(pageB, 3);
+    // No energy spent: the server still reports a full battery for B, and so does B's Home meter.
+    expect(await energyOf(device)).toBe(10);
+    await pageB.goto('./');
+    await waitForApp(pageB);
+    await expect(pageB.getByTestId('home-energy')).toHaveAttribute('aria-label', 'AI energy 10 of 10');
+    const saved = await pageB.evaluate(() => JSON.parse(window.localStorage.getItem('glitch.v1.state') ?? '{}') as { seenScenarios: Record<string, string[]> });
+    expect(saved.seenScenarios.m1g2).toEqual([expected.variationId]);
+    expect(requests).toHaveLength(1);
+  } finally {
+    await ctx.close();
+  }
+  expect(errors, `device B uncaught page errors:\n${errors.join('\n')}`).toEqual([]);
+}
+
+
 test.describe('Fresh case files · Fact or Fib', () => {
   test('a fresh device: first play is always the v3 case file and asks the server for nothing', async ({ page }) => {
     const requests = trackScenarioRequests(page);
@@ -107,7 +162,7 @@ test.describe('Fresh case files · Fact or Fib', () => {
     expect(requests).toEqual([]);
   });
 
-  test('clear it, replay → NEW CASE FILE with different lines; replay again → a different one; no repeats after reload', async ({ page }) => {
+  test('clear it, replay → NEW CASE FILE with different lines; replay again → a different one; a second device gets the same one from the cache; no repeats after reload', async ({ page, browser }) => {
     const requests = trackScenarioRequests(page);
     await seed(page); // a Phase-1 (v1) save: migrates to v2 on boot
     await openFactOrFib(page);
@@ -127,6 +182,9 @@ test.describe('Fresh case files · Fact or Fib', () => {
     await pickLines(page, fibsOf(first));
     await expectWin(page, 3);
     await expect(page.getByTestId('win-xp-tag')).toHaveCount(0); // game-clear XP is once per game
+
+    // A second device that cleared the game replays it → the SAME variation, a cache hit, no energy.
+    await replayOnSecondDevice(browser, first, firstLines);
 
     // Replay #2 → a different variation, never the one already seen.
     served = page.waitForResponse(isNext);

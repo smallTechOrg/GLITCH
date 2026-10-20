@@ -33,10 +33,18 @@ locked. Finish the earlier steps first." + Home button — never a crash.
 
 **Case-file chrome (Phase 2, REAL)** — in the game frame on a replay of a cleared content
 game (`capabilities/scenario-variations.md`): while fetching, NOVA's thinking card
-("NEW CASE FILE" tag + "NOVA IS PULLING A NEW CASE FILE…", polite announcement, no
-dot animation under reduced motion; ≤ 15 s); a served variation shows the "NEW CASE FILE" tag; any
-fallback shows the note "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE". First plays show
-none of these.
+("NOVA IS PULLING A NEW CASE FILE…", **no tag**, polite announcement, no dot animation under reduced motion;
+the client waits at most 8 s, `SCENARIO_TIMEOUT_MS`); only a served variation shows the
+"NEW CASE FILE" tag; any fallback (timeout, network error, cap, unparseable variation) shows
+the note "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE". The outcome is announced politely
+once per fetch ("New case file loaded" / the offline note). First plays show none of these.
+
+**Home energy meter (Phase 2, REAL)** — `capabilities/durable-ai-budget.md`: Home shows the
+same `EnergyMeter` component as the free-write round, directly under the four stat tiles
+(above the quest box), testID `home-energy`. It reads `GET /v1/energy` (never charges) each
+time Home mounts and again when the app returns to the foreground; "…" while loading, "?"
+when the server is unreachable (Home stays fully usable), r/10 otherwise (red at ≤ 2,
+"RECHARGES IN nH" at 0). An error envelope that still carries energy shows that energy.
 
 ## The four states (every data view)
 | View | Empty | Loading | Error | Populated |
@@ -45,7 +53,7 @@ none of these.
 | Home badges | all greyed with how-to text | — | — | coloured |
 | Prompt log | "No prompts yet. Your sends will appear here." | — | — | last 5 |
 | Free-write evaluate | goal + empty box with placeholder "e.g. Act as…" | NOVA thinking animation | offline banners (`freewrite-forge.md`) | reply + levers + tip |
-| Energy meter | — | "…" segments | "?" offline | r/10 |
+| Energy meter (free-write round `fw-energy`, Home `home-energy`) | — | "…" segments | "?" offline | r/10 |
 
 ## Responsive
 - Mobile-first single column; max content width 960 px (v3 `#wp`).
@@ -95,7 +103,9 @@ Welcome: `welcome-nickname-input`, `welcome-start`, `welcome-skip`.
 Home: `home-greeting`, `home-quest`, `home-quest-button`, `module-card-<n>`,
 `module-status-<n>` ("LOCKED" | "d/t STEPS"), `step-<stepId>` (e.g. `step-m1h`),
 `step-<stepId>-status`, `badges-count` ("BADGES · e/12"), `badge-<badgeId>` with
-accessibility label "<Name>, unlocked|locked".
+accessibility label "<Name>, unlocked|locked", `home-energy` (Phase 2; AI energy meter under
+the stats, label "AI energy r of 10" | "AI energy loading" | "AI energy unknown, NOVA is
+offline"; text "AI ENERGY" + "r/10" | "…" | "?").
 Hero select: `hero-card-<heroId>`, `hero-enter`, `hero-back`.
 Story: `story-root` (pressable), `story-text`, `story-skip`, `story-progress`.
 Game frame: `game-title`, `hearts`, `shield-indicator`, `power-button`, `say-bubble`,
@@ -103,7 +113,8 @@ Game frame: `game-title`, `hearts`, `shield-indicator`, `power-button`, `say-bub
 `fail-home`; win: `win-screen`, `win-stars` (label "n stars"), `win-continue`,
 `win-replay`, `win-xp-tag`, `win-flawless-tag`, `win-soon-strip`.
 Case file (Phase 2): `case-file-loading` (NOVA thinking card, role progressbar, label
-"NOVA IS PULLING A NEW CASE FILE…"), `case-file-tag` (text "NEW CASE FILE"),
+"NOVA IS PULLING A NEW CASE FILE…"; no tag while loading), `case-file-tag` (text "NEW CASE
+FILE"; only on a served variation),
 `case-file-offline` (text "NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE").
 Sort: `dnd-pool`, `dnd-item-<itemId>`, `dnd-zone-<zoneId>`. Pick: `pick-line-<index>`
 (0-based, v3 order), `pick-found`. Slider: `slider-<id>`, `slider-<id>-dec`,
