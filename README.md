@@ -153,6 +153,50 @@ Each request writes one JSON log line to stdout with `route`, `method`, `status`
 `latency_ms`, `request_id`, `device_hash` and `outcome`. Bodies, prompts and raw device
 ids are never logged.
 
+## Pre-building the case-file bank
+
+An offline admin command fills the shared scenario cache ahead of time, so learners
+rarely have to wait for a live generation. `--count N` is the **target** per game: only
+the shortfall is generated, so running it again with the same N generates nothing.
+
+```bash
+# from api/ — see what would be generated (no AI calls, nothing written)
+uv run python -m glitch_api.tools.build_bank --game all --count 3 --dry-run
+
+# fill Fact or Fib up to 3 case files in the local cache (GLITCH_CACHE_DIR, default api/.cache)
+uv run python -m glitch_api.tools.build_bank --game m1g2 --count 3
+# → m1g2: 3 generated, 0 already present, 0 rejected
+#   calls: 3, tokens: … prompt + … completion, est. cost: $…
+# run it again
+uv run python -m glitch_api.tools.build_bank --game m1g2 --count 3
+# → m1g2: 0 generated, 3 already present, 0 rejected
+
+# the deployed cache (needs GLITCH_GCS_BUCKET or --bucket, plus Application Default Credentials)
+uv run python -m glitch_api.tools.build_bank --game m1g2 --count 3 --backend gcs
+```
+
+- `--game` is one of `m1g1 m1g2 m3g1 m4g1 m4g2`, or `all`. `--count` is 1–100 (default 3).
+- `--backend local|gcs`, `--cache-dir`, `--bucket` and `--provider auto|openrouter|fake`
+  default to `GLITCH_BLOB_BACKEND`, `GLITCH_CACHE_DIR`, `GLITCH_GCS_BUCKET` and
+  `GLITCH_LLM_PROVIDER` from `.env`.
+- `--max-calls` (default 20) caps the AI calls in one run, counting retries and the
+  one-time regeneration. When it is reached the run stops and exits 1; run it again to
+  carry on.
+- Each case file costs one AI call. It goes through the same checks as live generation:
+  schema and content validation (one retry with the validator's feedback), the output
+  filter, and a duplicate check. Rejected candidates are listed with their reason and
+  never stored. Timeouts and 5xx/429 errors are retried 3 times with backoff before the
+  candidate counts as rejected. A rejected key, missing credits or an unknown model stops
+  the run.
+- Bank calls use no device energy and do **not** count against the server's daily
+  global ceiling (`GLITCH_GLOBAL_DAILY_CAP`). They are charged only to the OpenRouter
+  key in `.env`.
+- The command will not run with the demo provider (no key) unless you pass `--dry-run`.
+- The report goes to stdout. JSON log lines (`llm_call`, `bank_variation`, `bank_game`) go
+  to stderr. Neither contains generated text or the key. Exit codes: 0 = done
+  (rejections alone still count as done), 1 = a game errored (budget reached, cache
+  unreachable, provider refused), 2 = bad arguments or config.
+
 ## Web (`web/`)
 
 All commands run from the `web/` directory, through `npm`/`npx`, on Node 22.

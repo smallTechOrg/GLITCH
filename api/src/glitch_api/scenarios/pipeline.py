@@ -182,6 +182,7 @@ async def generate(
     start = time.perf_counter()
     try:
         s.llm = await provider.complete(request)
+        s.outcome = "ok"  # the call succeeded; later steps override on their own failure
     except LLMError as exc:
         s.outcome, s.detail, s.error = exc.outcome, exc.message, ApiError(exc.code)
     except Exception as exc:  # noqa: BLE001 — a provider bug is "unavailable", never a trace

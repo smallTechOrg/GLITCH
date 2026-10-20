@@ -244,6 +244,41 @@ async def test_store_failure_falls_back_and_refunds(repo, energy, monkeypatch) -
     assert s.error.code == "INTERNAL" and s.energy.remaining == 10
 
 
+SECRET_MSG = "boom-secret-exception-message"
+
+
+async def _raise_runtime(*_: Any, **__: Any) -> Any:
+    raise RuntimeError(SECRET_MSG)
+
+
+@pytest.mark.parametrize("target", ["moderator", "repo_add"])
+async def test_unexpected_exception_logs_internal_error_and_refunds(target, repo, energy, log_lines, monkeypatch) -> None:
+    from glitch_api.scenarios import pipeline
+
+    if target == "moderator":
+        monkeypatch.setattr(pipeline.moderation, "check", lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError(SECRET_MSG)))
+    else:
+        monkeypatch.setattr(repo, "add", _raise_runtime)
+    s = await run("m1g2", ScriptedProvider(good("m1g2")), repo, energy, request_id="req-internal-1")
+    assert s.result is None and s.error is not None and s.error.code == "INTERNAL"
+    assert s.energy.remaining == 10 and s.error.energy is s.energy  # reserved unit refunded
+    assert await repo.count("m1g2") == 0
+    lines = log_lines()
+    internal = [x for x in lines if x["event"] == "scenario_internal_error"]
+    assert len(internal) == 1
+    line = internal[0]
+    assert line["severity"] == "ERROR"
+    assert line["request_id"] == "req-internal-1" and line["game_id"] == "m1g2"
+    assert line["error_type"] == "RuntimeError"
+    # the provider call itself succeeded: its llm_call line must not blame the provider
+    calls = [x for x in lines if x["event"] == "llm_call"]
+    assert len(calls) == 1 and calls[0]["outcome"] == "ok" and calls[0]["error_code"] == "INTERNAL"
+    raw = json.dumps(lines)
+    assert SECRET_MSG not in raw  # never the exception message
+    for sentence in fake_scenario("m1g2", 1)["sentences"]:
+        assert sentence["text"] not in raw  # never generated text
+
+
 async def test_unreadable_cache_behaves_as_miss(repo, energy, monkeypatch) -> None:
     async def boom(*_: Any, **__: Any) -> Any:
         raise StoreError("bucket unreachable")
