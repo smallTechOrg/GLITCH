@@ -15,23 +15,46 @@ gets wrong and make the call*. It is a rebuild of the single-file prototype
 
 The full spec is in `spec/`: start with `spec/roadmap.md`, then `spec/architecture.md`.
 
-## What's in this version (Phase 1)
+## What's in this version (Phases 1–3)
+
+**Phase 1 — the game, rebuilt**
 
 - **All of v3:** 4 modules and 9 mini-games, at parity with the v3 prototype rules.
 - **Heroes and powers:** pick a pixel-art hero; each brings a power you can use in games.
 - **Progress:** hearts, stars, XP and levels, a daily streak and 12 badges.
 - **On-device save:** all progress lives on the device. A nickname is optional; there are
   no accounts.
-- **New: Prompt Forge FREE WRITE round.** The learner writes their own prompt. NOVA (a
-  real AI) answers it, and the learner gets a verdict on 5 levers plus one tip.
+- **Prompt Forge FREE WRITE round.** The learner writes their own prompt. NOVA (a real AI)
+  answers it, and the learner gets a verdict on 5 levers plus one tip.
   - Pass = 4 of 5 levers. A weak prompt costs a heart.
   - AI energy: 10 calls per device per day; the whole server allows 500 calls per day.
   - If the AI takes more than 8 s, or the API is out of energy or unreachable, the round
     switches to an in-world offline checklist so the game never stalls.
-- **Labelled stubs (not bugs):** the yellow "SOON" "Ask NOVA why" button after a wrong
-  answer, and the "Coming soon" strip on the win screen. Both are disabled on purpose.
 - **Known v3 parity quirk:** in Tune the Sorter (module 2) the sliders' starting values
-  already pass both rounds. v3 behaves the same way, so Phase 1 keeps it.
+  already pass both rounds. v3 behaves the same way, so the rebuild keeps it.
+
+**Phase 2 — fresh case files**
+
+- On replay, the 5 content games (Train the Model, Fact or Fib, Proxy Hunt, Source
+  Detective, Confidence Court) serve a fresh, never-seen case file from the shared cache, or generate one
+  with a single AI call (validated, filtered, de-duplicated) and cache it for everyone.
+  Offline or out of energy, the game plays a built-in v3 case file
+  ("NOVA'S OFFLINE — HERE'S A CLASSIC CASE FILE").
+
+**Phase 3 — Tutor NOVA**
+
+- **ASK NOVA WHY:** after a wrong answer an "ASK NOVA WHY" chip shows under the miss
+  bubble for 10 s. Tapping it gets a short explanation (≤ 60 words) plus one tip.
+  Explanations are cached for everyone, so each distinct mistake costs AI tokens once:
+  1 energy is spent only on a cache miss, and a cached answer is free ("FREE · NOVA
+  ALREADY KNEW THIS"). With the API unreachable or out of energy, NOVA shows an offline /
+  no-energy line plus the game's own canned miss message, so the game never stalls.
+- **Mistake recap:** the end-of-game screen (win and out-of-hearts) lists the mistakes of
+  that game — what you said, the right call, SHIELDED when a hero's shield absorbed it —
+  or "No mistakes. Clean run!". Device-only, no AI calls.
+- **Mistake memory + REVIEW:** mistakes are remembered on the device by concept. Home
+  shows a REVIEW panel of the ideas you miss most, each with a replay button; a 3-star
+  clear of that game removes the row.
 
 ## Prerequisites
 
@@ -147,14 +170,29 @@ cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.l
 # for that route (on automatically for this route; --require-cache-hit-and-miss forces it for any route)
 cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log --route "/v1/scenarios/{game_id}/next"
 # → LOGS OK …: … 1 cache hit / 1 cache miss, …
-# the same checks on a side-port E2E run's log (here GLITCH_E2E_API_PORT=8788)
-cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/8788/api.log --route "/v1/scenarios/{game_id}/next"
+# Phase 3: the explain route — also requires ≥1 cache hit AND ≥1 cache miss, and explain
+# llm_call lines must never carry item / answer / variation fields
+cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/api.log --route /v1/explain
+# the same checks on a side-port E2E run's log (here GLITCH_E2E_API_PORT=8798)
+cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/8798/api.log --route "/v1/scenarios/{game_id}/next"
+cd api && uv run python -m glitch_api.tools.check_logs ../web/test-results/8798/api.log --route /v1/explain
+
+# [live] Ask NOVA why only: 2 real explanations + their free cache hits (exactly 2 provider calls)
+cd api && uv run pytest -q -m live tests/live/test_explain_live.py
+
+# re-validate the scenario cache with today's validators (ids + rule names only, never text)
+cd api && uv run python -m glitch_api.tools.purge_invalid            # dry run (default): lists failures
+cd api && uv run python -m glitch_api.tools.purge_invalid --apply    # moves failures to quarantine/ and un-indexes them
+# --backend local|gcs, --cache-dir, --bucket default to GLITCH_BLOB_BACKEND / GLITCH_CACHE_DIR / GLITCH_GCS_BUCKET
 ```
 
 Endpoints (`spec/api.md`): `GET /healthz`, `GET /v1/energy`,
 `POST /v1/freewrite/evaluate`, `GET /v1/scenarios/{gameId}/next?seen=<ids>` (Phase 2: a
 fresh, never-seen case file for a content game — served free from the shared cache, or
-generated once — one AI call, or two when the first answer fails validation and is regenerated — and cached for everyone), `GET /v1/metrics`. Every response uses the envelope
+generated once — one AI call, or two when the first answer fails validation and is regenerated — and cached for everyone),
+`POST /v1/explain` (Phase 3: body `{gameId, variationId, itemId, answer}` for a wrong
+answer → `{text, tip, cached, provider}` plus energy; cached for everyone, 1 energy only on
+a cache miss), `GET /v1/metrics`. Every response uses the envelope
 `{"ok": true, "data": …}` / `{"ok": false, "error": {"code", "message", "retryable"}}`.
 Each request writes one JSON log line to stdout with `route`, `method`, `status`,
 `latency_ms`, `request_id`, `device_hash` and `outcome`. Bodies, prompts and raw device
@@ -236,17 +274,22 @@ cd web && npx tsc --noEmit && npx jest --ci
 # Side ports + a separate export dir (dist-e2e) leave a dev server on 8787 / 8090 and its
 # dist untouched. Artefacts (api.log for check_logs, the run's blob cache, Playwright output)
 # go to web/test-results/ on API port 8787 and to web/test-results/<port>/ on any other port
-# (here web/test-results/8788/), so runs on different ports never overwrite each other:
+# (here web/test-results/8798/), so runs on different ports never overwrite each other:
 cd web && npx playwright install chromium
-cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8788 npx expo export --platform web --output-dir dist-e2e
-cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8788 GLITCH_WEB_PORT=8091 GLITCH_E2E_EXPECT_PROVIDER=fake npx playwright test
+cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8798 npx expo export --platform web --output-dir dist-e2e
+cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8798 GLITCH_WEB_PORT=8097 GLITCH_E2E_EXPECT_PROVIDER=fake npx playwright test
 
 # [live] end-to-end with the real AI (needs the key in the root .env), same side-port export
-cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8788 GLITCH_WEB_PORT=8091 GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/freewrite.spec.ts e2e/journey.spec.ts e2e/variations.spec.ts
+cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8798 GLITCH_WEB_PORT=8097 GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/freewrite.spec.ts e2e/journey.spec.ts e2e/variations.spec.ts
+
+# [live] Ask NOVA why end to end: one real explanation ≤ 60 words + a free cache hit on a
+# second device (1 provider call; the demo-mode tutor tests skip themselves)
+cd web && GLITCH_WEB_DIST=dist-e2e GLITCH_E2E_API_PORT=8798 GLITCH_WEB_PORT=8097 GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/tutor.spec.ts
 
 # default ports instead (only when nothing else is serving 8787 / 8090; artefacts in web/test-results/)
 cd web && EXPO_PUBLIC_GLITCH_API_URL=http://127.0.0.1:8787 npx expo export --platform web
 cd web && GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/freewrite.spec.ts e2e/journey.spec.ts e2e/variations.spec.ts
+cd web && GLITCH_E2E_EXPECT_PROVIDER=openrouter npx playwright test e2e/tutor.spec.ts
 ```
 
 ## Running the whole thing locally

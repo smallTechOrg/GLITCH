@@ -118,8 +118,9 @@ class ScenarioRepository:
             if raw.get("schemaVersion") != SCHEMA_VERSION:
                 raise ScenarioInvalid(["schema version mismatch"])
             data = validate_data(game_id, raw.get("data"))
-        except ScenarioInvalid:
-            get_logger().warning("scenario_cache_invalid", game_id=game_id, variation_id=vid)
+        except ScenarioInvalid as exc:
+            # Variation ids are never logged (spec): game id + validator rule names only.
+            get_logger().warning("scenario_cache_invalid", game_id=game_id, rules=exc.errors)
             return None
         return StoredVariation(
             id=vid,

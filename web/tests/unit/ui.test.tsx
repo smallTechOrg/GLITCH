@@ -5,7 +5,6 @@ import { Slider, clampStep, sliderKeyValue, valueAtX } from '@/ui/Slider';
 import { EnergyMeter, energyLabel, hoursUntil } from '@/ui/EnergyMeter';
 import { MetricBar, metricOk } from '@/ui/MetricBar';
 import { ToggleTile } from '@/ui/ToggleTile';
-import { StubBadge, STUB_HINT } from '@/ui/StubBadge';
 import { ToastHost } from '@/ui/ToastHost';
 import { TOAST_MS, resetToasts, toast, useToastStore } from '@/ui/toast';
 import { steps } from '@/a11y/stepped';
@@ -98,7 +97,7 @@ describe('EnergyMeter', () => {
   });
 });
 
-describe('MetricBar, ToggleTile, StubBadge', () => {
+describe('MetricBar, ToggleTile', () => {
   it('applies the v3 metric rule on unrounded values', async () => {
     expect(metricOk(65, 65, 1)).toBe(true);
     expect(metricOk(64.99, 65, 1)).toBe(false);
@@ -116,15 +115,6 @@ describe('MetricBar, ToggleTile, StubBadge', () => {
     expect(t).toHaveTextContent(/ON/);
     await fireEvent.press(t);
     expect(onToggle).toHaveBeenCalledTimes(1);
-  });
-
-  // The shared stub look (no screen mounts it since Phase 3; kept for future labelled stubs).
-  it('stubs are disabled, tagged SOON and hinted', async () => {
-    await renderWithProviders(<StubBadge label="FUTURE FEATURE" testID="sample-stub" />);
-    const s = screen.getByTestId('sample-stub');
-    expect(s.props.accessibilityState).toEqual({ disabled: true });
-    expect(s.props.accessibilityHint).toBe(STUB_HINT);
-    expect(s).toHaveTextContent(/SOON/);
   });
 });
 

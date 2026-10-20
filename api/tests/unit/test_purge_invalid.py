@@ -179,3 +179,24 @@ def test_bad_usage_exits_2(make_settings: Callable[..., Settings], tmp_path: Pat
     assert info.value.code == 2
     code = purge_invalid.main(["--backend", "gcs"], settings=make_settings(), out=out)
     assert code == 2  # gcs with no bucket configured
+
+
+def test_cache_read_of_invalid_variation_logs_game_and_rules_never_the_id(tmp_path: Path, capsys) -> None:
+    """Spec: variation ids are never logged on the explain path — the cache-invalid warning
+    carries the game id and the validator rule names only."""
+    import json
+
+    from glitch_api.logging import configure_logging
+
+    configure_logging()
+    store = LocalBlobStore(tmp_path)
+    vid = asyncio.run(seed_raw(store, "m4g2", homework_data()))
+    capsys.readouterr()
+    assert asyncio.run(ScenarioRepository(store).get("m4g2", vid)) is None
+    out = capsys.readouterr().out
+    assert vid not in out
+    lines = [json.loads(line) for line in out.splitlines() if line.strip().startswith("{")]
+    warn = [line for line in lines if line.get("event") == "scenario_cache_invalid"]
+    assert len(warn) == 1
+    assert warn[0]["game_id"] == "m4g2" and "variation_id" not in warn[0]
+    assert isinstance(warn[0]["rules"], list) and warn[0]["rules"]

@@ -498,7 +498,8 @@ AI-generated data, not instructions).
 - Every LLM call (`event="llm_call"`): `request_id`, `purpose` (`freewrite_eval`, later
   `scenario_gen`, `explain`), `provider`, `model_requested`, `model_used`, `latency_ms`,
   `prompt_tokens`, `completion_tokens`, `cache` (`none`|`hit`|`miss`), `outcome`
-  (`ok`|`timeout`|`provider_error`|`invalid_output`|`moderated`), `prompt_chars` (length
+  (`ok`|`timeout`|`provider_error`|`invalid_output`|`moderated`|`not_called` — a cache
+  miss that never reached the provider, e.g. caps or store failure on explain), `prompt_chars` (length
   only).
 - Caps (`event="cap"`): `scope` (`device`|`global`), `remaining`, `limit`.
 - NEVER logged: prompt text, goal text from the client, reply text, raw device id, the key.
