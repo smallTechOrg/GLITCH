@@ -1,0 +1,66 @@
+# GLITCH output blocklist — NOVA's reply/tip containing any of these is withheld (fail-closed).
+# Audience: learners aged 13–18. One term per line; trailing * = prefix match; phrases allowed.
+# Matching is case-insensitive on letter boundaries (see moderation/filter.py).
+
+# --- strong profanity ---
+fuck*
+motherfuck*
+shit
+shits
+shitty
+shithead*
+bullshit*
+bitch*
+cunt*
+asshole*
+arsehole*
+dickhead*
+wank*
+twat*
+bollocks
+piss off
+pissed off
+
+# --- slurs and hate terms ---
+nigger*
+nigga*
+faggot*
+fag
+fags
+retard
+retards
+retarded
+tranny
+trannies
+chink
+chinks
+spic
+spics
+kike
+kikes
+wetback*
+raghead*
+towelhead*
+
+# --- sexual content ---
+porn*
+blowjob*
+handjob*
+dildo*
+orgasm*
+masturbat*
+nudes
+sexting
+cumshot*
+slut*
+whore*
+hentai
+onlyfans
+
+# --- self-harm / violence encouragement ---
+kill yourself
+kys
+go die
+cut yourself
+how to make a bomb
+make a pipe bomb

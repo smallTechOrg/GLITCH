@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`determinism matches the recorded fingerprints 1`] = `
+{
+  "chrono:blink": "24x32:a3231f73",
+  "chrono:idle": "24x32:14a24c9b",
+  "chrono:talk": "24x32:8b65cd1b",
+  "d:blink": "24x32:a0ed3a5c",
+  "d:idle": "24x32:8bf996dc",
+  "d:talk": "24x32:b68c1be0",
+  "guard:blink": "24x32:085c07c2",
+  "guard:idle": "24x32:b78be962",
+  "guard:talk": "24x32:8a0b159e",
+  "k:blink": "24x32:13ed7080",
+  "k:idle": "24x32:45ea0d48",
+  "k:talk": "24x32:334a4628",
+  "n:blink": "24x28:94965405",
+  "n:idle": "24x28:ba456619",
+  "n:talk": "24x28:4d7a1659",
+  "n:think:0": "24x28:13e1ab19",
+  "n:think:1": "24x28:ab35da99",
+  "n:think:2": "24x28:43711891",
+  "oracle:blink": "24x32:28d12e4a",
+  "oracle:idle": "24x32:fcf3ac92",
+  "oracle:talk": "24x32:9de2191a",
+  "scout:blink": "24x32:1bca1e80",
+  "scout:idle": "24x32:c68d540c",
+  "scout:talk": "24x32:3e151d34",
+  "z:blink": "24x32:3459fb74",
+  "z:idle": "24x32:c24ebefc",
+  "z:talk": "24x32:224c8b94",
+}
+`;

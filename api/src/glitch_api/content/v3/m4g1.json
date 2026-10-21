@@ -1,0 +1,50 @@
+{
+  "gameId": "m4g1",
+  "data": {
+    "citations": [
+      {
+        "id": "c1",
+        "text": "UNESCO (2021). Recommendation on the Ethics of Artificial Intelligence. Paris.",
+        "real": true
+      },
+      {
+        "id": "c2",
+        "text": "Dr. Elena Marsh (2023). 'Why GPT-9 Reads Minds'. Journal of Imaginary Science, 14(2).",
+        "real": false
+      },
+      {
+        "id": "c3",
+        "text": "Bender et al. (2021). On the Dangers of Stochastic Parrots. ACM FAccT.",
+        "real": true
+      },
+      {
+        "id": "c4",
+        "text": "A. Smith (2022). AI Facts Everyone Knows. blog.totallytrue.biz",
+        "real": false
+      },
+      {
+        "id": "c5",
+        "text": "OECD (2019). OECD Principles on AI. oecd.org",
+        "real": true
+      }
+    ]
+  },
+  "copy": {
+    "zones": {
+      "keep": "KEEP",
+      "cut": "CUT"
+    },
+    "wrong": "Check the clues: made-up journal, blog with no author, or the catalogue says NOT FOUND.",
+    "askMiss": "Asking the same AI is not verification. It will sound sure either way."
+  },
+  "conceptRules": [
+    [
+      "ask",
+      "Verification"
+    ],
+    [
+      "",
+      "Hallucination"
+    ]
+  ]
+}

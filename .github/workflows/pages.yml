@@ -1,0 +1,77 @@
+# Build the web export and deploy it to GitHub Pages at https://<owner>.github.io/GLITCH/
+# (spec/architecture.md → Deploy). Uses the repo variable GLITCH_API_URL (the Cloud Run URL);
+# Settings → Pages → Source = "GitHub Actions". Setup: README → Deploy.
+name: Deploy web to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.nvmrc'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      EXPO_PUBLIC_GLITCH_API_URL: ${{ vars.GLITCH_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Warn when the API URL is not configured
+        if: ${{ vars.GLITCH_API_URL == '' }}
+        run: echo "::warning::Repo variable GLITCH_API_URL is not set — the site will build against http://127.0.0.1:8787 and the free-write round will use the offline check."
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npx jest --ci
+
+      - name: Export (static, base path /GLITCH)
+        run: npx expo export --platform web
+
+      - name: Check export
+        run: node scripts/check-export.mjs
+
+      - name: GitHub Pages 404 → app deep-link fallback
+        run: cp "dist/+not-found.html" dist/404.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

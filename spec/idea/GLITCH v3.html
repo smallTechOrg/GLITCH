@@ -1,0 +1,595 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GLITCH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0a24;--bg2:#15113a;--cd:#1c1648;--ln:#3a2f84;--tx:#f4f4ff;--mu:#9aa0c8;--ac:#ffd23b;--ok:#3ee98a;--no:#ff5d73;--bl:#4cc9ff;--pk:#ff6bb5}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:10px}
+body{background:var(--bg);color:var(--tx);font-family:"Press Start 2P",ui-monospace,Menlo,monospace;font-size:10px;line-height:1.9;min-height:100vh;-webkit-font-smoothing:none;background-image:linear-gradient(var(--bg2) 1px,transparent 1px),linear-gradient(90deg,var(--bg2) 1px,transparent 1px);background-size:32px 32px}
+button,input,label{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+img.px{image-rendering:pixelated;display:block}
+h1,h2,h3,b,strong{font-weight:400;text-shadow:1px 0 0 currentColor,0 1px 0 currentColor}
+h1{font-size:28px;line-height:1.4}h2{font-size:18px;line-height:1.5}h3{font-size:13px;line-height:1.6}
+small{font-size:8px;color:var(--mu);letter-spacing:.5px}
+p.sub,.secs{color:var(--mu);font-size:9px;line-height:2}
+#wp{max-width:960px;margin:0 auto;padding:16px 14px 60px}
+#wp.go{animation:wipe .8s steps(8)}
+@keyframes wipe{0%{opacity:1}40%{opacity:0;transform:scale(.98)}60%{opacity:0}100%{opacity:1}}
+.tb{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#07051a;border-bottom:3px solid var(--ln);position:sticky;top:0;z-index:50;flex-wrap:wrap}
+.logo{color:var(--ac);font-size:14px;cursor:pointer;text-shadow:2px 2px 0 #b02a45}
+.tbs{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.homeb,.link{font-size:8px;color:var(--bl);padding:6px 8px;border:2px solid var(--ln);background:var(--cd)}
+.link{border:0;background:none;text-decoration:underline;padding:0}
+.homeb:hover{border-color:var(--bl)}
+.chip{display:flex;align-items:center;gap:6px;padding:4px 8px;border:2px solid var(--ln);background:var(--cd);font-size:9px}
+.fx{color:var(--ac)}
+.xpw{flex-direction:column;align-items:stretch;gap:3px;min-width:120px}.xl{display:flex;justify-content:space-between;gap:8px;font-size:8px}
+.bar{height:10px;background:#07051a;border:2px solid var(--ln);position:relative}.bar i,.xp{display:block;height:100%;background:repeating-linear-gradient(90deg,var(--ok) 0 6px,#2ac272 6px 8px)}
+.eyebrow{color:var(--ac);font-size:8px}
+.card{background:var(--cd);border:3px solid var(--ln);box-shadow:0 0 0 3px #07051a,6px 6px 0 3px #07051a;padding:20px;margin:20px auto;max-width:440px}
+.ch{display:block;width:100%;margin-top:12px;padding:12px 14px;background:var(--cd);border:3px solid var(--ln);box-shadow:3px 3px 0 #07051a;font-size:10px;text-align:center;line-height:1.6}
+.ch:hover{border-color:var(--bl)}.ch:active{box-shadow:none}
+.ch.pri{background:var(--ac);color:#16122b;border-color:#fff;text-shadow:none}.ch.pri:hover{background:#fff}
+.ch:disabled{opacity:.5;cursor:default}
+input[type=text],input[type=password],input:not([type]){display:block;width:100%;padding:12px;background:#07051a;border:3px solid var(--ln);margin:6px 0 12px;outline:0}
+input:focus{border-color:var(--ac)}label{display:block;font-size:8px;color:var(--mu)}
+.er{color:var(--no);font-size:8px;min-height:14px}.foot{color:var(--mu);font-size:8px;margin-top:18px;text-align:center}.tg{text-align:center;font-size:9px;color:var(--mu);margin-bottom:14px}
+.lgban{position:relative;border:3px solid var(--ln);overflow:hidden;margin-top:14px}.lgimg{width:100%;height:260px;object-fit:cover}
+.lgt{position:absolute;top:26px;left:0;right:0;text-align:center}.lgt h1{color:var(--ac);text-shadow:4px 4px 0 #b02a45}.lgt p{font-size:9px;margin-top:8px;color:#fff}
+.lgc{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:20px}
+.bob{animation:bob 1.2s steps(2) infinite;display:inline-block}@keyframes bob{50%{transform:translateY(-4px)}}
+/* home */
+.hero{display:flex;gap:20px;align-items:center;margin:16px 0}.hello{color:var(--ac)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.st{background:var(--cd);border:3px solid var(--ln);padding:12px}.st b{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ac)}.st span{font-size:7px;color:var(--mu);display:block;margin-top:6px}
+.quest{display:flex;gap:16px;align-items:center;background:linear-gradient(90deg,#3a2f84,#1c1648);border:3px solid var(--ac);padding:12px 16px;margin:14px 0;flex-wrap:wrap}.quest .qt{flex:1;min-width:200px;font-size:10px}.quest small{display:block;color:var(--ac);margin-bottom:4px}.quest .ch{width:auto;margin:0}
+.sec{margin:30px 0 4px;color:var(--ac)}
+.path{display:flex;flex-direction:column;gap:20px;margin-top:14px;position:relative}
+.mod{display:flex;gap:14px;--mc:#4cc9ff}
+.mn{flex:0 0 46px;height:46px;background:var(--cd);border:3px solid var(--mc);display:grid;place-items:center;font-size:14px;color:var(--mc)}
+.mod.dn .mn{background:var(--mc);color:#16122b}
+.mb{flex:1;background:var(--cd);border:3px solid var(--ln);overflow:hidden;min-width:0}
+.mod:not(.lk) .mb{border-color:var(--mc)}
+.mbanner{position:relative;height:120px;overflow:hidden;border-bottom:3px solid var(--ln)}.mbi{width:100%;height:100%;object-fit:cover}
+.mbov{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:space-between;padding:8px 12px;background:linear-gradient(transparent 40%,rgba(7,5,26,.6))}
+.mod.lk .mbi{filter:grayscale(1) brightness(.4)}.mod.lk{opacity:.8}
+.mbody{padding:14px}.mbody h3{margin:4px 0}.mbody p{color:var(--mu);font-size:9px;line-height:2}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.tags span{font-size:7px;padding:4px 6px;border:2px solid var(--ln);color:var(--bl)}
+.steps{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.stp{display:flex;align-items:center;gap:10px;padding:10px;border:2px solid var(--ln);background:#120e34;text-align:left;font-size:9px}
+.stp em{font-style:normal;font-size:7px;padding:3px 5px;background:var(--ln);min-width:46px;text-align:center}.stp span{flex:1}.stp b{display:flex;gap:2px;color:var(--mu);font-size:8px;align-items:center}
+.stp.go{border-color:var(--ac)}.stp.go b{color:var(--ac)}.stp.d b{color:var(--ok)}.stp:disabled{opacity:.55;cursor:default}.stp:not(:disabled):hover{border-color:var(--bl)}
+.lkm{font-size:8px!important;color:var(--mu)}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px}
+.bd{background:var(--cd);border:3px solid var(--ln);padding:10px;text-align:center;opacity:.45;filter:grayscale(.8)}.bd.on{opacity:1;filter:none;border-color:var(--ac)}.bd span{display:grid;place-items:center;margin-bottom:6px}.bd b{font-size:8px;display:block}.bd small{font-size:7px;display:block;margin-top:4px;line-height:1.6}
+/* hero select */
+.hsel{position:relative;border:3px solid var(--ln);overflow:hidden;margin-top:14px}.hsbg{position:absolute;inset:0}.hsimg{width:100%;height:100%;object-fit:cover;filter:brightness(.35)}
+.hsin{position:relative;padding:24px 18px}.hh{color:var(--ac);margin:6px 0}
+.hcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.hc{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 10px;background:rgba(13,10,36,.9);border:3px solid var(--ln);text-align:center}
+.hc.sel{border-color:var(--hc);box-shadow:0 0 0 3px var(--hc),0 0 24px var(--hc);background:#1c1648}
+.hc b{color:var(--hc);font-size:11px}.hc small{color:var(--tx);line-height:1.8}.hp{display:flex;align-items:center;gap:6px;padding:4px 8px;background:#07051a;border:2px solid var(--hc);font-size:8px}.hp em{font-style:normal;color:var(--hc)}
+.hgo{max-width:380px;margin:20px auto 10px}#back{display:block;margin:0 auto}
+.spr.stk,.stk{filter:drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)}
+/* cutscene */
+.cut{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column;cursor:pointer;overflow:hidden}
+.cprog{position:absolute;top:12px;left:14px;right:100px;display:flex;gap:4px;z-index:5}.cprog i{flex:1;height:6px;background:#333}.cprog i.d{background:var(--ac)}.cprog i.c{background:#fff}
+.cskip{position:absolute;top:6px;right:12px;z-index:6;font-size:8px;padding:8px;color:var(--mu);border:2px solid #333;background:#000}.cskip:hover{color:#fff;border-color:#fff}
+.chint{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:7px;color:#666;z-index:5}
+.ctxt{position:absolute;left:0;right:0;bottom:44px;padding:0 6vw;max-width:900px;font-size:14px;line-height:2.1}.ctxt b{color:var(--ac);display:block;margin-bottom:6px;font-size:11px}
+.cpt{flex:1;display:grid;place-items:center;padding-bottom:140px}.cpt .spr{width:min(70vw,300px)!important;height:auto!important}
+.cic{flex:1;display:grid;grid-template-columns:repeat(4,auto);justify-content:center;align-content:center;gap:26px 40px;padding:60px 20px 180px}.cii{display:flex;flex-direction:column;align-items:center;gap:10px;animation:pop .35s steps(4) both}.cii small{font-size:8px;color:#bbb}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.ctl{position:absolute;inset:0}.ctl .cbg{filter:brightness(.5)}.cbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.cbg.dim{filter:brightness(.35)}
+.ctt{position:absolute;top:22%;left:0;right:0;text-align:center;padding:0 20px}.ctt small{color:var(--ac);font-size:10px}.ctt h1{margin:12px 0;font-size:32px;color:#fff;text-shadow:4px 4px 0 #000,0 0 20px var(--mc)}.ctt p{font-size:11px;color:#fff;text-shadow:2px 2px 0 #000}
+.cchars{position:absolute;bottom:14%;left:0;right:0;display:flex;justify-content:center;align-items:flex-end;gap:2vw}
+.csc{position:absolute;inset:0}.csc .cchars{bottom:26%}.cchars .talk{animation:bob .5s steps(2) infinite}
+.cdlg{position:absolute;left:4vw;right:4vw;bottom:34px;background:rgba(7,5,26,.88);border:3px solid #fff;padding:16px 18px;min-height:130px;font-size:12px;line-height:2.1}.cdlg b{display:block;font-size:11px;margin-bottom:6px}.cnx{position:absolute;right:12px;bottom:8px;color:var(--ac);opacity:0}.cut.rdy .cnx{opacity:1;animation:bob .6s steps(2) infinite}
+.ckey{position:absolute;inset:0;display:grid;place-items:center;padding-bottom:140px}.kb{position:relative;text-align:center;padding:0 20px}.kb small{color:var(--ac);font-size:10px}.kb h2{font-size:26px;color:#fff;margin:14px 0;text-shadow:3px 3px 0 var(--mc)}.kic{display:grid;place-items:center}
+/* game */
+.gm{margin-top:12px}.gban{position:relative;height:200px;border:3px solid var(--ln);overflow:hidden}
+.gtag{position:absolute;top:8px;left:10px;background:rgba(7,5,26,.85);padding:6px 10px;border:2px solid var(--mc)}.gtag b{display:block;color:var(--mc);font-size:11px}
+.gch{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:flex-end;justify-content:space-between;padding:0 14px 0 14px}
+.say{position:absolute;left:50%;transform:translateX(-50%);bottom:30px;width:min(52%,360px);background:#fff;color:#16122b;padding:10px 12px;border:3px solid #16122b;font-size:8px;line-height:1.9;text-shadow:none;min-height:40px}
+.say.bad{background:#ffd9de}.say.good{background:#d5ffe6}.say.pop{animation:pop .25s steps(3)}
+.ghud{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;background:#07051a;border:3px solid var(--ln);border-top:0}.hpw{display:flex;gap:4px;align-items:center}.shd{margin-left:6px}.goal{flex:1;font-size:8px;color:var(--mu);min-width:140px}
+.pwb{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cd);border:3px solid var(--mc);font-size:9px}.pwb em{font-style:normal;color:var(--ac)}.pwb:disabled{opacity:.4;cursor:default}.pwb:not(:disabled):hover{background:var(--mc);color:#16122b}
+.gbody{padding:18px 4px;min-height:300px}.gbody.shake{animation:shake .35s steps(6)}@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.ph{color:var(--ac);margin-bottom:8px}
+.pool{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;padding:12px;border:3px dashed var(--ln);min-height:70px}
+.di{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--cd);border:3px solid var(--ln);box-shadow:3px 3px 0 #07051a;font-size:9px;line-height:1.8;touch-action:none;user-select:none;cursor:grab;max-width:100%}
+.di:hover,.di.sel{border-color:var(--ac)}.di.sel{box-shadow:0 0 0 3px var(--ac)}.di.lift{opacity:.3}.di.bad{border-color:var(--no);animation:shake .4s steps(6)}.di.dim{opacity:.3;text-decoration:line-through}.di.flash,.dz.flash{animation:fl .5s steps(2) infinite}
+@keyframes fl{50%{box-shadow:0 0 0 4px var(--ac)}}
+.di.pl{cursor:default;border-color:var(--ok);box-shadow:none}.di.pl:hover{border-color:var(--ok)}
+.di.cit{flex-wrap:wrap;width:100%}.di.cit>span{flex:1;min-width:200px}
+.ghost{position:fixed;z-index:200;pointer-events:none;opacity:.95;transform:rotate(-3deg)}
+.zs{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.zs.z5{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.dz{min-height:120px;padding:10px;border:3px dashed var(--zc);background:rgba(7,5,26,.6)}.dz.over{background:rgba(255,255,255,.15);border-style:solid}.dz.full{border-style:solid}
+.zl{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--zc)}.zc{display:flex;flex-direction:column;gap:8px}
+.zs.top{position:sticky;top:58px;z-index:30;background:var(--bg);padding:8px 0;margin-bottom:8px}.zs.top .dz{min-height:64px}.zs.top .zc{flex-direction:row;flex-wrap:wrap}.zs.top .di.pl{padding:4px 8px;font-size:7px;width:auto}.vd{font-style:normal;color:var(--ac);font-size:8px}
+.paper{background:#f4ecd0;color:#16122b;border:3px solid #16122b;padding:14px;display:flex;flex-direction:column;gap:6px;box-shadow:6px 6px 0 #07051a}.ptag{font-size:8px;color:#8a6a2a;margin-bottom:6px}
+.paper b,.paper em{text-shadow:none}
+.ln{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:#fffbe8;border:2px solid #cdbf8f;text-align:left;font-size:9px;line-height:1.9;color:#16122b;flex-wrap:wrap}.ln i{font-style:normal;color:#b09a50}.ln span{flex:1;min-width:150px}.ln em{flex-basis:100%;font-style:normal;font-size:8px;color:#555}
+.ln.hid{background:#2a2a3a;color:#999;border-color:#444}.ln.hid u{text-decoration:none}
+button.ln:hover{border-color:var(--no);background:#fff}.ln.fib{background:#ffd9de;border-color:var(--no)}.ln.safe{background:#d5ffe6;border-color:var(--ok)}.ln:disabled{cursor:default}
+.tg{font-weight:400}.tg.bad,.tg.good{display:inline-block;padding:2px 6px;margin-right:8px;font-size:7px;color:#fff}.tg.bad{background:var(--no)}.tg.good{background:#1c8f55}
+.found{margin-top:12px;color:var(--ac);font-size:10px}
+.tlist{display:flex;flex-direction:column;gap:6px;margin:12px 0}.tr{display:grid;grid-template-columns:1.4fr 1fr 70px;gap:10px;align-items:center;padding:6px 8px;border:2px solid var(--ln);background:var(--cd);font-size:8px}.tr.x{border-color:var(--no)}.tbar{height:10px;background:#07051a;position:relative}.tbar i{display:block;height:100%;background:var(--bl)}.tbar u{position:absolute;top:-4px;width:3px;height:18px;background:var(--ac)}.tv{font-size:7px;color:var(--mu);text-align:center}.tv.on{color:var(--ok)}
+.sl{display:grid;gap:6px;margin:14px 0}.sl label{display:flex;justify-content:space-between;color:var(--tx)}input[type=range]{width:100%;accent-color:var(--ac);height:28px}
+.tsum,#cm{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.mt{padding:8px 10px;background:var(--cd);border:2px solid var(--ln)}.mt.ok{border-color:var(--ok)}.ml{display:flex;gap:8px;align-items:center;font-size:8px}.ml span{margin-left:auto}.ml em{font-style:normal;color:var(--mu)}.mbar{height:10px;background:#07051a;margin-top:6px;position:relative}.mbar i{display:block;height:100%;background:var(--bl)}.mt.ok .mbar i{background:var(--ok)}.mbar u{position:absolute;top:-4px;width:3px;height:18px;background:var(--ac)}
+.tgls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:12px 0}.tgl{display:flex;align-items:center;gap:8px;padding:10px;background:var(--cd);border:3px solid var(--ln);text-align:left;font-size:8px}.tgl span{flex:1}.tgl em{font-style:normal;padding:2px 6px;background:var(--no);color:#fff}.tgl.on{border-color:var(--ok)}.tgl.on em{background:#1c8f55}.tgl.flash{animation:fl .5s steps(2) infinite}
+.gv{display:flex;gap:30px;justify-content:center;align-items:flex-end;margin:14px 0;height:190px}.gcol{display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end}.gbar{height:120px;width:56px;border:3px solid var(--ln);display:flex;align-items:flex-end;background:#07051a}.gbar i{display:block;width:100%}
+.look{display:flex;align-items:center;gap:8px;color:var(--bl);margin:10px 0;font-size:8px}.lkb{padding:6px 8px;border:2px solid var(--bl);color:var(--bl);font-size:7px;display:flex;gap:4px;align-items:center;background:#07051a}.lkb:disabled{opacity:.4}.rs{flex-basis:100%;font-style:normal}
+.ask{max-width:340px;margin:0 0 8px}
+.term{background:#07051a;border:3px solid var(--ln);padding:12px;margin:10px 0;font-size:9px;line-height:2}.term small{display:block;color:var(--ac);margin-bottom:4px}.term.out{border-color:var(--ok)}
+.res{text-align:center;max-width:560px;margin:0 auto}.res h2{color:var(--ac);margin:10px 0}.rbig{display:grid;place-items:center;margin:10px 0}.rst{display:flex;justify-content:center;gap:6px;margin:6px 0}.ic.big{width:48px!important;height:48px!important}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.cmp>div{padding:12px;border:3px solid var(--ok);background:var(--cd)}.cmp>div.bad{border-color:var(--no)}.cmp b{display:block;font-size:22px;margin:6px 0}.cmp span{font-size:8px}
+.reveal{background:var(--cd);border:3px solid var(--ac);padding:12px;margin:12px 0;text-align:left;font-size:9px;line-height:2}.reveal small{display:block;color:var(--ac);margin-bottom:4px}
+.tag{display:inline-block;font-size:8px;padding:4px 8px;border:2px solid var(--ln);margin:4px}.tag.good{border-color:var(--ok);color:var(--ok)}
+.mdone{position:relative;max-width:620px;margin:16px auto;text-align:center;overflow:hidden}.mdban{position:relative;height:200px;border:3px solid var(--mc)}.mdtr{position:absolute;inset:0;display:grid;place-items:center}.mdb{padding:16px}.mdb h2{color:var(--mc);margin:10px 0}.cl{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px}.cl span{padding:6px;border:2px solid var(--mc);font-size:8px}
+.conf{position:absolute;inset:0;pointer-events:none;z-index:3}.cf{position:absolute;top:-10px;width:8px;height:8px;animation:fall 2.4s steps(14) infinite}@keyframes fall{to{transform:translateY(520px)}}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ac);color:#16122b;padding:10px 14px;border:3px solid #fff;z-index:300;font-size:9px;animation:pop .25s steps(3);text-shadow:none}
+button:focus-visible,.di:focus-visible,.dz:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@media(max-width:640px){h1{font-size:20px}.mn{flex-basis:34px;height:34px}.cic{grid-template-columns:repeat(4,auto);gap:16px 18px}.cic .ic{width:48px!important;height:48px!important}.ctxt{font-size:11px}.gban{height:210px}.say{left:8px;right:8px;width:auto;transform:none;bottom:auto;top:58px}.gch .spr{width:72px!important;height:auto!important}.tr{grid-template-columns:1fr 60px}.tr .tbar{display:none}.ctt h1{font-size:22px}.cdlg{font-size:10px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body><div id="top"></div><div id="wp"><main id="app"></main></div>
+<script>
+"use strict";
+/* ===================== utilities ===================== */
+var $=function(s,r){return(r||document).querySelector(s)},$$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function cl(v,a,b){return Math.max(a==null?0:a,Math.min(b==null?100:b,v))}
+function rnd(i){return Math.abs(Math.sin(i*12.9898+78.233)*43758.5453%1)}
+function shuf(a,seed){var r=a.slice(),i,j,t;for(i=r.length-1;i>0;i--){j=Math.floor((seed==null?Math.random():rnd(seed+i*3.7))*(i+1));t=r[i];r[i]=r[j];r[j]=t}return r}
+var RM=matchMedia("(prefers-reduced-motion:reduce)").matches;
+/* ===================== pixel canvas engine ===================== */
+var PC={},X;
+function cv(w,h){var c=document.createElement("canvas");c.width=w;c.height=h;return c}
+function mkImg(key,w,h,fn){if(PC[key])return PC[key];var c=cv(w,h),x=c.getContext("2d");x.imageSmoothingEnabled=false;X=x;fn(w,h);return PC[key]=c.toDataURL()}
+function im(src,cls,style){return'<img class="px '+(cls||"")+'" src="'+src+'" alt="" draggable="false"'+(style?' style="'+style+'"':"")+'>'}
+function rc(x,y,w,h,c){X.fillStyle=c;X.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
+function px1(x,y,c){X.fillStyle=c;X.fillRect(x,y,1,1)}
+function cir(cx,cy,r,c){for(var y=-r;y<=r;y++){var w=Math.floor(Math.sqrt(r*r-y*y)+.5);rc(cx-w,cy+y,w*2+1,1,c)}}
+function band(y0,y1,cols,w){var n=cols.length,h=(y1-y0)/n;for(var i=0;i<n;i++)rc(0,y0+i*h,w,Math.ceil(h),cols[i])}
+function mtn(w,base,amp,fr,seed,col){for(var x=0;x<w;x++){var h=base-Math.round(amp*(Math.sin(x*fr+seed)*.55+Math.sin(x*fr*2.7+seed*1.7)*.3+.5));rc(x,h,1,200,col)}}
+function dith(x,y,w,h,c,seed,p){for(var j=0;j<h;j++)for(var i=0;i<w;i++)if(rnd(seed+i*7.3+j*13.1)<p)px1(x+i,y+j,c)}
+var FONT3={A:"010101111101101",B:"110101110101110",C:"011100100100011",D:"110101101101110",E:"111100110100111",F:"111100110100100",G:"011100101101011",H:"101101111101101",I:"111010010010111",J:"001001001101010",K:"101101110101101",L:"100100100100111",M:"101111111101101",N:"110101101101101",O:"010101101101010",P:"110101110100100",Q:"010101101011001",R:"110101110101101",S:"011100010001110",T:"111010010010010",U:"101101101101111",V:"101101101101010",W:"101101111111101",X:"101101010101101",Y:"101101010010010",Z:"111001010100111","0":"111101101101111","1":"010110010010111","2":"110001010100111","3":"110001010001110","4":"101101111001001","5":"111100110001110","6":"011100111101111","7":"111001010010010","8":"111101111101111","9":"111101111001110","!":"010010010000010","?":"110001010000010"};
+function txt(x,y,s,c){for(var i=0;i<s.length;i++){var g=FONT3[s.charAt(i)];if(g)for(var j=0;j<15;j++)if(g.charAt(j)==="1")px1(x+i*4+j%3,y+((j/3)|0),c)}}
+/* palette for string-grid sprites */
+var PAL={k:"#16122b",w:"#f4f4ff",g:"#9aa0c8",G:"#5a6090",r:"#ff5d73",R:"#b02a45",o:"#ffa63d",y:"#ffd23b",Y:"#b88a00",l:"#8ef06a",e:"#3ee98a",E:"#1c8f55",c:"#5eead4",b:"#4cc9ff",B:"#2a6bd6",p:"#b794ff",P:"#6a44c2",m:"#ff6bb5",n:"#8b5a3c",N:"#5a341f",d:"#2b2f63",s:"#d7a47c"};
+function grid(g,key){return mkImg("g:"+key,g[0].length,g.length,function(){for(var j=0;j<g.length;j++)for(var i=0;i<g[j].length;i++){var ch=g[j].charAt(i);if(ch!=="."&&PAL[ch])px1(i,j,PAL[ch])}})}
+/* ===================== 12x12 pixel icons ===================== */
+var IC={
+heart:["............","..kk....kk..",".krrk..krrrk","krwrrkkrrrrk","krwrrrrrrrrk","krrrrrrrrrRk",".krrrrrrrRk.","..krrrrrRk..","...krrrRk...","....krRk....",".....kk.....","............"],
+star:["............",".....kk.....","....kyyk....","....kyyk....","kkkkkyykkkkk","kyyyywyyyyyk",".kyyyyyyyyk.","..kyyyyyyk..","..kyyyyyyk..",".kyyykkyyyk.",".kyykk.kkyyk",".kkk.....kkk"],
+lock:["............","...kkkkkk...","..kggggggk..","..kg....gk..","..kg....gk..",".kkkkkkkkkk.",".kyyyyyyyyk.",".kyyyykkyyk.",".kyyyykkyyk.",".kyyyyyyyyk.",".kkkkkkkkkk.","............"],
+check:["............","..........kk",".........kek","........keek","kk.....keek.","kek...keek..","keek.keek...",".keekeek....","..keeek.....","...kek......","....k.......","............"],
+cross:["............","kk........kk","krk......krk","krrk....krrk",".krrk..krrk.","..krrkkrrk..","...krrrrk...","..krrkkrrk..",".krrk..krrk.","krrk....krrk","krk......krk","kk........kk"],
+flame:["............","......kk....",".....kook...",".....koyk...","....kooyk...","...kkooyok..","..kooyyyook.","..kooywyyok.","..koyywwyok.","..koyyyyyok.","...kooyyok..","....kkkk...."],
+shield:["............",".kkkkkkkkkk.",".kbbbbBBBBk.",".kbwbbBBBBk.",".kbwbbBBBBk.",".kbbbbBBBBk.",".kbbbbBBBBk.","..kbbbBBBk..","..kbbbBBBk..","...kbbBBk...","....kbBk....",".....kk....."],
+scan:["............","...kkkkk....","..kbbwbbk...",".kbwbbbbbk..",".kbbbbbbbk..",".kbbbbbbbk..","..kbbbbbkk..","...kkkkkgkk.","........kgkk",".........kgk","..........kk","............"],
+rewind:["............","............","...kk...kk..","..kyk..kyk..",".kyyk.kyyk..","kyyyykyyyyk.","kyyyykyyyyk.",".kyyk.kyyk..","..kyk..kyk..","...kk...kk..","............","............"],
+target:["............","....kkkk....","..kkrrrrkk..",".krrwwwwrrk.",".krwkkkkwrk.","krwkrrrrkwrk","krwkrkkrkwrk","krwkrrrrkwrk",".krwkkkkwrk.",".krrwwwwrrk.","..kkrrrrkk..","....kkkk...."],
+bolt:["............","......kkk...",".....kyyk...","....kyyk....","...kyyk.....","..kyyyyyk...","..kkkyyk....","....kyyk....","....kyk.....","...kyk......","...kk.......","............"],
+trophy:["............",".kkkkkkkkkk.","kyykyyyykyyk","kyykyyyykyyk",".kkkyyyykkk.","...kyywyk...","...kyyyyk...","....kyyk....","....kyyk....","...kkkkkk...","..kYYYYYYk..","..kkkkkkkk.."],
+plug:["............","..k......k..","..ky....yk..","..ky....yk..",".kkkkkkkkkk.",".kggggggggk.",".kggggggggk.","..kggggggk..","...kggggk...","....kggk....","....kggk....",".....kk....."],
+book:["............","kkkkkkkkkkk.","kBBBBBBBBBk.","kBwwwwwwBBk.","kBBBBBBBBBk.","kBwwwwwBBBk.","kBBBBBBBBBk.","kBBBBBBBBBk.","kkkkkkkkkkk.","kwwwwwwwwwk.",".kkkkkkkkk..","............"],
+eye:["............","............","...kkkkkk...","..kwwwwwwk..",".kwwkbbkwwk.","kwwkbkkbkwwk","kwwkbkkbkwwk",".kwwkbbkwwk.","..kwwwwwwk..","...kkkkkk...","............","............"],
+flask:["............","....kkkk....","....kggk....","....kggk....","....kwwk....","...kwwwwk...","..kwwwwwwk..",".kwcccccwwk.",".kccceccccck",".kcceeeeccck","..kkkkkkkk..","............"],
+scales:["............",".....kk.....","kkkkkyykkkkk","kyyyyyyyyyyk",".ky..kk..yk.",".ky..kk..yk.","kyyk.kk.kyyk","kyyk.kk.kyyk","kkkk.kk.kkkk","....kyyk....","...kkkkkk...","............"],
+burst:["............","k....kk....k",".kk..kk..kk.","..kkkrrkkk..","kkkrryyrrkkk","krryyyyyyrrk","krryyyyyyrrk","kkkrryyrrkkk","..kkkrrkkk..",".kk..kk..kk.","k....kk....k","............"],
+cap:["............","............","....kkkk....","..kkppppkk..","kkppppppppkk",".kkppppppkk.","...kPPPPk...","...kPPPPk...","....kkkk....","..........y.",".........yy.",".........yy."],
+anchor:["............","....kkkk....","....kggk....","....kkkk....","...kkggkk...","....kggk....","kk..kggk..kk","kgk.kggk.kgk",".kgkkggkkgk.","..kggggggk..","...kkkkkk...","............"],
+mask:["............","............",".kkkkkkkkkk.","kvvvvvvvvvvk","kvkkvvvvkkvk","kvkwvvvvwkvk","kvvvvvvvvvvk",".kvvvkkvvvk.","..kvvvvvvk..","...kkkkkk...","............","............"],
+envelope:["............","............","kkkkkkkkkkkk","kwwwwwwwwwwk","kwkwwwwwwkwk","kwwkwwwwkwwk","kwwwkkkkwwwk","kwwkwwwwkwwk","kwkwwwwwwkwk","kwwwwwwwwwwk","kkkkkkkkkkkk","............"],
+doc:["............","..kkkkkkk...","..kwwwwwkk..","..kwbbbwwwk.","..kwwwwwwwk.","..kwbbbbbwk.","..kwwwwwwwk.","..kwbbbbwwk.","..kwwwwwwwk.","..kwbbbwwwk.","..kkkkkkkkk.","............"],
+robot:["............","....kr......","....kk......","..kkkkkkkk..","..kgggggggk.",".kkkccckccck",".kkkcckkcckk","..kgggggggk.","..kkkkkkkk..","...kggggk...","...kkkkkk...","............"],
+bubble:["............",".kkkkkkkkkk.","kwwwwwwwwwwk","kwkwwkwwkwwk","kwwwwwwwwwwk",".kkkkkkkkkk.","...kwk......","....kk......","............","............","............","............"],
+bin:["............","..kkkkkkkk..",".kkkkkkkkkk.","..kggggggk..","..kgGgGgGk..","..kggggggk..","..kgGgGgGk..","..kggggggk..","..kgGgGgGk..","..kggggggk..","...kkkkkk...","............"],
+question:["............","...kkkkkk...","..kbbbbbbk..",".kbbkkkkbbk.",".kbbk..kbbk.","......kbbk..","....kbbk....","...kbbk.....","...kbbk.....","............","...kbbk.....","...kkkk....."],
+warning:["............",".....kk.....","....kyyk....","....kyyk....","...kykkyk...","...kykkyk...","..kyykkyyk..","..kyyyyyyk..",".kyyykkyyyk.",".kyyykkyyyk.","kyyyyyyyyyyk","kkkkkkkkkkkk"],
+clock:["............","...kkkkkk...","..kwwwwwwk..",".kwwwkwwwwk.",".kwwwkwwwwk.",".kwwwkkkwwk.",".kwwwwwwwwk.","..kwwwwwwk..","...kkkkkk...","............","............","............"],
+globe:["............","...kkkkkk...","..kbbeebbk..",".kbeeebbbbk.",".kbeebbeebk.",".kbbbbeeebk.",".kbbeebbbbk.",".kbbeeebbbk.","..kbbbbbbk..","...kkkkkk...","............","............"],
+phone:["..kkkkkkkk..","..kddddddk..","..kdbbbbdk..","..kdbwwbdk..","..kdbbbbdk..","..kdbwwbdk..","..kdbbbbdk..","..kddddddk..","..kdkkkkdk..","..kddddddk..","..kkkkkkkk..","............"],
+pin:["............","....kkkk....","...krrrrk...","..krrwrrrk..","..krwkkrrk..","..krrkkrrk..","...krrrrk...","....krrk....",".....kk.....","............","............","............"],
+mic:["............","....kkkk....","...kppppk...","...kpwppk...","...kppppk...","...kpwppk...",".k.kppppk.k.",".kkkppppkkk.","..kkkkkkkk..","....kppk....","...kkkkkk...","............"],
+tv:["............","...k....k...","....k..k....","..kkkkkkkk..",".kdbbbbbbdk.",".kdbbwwbbdk.",".kdbbbbbbdk.",".kddddddddk.","..kkkkkkkk..","............","............","............"],
+car:["............","............","....kkkkk...","...kbbwwbk..","..kbbwwbbbk.",".kkkkkkkkkkk","kbbbbbbbbbbk","kbbyybbbbyyk","kkkkkkkkkkkk",".kgkk..kkgk.","..kk....kk..","............"],
+chip:["............","..k.k.k.k...","..kkkkkkkk..","kkkEEEEEEkkk","..kEcccceEk.","kkkEcEEcEkkk","..kEcEEcEEk.","kkkEcccceEkk","..kEEEEEEEk.","..kkkkkkkk..","..k.k.k.k...","............"],
+camera:["............","............","...kkkk.....",".kkkkkkkkkk.","kgggggggggk.","kgkkkkkkkgk.","kgkwbbbkkgk.","kgkbbbwkkgk.","kgkkkkkkkgk.","kgggggggggk.",".kkkkkkkkkk.","............"],
+gear:["............","....kkkk....",".kk.kggk.kk.","kggkkggkkggk",".kggggggggk.","..kgkkkkgk..","kggkk..kkggk","kggkk..kkggk","..kgkkkkgk..",".kggggggggk.","kggkkggkkggk",".kk.kggk.kk."],
+key:["............","..kkkk......",".kyyyyk.....","kyy..yyk....","kyy..yykkkkk","kyyyyyyyyyyk",".kyyyk.kk.yk","..kkk..kk.kk",".......kk...","............","............","............"],
+medal:["............","..kbk.kbk...","..kbbkbbk...","...kbbbk....","...kkkkk....","..kyyyyyk...",".kyywwyyyk..",".kyywyyyyk..",".kyyyyyyyk..","..kyyyyyk...","...kkkkk....","............"],
+};
+IC.heart0=IC.heart.map(function(r){return r.replace(/w/g,"G").replace(/[rR]/g,"d")});
+IC.star0=IC.star.map(function(r){return r.replace(/w/g,"G").replace(/[yY]/g,"d")});
+PAL.v="#6a44c2";
+function ico(n,s,cls){var g=IC[n]||IC.question;return'<img class="px ic '+(cls||"")+'" style="width:'+g[0].length*(s||4)+'px;height:'+g.length*(s||4)+'px" src="'+grid(g,n)+'" alt="" draggable="false">'}
+/* ===================== characters ===================== */
+var HERO={
+ scout:{n:"SCOUT",pw:"scan",pn:"X-RAY",d:"Reveals the hidden truth about one thing.",skin:"#e0a87c",hair:"#2a2a2a",hs:"short",top:"#4cc9ff",bot:"#2b2f63",acc:"goggles",col:"#4cc9ff"},
+ chrono:{n:"CHRONO",pw:"rewind",pn:"REWIND",d:"Undo your last mistake and win the heart back.",skin:"#f1c9a5",hair:"#b794ff",hs:"spiky",top:"#6a44c2",bot:"#2b2f63",acc:"cape",col:"#b794ff"},
+ guard:{n:"GUARDIAN",pw:"shield",pn:"SHIELD",d:"Blocks your next mistake. No heart lost.",skin:"#8d5a3c",hair:"#ffa63d",hs:"helmet",top:"#ffa63d",bot:"#5a6090",acc:"shield",col:"#ffa63d"},
+ oracle:{n:"ORACLE",pw:"hint",pn:"FOCUS",d:"Points out one wrong choice so you can skip it.",skin:"#c68a62",hair:"#1c8f55",hs:"hat",top:"#3ee98a",bot:"#1c8f55",acc:"orb",col:"#3ee98a"}
+};
+var NPC={
+ z:{n:"ZARA",skin:"#c68a62",hair:"#2b1630",hs:"long",top:"#ff6bb5",bot:"#2b2f63",col:"#ff6bb5"},
+ k:{n:"KABIR",skin:"#b97b55",hair:"#101418",hs:"short",top:"#4cc9ff",bot:"#3a3d82",col:"#4cc9ff"},
+ d:{n:"MS. D'SOUZA",skin:"#d09a72",hair:"#5a2d1a",hs:"bun",top:"#ffd23b",bot:"#6a44c2",col:"#ffd23b"},
+ n:{n:"NOVA",col:"#5eead4"}
+};
+function chDef(id){return HERO[id]||NPC[id]}
+function drawChar(o){var K="#16122b";
+ function part(x,y,w,h,c){rc(x-1,y-1,w+2,h+2,K);rc(x,y,w,h,c)}
+ if(o.acc==="cape")part(5,14,14,15,"#3a1d7a");
+ if(o.hs==="long")part(5,4,14,16,o.hair);
+ part(8,23,3,6,o.bot);part(13,23,3,6,o.bot);part(7,28,5,3,"#241d3d");part(12,28,5,3,"#241d3d");
+ part(6,14,12,10,o.top);rc(6,22,12,2,"rgba(0,0,0,.25)");rc(11,14,2,10,"rgba(255,255,255,.18)");
+ part(3,15,3,8,o.top);part(18,15,3,8,o.top);rc(3,21,3,2,o.skin);rc(18,21,3,2,o.skin);
+ part(7,3,10,10,o.skin);rc(10,13,4,1,o.skin);
+ rc(9,8,2,2,K);rc(13,8,2,2,K);rc(8,10,1,1,"#ff9aa8");rc(15,10,1,1,"#ff9aa8");rc(11,11,2,1,"#8a3b3b");
+ var h=o.hair;
+ if(o.hs==="short"||o.hs==="long"||o.hs==="bun"){part(6,2,12,4,h);rc(6,5,2,3,h);rc(16,5,2,3,h);if(o.hs==="bun")part(10,-1,4,3,h)}
+ if(o.hs==="spiky"){part(6,2,12,4,h);rc(6,5,3,4,h);rc(16,5,2,3,h);part(11,0,6,3,h)}
+ if(o.hs==="helmet"){part(5,2,14,5,h);rc(5,6,2,6,h);rc(17,6,2,6,h);rc(10,1,4,2,"#ffd23b")}
+ if(o.hs==="hat"){part(4,4,16,2,h);part(7,1,10,3,h);part(9,-2,6,3,h);rc(11,2,2,1,"#ffd23b")}
+ if(o.acc==="goggles"){rc(7,7,10,3,"#ffd23b");rc(8,8,3,1,"#5eead4");rc(13,8,3,1,"#5eead4")}
+ if(o.acc==="shield"){part(0,16,5,8,"#c9d2ff");rc(1,18,3,4,"#ff5d73")}
+ if(o.acc==="orb"){cir(21,21,2,"#ffd23b");px1(20,20,"#fff")}
+ if(o.acc==="cape"){rc(11,14,2,2,"#ffd23b")}}
+var CCV={};
+function drawNova(){var K="#16122b";function part(x,y,w,h,c){rc(x-1,y-1,w+2,h+2,K);rc(x,y,w,h,c)}
+ part(11,3,2,4,"#9aa0c8");part(10,0,4,3,"#ff5d73");part(3,10,2,6,"#9aa0c8");part(19,10,2,6,"#9aa0c8");part(5,7,14,11,"#d7defa");rc(5,15,14,3,"rgba(0,0,0,.15)");
+ part(7,10,10,5,"#0b0f2a");rc(8,11,3,3,"#5eead4");rc(13,11,3,3,"#5eead4");rc(9,12,1,1,"#fff");rc(14,12,1,1,"#fff");
+ part(8,19,8,6,"#9aa0c8");rc(11,21,2,2,"#5eead4");part(6,25,4,2,"#9aa0c8");part(14,25,4,2,"#9aa0c8")}
+function chCanvas(id){if(CCV[id])return CCV[id];var isN=id==="n",c=cv(24,isN?28:32);X=c.getContext("2d");X.imageSmoothingEnabled=false;if(isN)drawNova();else drawChar(chDef(id));return CCV[id]=c}
+function chImg(id){return PC["c:"+id]||(PC["c:"+id]=chCanvas(id).toDataURL())}
+function head(id,s){var k="hd:"+id;if(!PC[k]){var o=cv(14,14),ox=o.getContext("2d");ox.imageSmoothingEnabled=false;ox.drawImage(chCanvas(id),5,id==="n"?3:1,14,14,0,0,14,14);PC[k]=o.toDataURL()}return im(PC[k],"hd","width:"+(14*(s||3))+"px;height:"+(14*(s||3))+"px")}
+function sprite(id,s,cls){var h=id==="n"?28:32;return im(chImg(id),"spr "+(cls||""),"width:"+24*s+"px;height:"+h*s+"px")}
+/* ===================== scenes (procedural pixel backgrounds) ===================== */
+function tree(x,y,s){rc(x,y,2,3,"#5a341f");for(var k=0;k<4;k++){var hw=1+k*(s||1);rc(x+1-hw,y-3*k-3,hw*2,3,k%2?"#1f6b3a":"#2a8a4a")}}
+function cloud(x,y,w){rc(x,y,w,3,"#fff");rc(x+2,y-2,w-5,2,"#fff");rc(x+1,y+3,w-3,1,"#d6ecff")}
+var SC={
+meadow:function(w,h){band(0,56,["#2f8fff","#4aa3ff","#66b5ff","#85c6ff","#a6d6ff","#c4e4ff"],w);cloud(14,10,22);cloud(70,6,28);cloud(130,14,20);cloud(100,22,16);
+ mtn(w,50,22,.04,1,"#4b7fc4");mtn(w,58,16,.06,5,"#3a67a8");mtn(w,66,9,.05,3,"#2e9e5a");rc(0,66,w,h-66,"#2f8f4a");dith(0,66,w,h-66,"#3fbf6f",11,.25);
+ mtn(w,74,6,.08,8,"#38b46a");rc(0,76,w,h,"#2a7f44");[10,40,150,176,100].forEach(function(x,i){tree(x,60+i%3*3,1+(i%2))})},
+lab:function(w,h){rc(0,0,w,h,"#0d2531");for(var x=0;x<w;x+=24)rc(x,0,1,56,"#123546");rc(0,18,w,1,"#123546");rc(0,56,w,h-56,"#07161d");for(x=0;x<w;x+=16)rc(x,56,1,h-56,"#0c222c");rc(0,56,w,2,"#1c4a5e");
+ [8,150].forEach(function(x){rc(x,10,34,46,"#16384a");rc(x+1,11,32,44,"#1a4560");for(var j=0;j<6;j++){rc(x+3,13+j*7,28,5,"#0b1f2b");for(var i=0;i<7;i++)px1(x+5+i*4,15+j*7,rnd(x+i*7+j)>.55?"#3ee98a":rnd(i+j*3)>.5?"#ff5d73":"#ffd23b")}});
+ rc(62,8,68,40,"#0a1a22");rc(64,10,64,36,"#031318");for(var j=0;j<7;j++)for(var i=0;i<15;i++)if(rnd(i*3+j*11)>.5)rc(66+i*4,12+j*5,2,2,"#3ee98a");txt(86,40,"TRAIN",'#5eead4');rc(60,48,72,3,"#1c4a5e");
+ rc(0,66,w,8,"#2b3a45");rc(0,66,w,1,"#4b5f6e");for(x=0;x<w;x+=8)rc(x+2,69,3,3,"#1d2832");[20,70,120,165].forEach(function(x,i){rc(x,58,10,8,i%2?"#c99a5b":"#a5733a");rc(x,58,10,2,"#e0b87a");rc(x+4,60,2,6,"#e0b87a")});rc(0,74,w,6,"#0a1a22")},
+forge:function(w,h){rc(0,0,w,h,"#2a1a16");for(var j=0;j<8;j++)for(var i=0;i<14;i++){var x=i*14+(j%2?7:0)-7;rc(x,j*8,13,7,rnd(i*5+j*9)>.5?"#3a2620":"#33211b")}
+ rc(0,58,w,h-58,"#1a0f0c");for(i=0;i<w;i+=12)rc(i,58,1,h-58,"#241512");rc(0,58,w,2,"#4a2c22");
+ rc(66,16,60,44,"#120907");rc(70,20,52,40,"#ff7a1a");rc(74,26,44,34,"#ffa63d");rc(80,34,32,26,"#ffd23b");rc(88,42,16,18,"#fff2a8");dith(70,20,52,40,"#ff5d1a",3,.12);
+ rc(60,10,72,8,"#3b2c28");rc(62,12,68,3,"#5a423b");
+ rc(20,50,34,8,"#16122b");rc(26,44,22,6,"#2b2f63");rc(22,46,6,3,"#2b2f63");rc(14,48,8,2,"#2b2f63");rc(24,58,26,4,"#0d0a1c");
+ [[142,14],[152,22],[162,12],[172,24]].forEach(function(p,i){rc(p[0],p[1],2,16+i*3,"#6b5a52");rc(p[0]-3,p[1]+16+i*3,8,4,"#8a7a72")});
+ dith(60,10,76,52,"#ffd23b",21,.02);dith(40,20,110,40,"#ff9a3a",5,.015)},
+city:function(w,h){band(0,50,["#0a0722","#100a30","#170f40","#201552","#2c1b66","#3b2278"],w);for(var i=0;i<40;i++)px1(Math.floor(rnd(i)*w),Math.floor(rnd(i+50)*34),rnd(i+9)>.6?"#fff":"#9aa0ff");cir(160,16,7,"#fff6c8");cir(163,14,6,"#0f0a30");
+ var cols=["#150d3a","#1a1048","#120a33"];for(i=0;i<16;i++){var bx=i*12,bh=18+Math.floor(rnd(i*2.1)*34);rc(bx,64-bh,11,bh,cols[i%3]);for(var j=0;j<bh/6;j++)for(var k=0;k<2;k++)if(rnd(i*13+j*5+k)>.45)rc(bx+2+k*5,66-bh+j*6,3,3,rnd(i+j)>.8?"#ff6bb5":"#ffd23b")}
+ rc(0,64,w,h-64,"#0d0a24");rc(0,64,w,2,"#3a2a7a");rc(0,74,w,1,"#4a3a8a");for(i=0;i<w;i+=20)rc(i,70,10,1,"#6a5ac0");
+ rc(76,24,40,14,"#0a0620");rc(77,25,38,12,"#ff2e9a");rc(79,27,34,8,"#1a0630");txt(82,28,"HIRE",'#ff6bb5');rc(95,38,2,16,"#3a2a7a");rc(0,0,0,0,"#000")},
+news:function(w,h){rc(0,0,w,h,"#14261f");for(var x=0;x<w;x+=16)rc(x,0,1,60,"#1b3329");rc(0,58,w,h-58,"#0d1a15");for(x=0;x<w;x+=14)rc(x,58,1,h-58,"#12241d");rc(0,58,w,2,"#3a2a1a");
+ [6,150].forEach(function(bx){rc(bx,6,36,52,"#2a1a10");for(var r=0;r<4;r++){rc(bx+2,8+r*12,32,10,"#1b100a");for(var i=0;i<9;i++){var bh=6+Math.floor(rnd(bx+r*9+i)*4);rc(bx+3+i*3.5,18+r*12-bh,3,bh,["#ff5d73","#4cc9ff","#ffd23b","#b794ff","#3ee98a"][Math.floor(rnd(i+r*7+bx)*5)])}}});
+ rc(56,8,80,38,"#3a2a1a");rc(58,10,76,34,"#d9c79a");[[62,14,"#fff"],[84,18,"#ffd23b"],[106,13,"#fff"],[70,30,"#4cc9ff"],[96,29,"#fff"],[118,32,"#ff6bb5"]].forEach(function(p){rc(p[0],p[1],14,10,p[2]);rc(p[0]+6,p[1]-1,2,2,"#ff5d73")});
+ rc(68,20,56,1,"#ff5d73");rc(72,20,1,12,"#ff5d73");rc(100,19,1,12,"#ff5d73");rc(46,48,100,4,"#5a341f");rc(46,52,100,6,"#3b2314");rc(52,44,6,4,"#9aa0c8");rc(128,44,6,4,"#ffd23b");rc(124,36,14,8,"#ffd23b");
+ rc(96,36,16,4,"#f4f4ff");rc(0,0,0,0,"#000");txt(88,1,"NEWS","#ff5d73")},
+title:function(w,h){band(0,56,["#07051a","#0b0828","#110c38","#190f4a","#241660","#331d78"],w);for(var i=0;i<60;i++)px1(Math.floor(rnd(i)*w),Math.floor(rnd(i+70)*44),rnd(i+9)>.6?"#fff":"#8a93ff");cir(150,18,10,"#fff6c8");cir(154,15,9,"#190f4a");
+ for(i=0;i<18;i++){var bx=i*11,bh=14+Math.floor(rnd(i*3.3)*30);rc(bx,64-bh,10,bh,"#0a0720");for(var j=0;j<bh/6;j++)if(rnd(i*9+j)>.5)rc(bx+3,66-bh+j*6,3,3,"#ffd23b")}
+ rc(0,64,w,h-64,"#060414");for(i=0;i<12;i++){var gy=20+Math.floor(rnd(i*4.1)*40);rc(Math.floor(rnd(i*2.2)*w),gy,10+Math.floor(rnd(i)*30),1,rnd(i)>.5?"#ff6bb5":"#5eead4")}}
+};
+function scene(n,w,h){w=w||192;h=h||80;return mkImg("s:"+n+w+h,w,h,function(){SC[n](w,h)})}
+/* ===================== state ===================== */
+var me="",P=null,CTX=null,CS=null,G=null,lastSc=null,app,topEl,wp,tq=[],tbusy=0;
+function hs(x){var h=5381;for(var i=0;i<x.length;i++)h=(h*33^x.charCodeAt(i))>>>0;return h}
+function pk(){return"g9_"+me.toLowerCase()}
+function newP(){return{xp:0,streak:0,best:0,last:"",once:{},bd:{},st:{},stars:{},hero:{},used:{},heroes:{},lastHero:"scout"}}
+function loadP(){P=newP();try{var q=JSON.parse(localStorage.getItem(pk())||"{}");for(var k in q)P[k]=q[k]}catch(e){}
+ ["once","bd","st","stars","hero","used","heroes"].forEach(function(k){P[k]=P[k]||{}});P.lastHero=P.lastHero||"scout";daily();renderTop()}
+function savP(){if(!me||!P)return;try{localStorage.setItem(pk(),JSON.stringify(P));localStorage.setItem("g9_last",me)}catch(e){}}
+function lvl(x){return Math.floor(x/100)+1}
+function dstr(d){return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
+function daily(){var t=dstr(new Date());if(P.last===t)return;var y=dstr(new Date(Date.now()-864e5));P.streak=P.last===y?(P.streak||0)+1:1;P.best=Math.max(P.best||0,P.streak);P.last=t;savP();addXp(10,"DAILY x"+P.streak)}
+function go(f){if(RM){f();return}wp.className="";void wp.offsetWidth;wp.className="go";setTimeout(f,330);setTimeout(function(){wp.className=""},820)}
+function logout(){savP();me="";P=null;CTX=null;G=null;try{localStorage.removeItem("g9_last")}catch(e){}stopType();clearDnd();renderTop();go(login)}
+/* ===================== top bar, toast, xp ===================== */
+function renderTop(){if(!me||!P){topEl.innerHTML="";return}var l=lvl(P.xp),x=P.xp%100;
+ topEl.innerHTML='<div class="tb"><span class="logo" onclick="go(menu)">GLITCH</span><button class="homeb" onclick="go(menu)">HOME</button><div class="tbs"><span class="chip fx">'+ico("flame",2)+(P.streak||0)+'</span><div class="xpw chip"><div class="xl"><b>LVL '+l+'</b><span>'+x+'/100 XP</span></div><div class="bar"><i class="xp" style="width:'+x+'%"></i></div></div>'+head(P.lastHero||"scout",3)+'<button class="homeb" onclick="logout()">LOG OUT</button></div></div>'}
+function toast(t){tq.push(t);if(!tbusy)nt()}
+function nt(){var t=tq.shift();if(!t){tbusy=0;return}tbusy=1;var d=document.createElement("div");d.className="toast";d.setAttribute("role","status");d.textContent=t;document.body.appendChild(d);setTimeout(function(){d.remove();nt()},2300)}
+function addXp(n,why){var a=lvl(P.xp);P.xp+=n;var b=lvl(P.xp);savP();renderTop();toast("+"+n+" XP"+(why?" · "+why:""));if(b>a)toast("LEVEL UP! LVL "+b);checkBadges()}
+function bonus(k,n,w){if(P.once[k])return 0;P.once[k]=1;addXp(n,w||k.toUpperCase());return n}
+/* ===================== course data ===================== */
+var MODS=[
+{id:1,t:"Training Lab",sub:"Rules versus learning. How a machine learns from examples.",c:"#4cc9ff",env:"lab",npc:"n",icon:"chip",tags:["Machine learning","Training data","Generalization"],games:[["g1","Train the Model"],["g2","Fact or Fib"]]},
+{id:2,t:"Prompt Forge",sub:"Scores, thresholds, and how your prompt shapes the answer.",c:"#ff6bb5",env:"forge",npc:"n",icon:"flask",tags:["Weights and thresholds","Classification","Prompt engineering"],games:[["g1","Tune the Sorter"],["g2","Prompt Forge"]]},
+{id:3,t:"Neon City",sub:"How models learn unfair patterns, even after you delete the obvious feature.",c:"#b794ff",env:"city",npc:"k",icon:"scales",tags:["Dataset bias","Proxy variables","Algorithmic discrimination"],games:[["g1","Proxy Hunt"],["g2","Fairness Lab"]]},
+{id:4,t:"The Newsroom",sub:"Hallucinations, verification, and who decides what is right.",c:"#3ee98a",env:"news",npc:"d",icon:"book",tags:["Hallucination","Verification","Human oversight"],games:[["g1","Source Detective"],["g2","Confidence Court"],["g3","Design the Companion"]]}];
+function stepsOf(m){return[["m"+m.id+"h","HERO","Choose your hero"],["m"+m.id+"s","STORY","Storytime"]].concat(m.games.map(function(g){return["m"+m.id+g[0],"GAME",g[1]]}))}
+function modDone(m){return stepsOf(m).every(function(s){return P.st[s[0]]})}
+function modOpen(i){return i===0||modDone(MODS[i-1])}
+function stepOpen(m,k){var s=stepsOf(m);for(var j=0;j<k;j++)if(!P.st[s[j][0]])return false;return true}
+function nextStepOf(i){var s=stepsOf(MODS[i]);for(var j=0;j<s.length;j++)if(!P.st[s[j][0]])return s[j][0];return null}
+function curMod(){for(var i=0;i<MODS.length;i++)if(!modDone(MODS[i]))return i;return-1}
+function stepLabel(id){var s=stepsOf(MODS[+id.charAt(1)-1]);for(var j=0;j<s.length;j++)if(s[j][0]===id)return s[j][2];return""}
+function heroOf(i){return P.hero[MODS[i].id]||P.lastHero||"scout"}
+function markDone(){if(CTX&&CTX.step&&!P.st[CTX.step]){P.st[CTX.step]=1;savP();checkBadges()}}
+function flowBtn(){return CTX&&CTX.i>=0&&CTX.step!=="x"?'<button class="ch pri" id="nx" onclick="advance()">'+(nextStepOf(CTX.i)?"Continue ▶":"Finish module ▶")+'</button>':""}
+function advance(){if(!CTX){go(menu);return}var i=CTX.i,ns=nextStepOf(i);go(function(){if(ns)runStep(ns);else modDoneScreen(i)})}
+function runStep(id){var i=+id.charAt(1)-1,t=id.slice(2);CTX={i:i,step:id};stopType();clearDnd();G=null;
+ if(t==="h")heroSel(i);else if(t==="s")cut(i);else gameStart(id,i)}
+/* ===================== badges ===================== */
+function starsOf(k){return P.stars[k]||0}
+var BD=[
+{id:"boot",i:"plug",n:"Boot Up",d:"Finish Module 1",ok:function(){return modDone(MODS[0])}},
+{id:"story",i:"book",n:"Story Fan",d:"Watch all 4 storytimes",ok:function(){return MODS.every(function(m){return!!P.st["m"+m.id+"s"]})}},
+{id:"eye",i:"eye",n:"Sharp Eye",d:"Get 3 stars on any game",ok:function(){return Object.keys(P.stars).some(function(k){return P.stars[k]>=3})}},
+{id:"smith",i:"flask",n:"Prompt Smith",d:"3 stars in Prompt Forge",ok:function(){return starsOf("m2g2")>=3}},
+{id:"bias",i:"scales",n:"Bias Buster",d:"3 stars in Fairness Lab",ok:function(){return starsOf("m3g2")>=3}},
+{id:"fact",i:"scan",n:"Fact Checker",d:"3 stars in Source Detective",ok:function(){return starsOf("m4g1")>=3}},
+{id:"untouch",i:"shield",n:"Untouchable",d:"Clear a game with no hearts lost",ok:function(){return!!P.once.untouch}},
+{id:"power",i:"bolt",n:"Power User",d:"Use all 4 hero powers",ok:function(){return Object.keys(P.used).length>=4}},
+{id:"heroes",i:"mask",n:"Hero Collector",d:"Play with all 4 heroes",ok:function(){return Object.keys(P.heroes).length>=4}},
+{id:"grad",i:"trophy",n:"Graduate",d:"Finish all 4 modules",ok:function(){return MODS.every(modDone)}},
+{id:"streak",i:"flame",n:"3-Day Streak",d:"Play 3 days in a row",ok:function(){return(P.best||0)>=3}},
+{id:"lvl",i:"star",n:"Level 3",d:"Earn 200 XP",ok:function(){return lvl(P.xp)>=3}}];
+function checkBadges(){if(!P)return;BD.forEach(function(b){if(!P.bd[b.id]&&b.ok()){P.bd[b.id]=1;savP();toast("BADGE · "+b.n.toUpperCase())}})}
+/* ===================== login / logout ===================== */
+function login(){me="";P=null;renderTop();lastSc=null;
+ app.innerHTML='<div class="lg"><div class="lgban">'+im(scene("title"),"lgimg")+'<div class="lgt"><h1 data-t="GLITCH">GLITCH</h1><p>AN AI LITERACY ADVENTURE</p></div><div class="lgc">'+["z","k","d","n"].map(function(w,i){return'<span class="bob" style="animation-delay:'+i*.25+'s">'+sprite(w,4)+'</span>'}).join("")+'</div></div>'
+ +'<div class="card"><p class="tg">Spot what AI gets wrong. Pick a hero. Win the game.</p><label for="nm">Your name</label><input id="nm" maxlength="20" autocomplete="off" placeholder="Type your name"><label for="pn">4-digit PIN</label><input id="pn" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234"><div class="er" id="er"></div><button class="ch pri" id="en">▶ Start playing</button><p class="foot">New name = new profile. Saved on this device only.</p></div></div>';
+ var nm=$("#nm"),pn=$("#pn"),er=$("#er");
+ function ent(){var v=nm.value.trim(),p=pn.value;if(!v){er.textContent="Type your name.";nm.focus();return}if(!/^\d{4}$/.test(p)){er.textContent="PIN must be 4 digits.";pn.focus();return}
+  var k="g9p_"+v.toLowerCase(),pf=null,h=hs(p+v.toLowerCase());try{pf=JSON.parse(localStorage.getItem(k)||"null")}catch(e){}
+  if(pf&&pf.h!==h){er.textContent="That name uses a different PIN.";return}
+  me=v;try{localStorage.setItem(k,JSON.stringify({h:h}))}catch(e){}loadP();savP();go(menu)}
+ $("#en").onclick=ent;pn.onkeydown=nm.onkeydown=function(e){if(e.key==="Enter")ent()};nm.focus()}
+/* ===================== home (course page) ===================== */
+function starsHtml(n){var s="";for(var i=0;i<3;i++)s+=ico(i<n?"star":"star0",2);return s}
+function menu(){lastSc=null;CTX=null;G=null;clearDnd();stopType();renderTop();
+ var l=lvl(P.xp),x=P.xp%100,ci=curMod(),ns=ci>=0?nextStepOf(ci):null,dn=MODS.filter(modDone).length,earn=BD.filter(function(b){return P.bd[b.id]}).length,fresh=!Object.keys(P.st).length,hero=P.lastHero||"scout",qb;
+ if(ci<0)qb=["COURSE COMPLETE","You finished all four modules. Replay any game to earn more stars.","m1s","Replay"];
+ else qb=[fresh?"START HERE":"CONTINUE","Module "+(ci+1)+": "+MODS[ci].t+" · "+stepLabel(ns),ns,fresh?"Start":"Continue"];
+ app.innerHTML='<div class="hero"><span class="bob">'+sprite(hero,5)+'</span><div><p class="eyebrow">WELCOME BACK</p><h2 class="hello">'+esc(me)+'</h2><p class="sub">Spot what AI gets wrong. Make the call.</p></div></div>'
+ +'<div class="stats"><div class="st"><b>LVL '+l+'</b><span>'+x+'/100 XP to next level</span></div><div class="st"><b>'+P.xp+'</b><span>Total XP</span></div><div class="st"><b class="fx">'+ico("flame",3)+(P.streak||0)+'</b><span>Day streak (best '+(P.best||0)+')</span></div><div class="st"><b>'+dn+'/'+MODS.length+'</b><span>Modules complete</span></div></div>'
+ +'<div class="quest"><span class="bob">'+sprite("n",3)+'</span><div class="qt"><small>'+qb[0]+'</small>'+esc(qb[1])+'</div><button class="ch pri" id="qb">▶ '+qb[3]+'</button></div>'
+ +'<h3 class="sec">COURSE · AI LITERACY</h3><p class="secs">4 environments. In each one: pick a hero, watch the story, then play the games. Finish a module to unlock the next.</p>'
+ +'<div class="path">'+MODS.map(function(m,i){var op=modOpen(i),md=modDone(m),st=stepsOf(m),dc=st.filter(function(s){return P.st[s[0]]}).length,mh=P.hero[m.id];
+  return'<div class="mod'+(md?" dn":"")+(op?"":" lk")+'" style="--mc:'+m.c+'"><div class="mn">'+(md?ico("check",3):op?(i+1):ico("lock",3))+'</div><div class="mb"><div class="mbanner">'+im(scene(m.env),"mbi")+'<div class="mbov"><span class="mico">'+ico(m.icon,4)+'</span>'+(mh?'<span class="mhero">'+head(mh,3)+'</span>':"")+'</div></div><div class="mbody"><small>MODULE '+(i+1)+(op?" · "+dc+"/"+st.length+" STEPS":" · LOCKED")+'</small><h3>'+esc(m.t)+'</h3><p>'+esc(m.sub)+'</p><div class="tags">'+m.tags.map(function(t){return'<span>'+esc(t)+'</span>'}).join("")+'</div>'
+  +(op?'<div class="bar"><i class="xp" style="width:'+Math.round(dc/st.length*100)+'%"></i></div><div class="steps">'+st.map(function(s,k){var d=P.st[s[0]],ok=stepOpen(m,k),isG=s[1]==="GAME";return'<button class="stp'+(d?" d":"")+(ok&&!d?" go":"")+'" data-s="'+s[0]+'"'+(ok?"":" disabled")+'><em>'+s[1]+'</em><span>'+esc(s[2])+'</span><b>'+(isG&&d?starsHtml(P.stars[s[0]]||1):d?"DONE":ok?"START":ico("lock",2))+'</b></button>'}).join("")+'</div>':'<p class="lkm">Finish Module '+i+' to unlock this one.</p>')
+  +'</div></div></div>'}).join("")+'</div>'
+ +'<h3 class="sec">BADGES · '+earn+'/'+BD.length+'</h3><p class="secs">Collect them by playing.</p><div class="badges">'+BD.map(function(b){var on=P.bd[b.id];return'<div class="bd'+(on?" on":"")+'"><span>'+ico(b.i,5)+'</span><b>'+b.n+'</b><small>'+(on?"UNLOCKED":b.d)+'</small></div>'}).join("")+'</div>'
+ +'<p class="foot">Progress saves on this device. <button class="link" id="rst">Reset progress</button></p>';
+ $$(".stp").forEach(function(el){el.onclick=function(){var id=el.getAttribute("data-s");go(function(){runStep(id)})}});
+ $("#qb").onclick=function(){go(function(){runStep(qb[2])})};
+ var rs=$("#rst"),arm=0;rs.onclick=function(){if(!arm){arm=1;rs.textContent="Click again to erase XP, badges and progress";return}var k=P.streak,b=P.best,la=P.last;P=newP();P.streak=k;P.best=b;P.last=la;savP();menu()}}
+/* ===================== hero select ===================== */
+function heroSel(i){var m=MODS[i],sel=P.hero[m.id]||P.lastHero||"scout";lastSc=null;
+ function draw(){app.innerHTML='<div class="hsel"><div class="hsbg">'+im(scene(m.env),"hsimg")+'</div><div class="hsin"><p class="eyebrow">MODULE '+m.id+' · '+m.t.toUpperCase()+'</p><h2 class="hh">CHOOSE YOUR HERO</h2><p class="sub" style="margin-bottom:18px">Each hero has one power. You get 2 uses per game.</p><div class="hcards">'
+  +Object.keys(HERO).map(function(id){var h=HERO[id];return'<button class="hc'+(id===sel?" sel":"")+'" data-h="'+id+'" style="--hc:'+h.col+'"><span class="hcs bob">'+sprite(id,6)+'</span><b>'+h.n+'</b><span class="hp">'+ico(h.pw==="hint"?"target":h.pw,3)+'<em>'+h.pn+'</em></span><small>'+h.d+'</small></button>'}).join("")
+  +'</div><button class="ch pri hgo" id="hgo">▶ Enter the '+esc(m.t)+'</button><button class="link" id="back">← HOME</button></div></div>';
+  $$(".hc").forEach(function(el){el.onclick=function(){sel=el.getAttribute("data-h");draw()}});
+  $("#hgo").onclick=function(){P.hero[m.id]=sel;P.lastHero=sel;P.heroes[sel]=1;savP();markDone();renderTop();advance()};$("#back").onclick=function(){go(menu)}}
+ draw()}
+/* ===================== module complete ===================== */
+function modDoneScreen(i){var m=MODS[i],gx=bonus("mod"+m.id,50,"MODULE COMPLETE"),last=i===MODS.length-1,conf="";CTX={i:i,step:"x"};lastSc=null;stopType();checkBadges();
+ for(var c=0;c<28;c++)conf+='<i class="cf" style="left:'+Math.floor(rnd(c)*100)+'%;background:'+["#ffd23b","#ff6bb5","#4cc9ff","#3ee98a","#b794ff"][c%5]+';animation-delay:'+(rnd(c+9)*1.6).toFixed(2)+'s"></i>';
+ app.innerHTML='<div class="mdone" style="--mc:'+m.c+'"><div class="conf">'+conf+'</div><div class="mdban">'+im(scene(m.env),"mbi")+'<div class="mdtr bob">'+ico("trophy",12)+'</div></div><div class="mdb"><span class="tag good">MODULE '+m.id+' COMPLETE</span>'+(gx?'<span class="tag good">+'+gx+' XP</span>':"")+'<h2>'+esc(last?"COURSE COMPLETE!":m.t)+'</h2><p class="sub" style="margin-bottom:12px">You covered:</p><div class="cl">'+m.tags.map(function(t){return'<span>'+esc(t)+'</span>'}).join("")+'</div><div class="reveal"><small>'+(last?"YOU FINISHED GLITCH":"WHAT'S NEXT")+'</small>'+esc(last?"You can now spot what AI gets wrong and make the call. Replay any game from the homepage to earn more stars.":"Module "+(i+2)+" is unlocked: "+MODS[i+1].t+".")+'</div>'+(last?"":'<button class="ch pri" id="nm">Start Module '+(i+2)+' ▶</button>')+'<button class="ch" id="hm">← Home</button></div></div>';
+ $("#hm").onclick=function(){go(menu)};var nm=$("#nm");if(nm)nm.onclick=function(){go(function(){runStep("m"+(i+2)+"h")})}}
+/* ===================== cutscene storytime ===================== */
+var TT=null,CUT=null;
+function stopType(){if(TT){clearInterval(TT);TT=null}document.onkeydown=null}
+function T(x){return{t:"title",h:x[0],s:x[1],x:x[2]}}
+function Pt(w,x){return{t:"portrait",w:w,x:x}}
+function Ic(ic,x,cap){return{t:"icons",ic:ic,x:x,cap:cap}}
+function Sn(w,x,o){o=o||{};o.t="scene";o.w=w;o.x=x;return o}
+function Ky(k,x){return{t:"key",k:k,x:x}}
+var STORY={
+1:[T(["MODULE 1","TRAINING LAB","Week one. A question on the board."]),
+ Pt("d","Welcome to the Training Lab. Today's question: what is AI, really?"),
+ Sn("z","a robot brain that thinks like a person, right?"),
+ Sn("d","Let's compare. Traditional software follows rules a person wrote. Same input, same output, every time."),
+ Ic(["gear","doc","key","chip","bin","check","clock","book"],"Traditional software = rules written by people. It does exactly what the rules say, nothing more.",["RULES","CODE","LOGIC","CHIP","BIN","OK","TIME","BOOK"]),
+ Ky("Machine learning","Instead of rules, a model learns patterns from examples. We show it lots of examples and it finds the patterns itself."),
+ Ic(["envelope","bubble","question","target","star","warning","eye","scan"],"Examples are training data. Each one has features, the details we measure. Many have a label: the right answer, like SPAM.",["EMAIL","WORDS","?","LABEL","GOOD","SPAM","LOOK","SCAN"]),
+ Sn("d","The model learns which features go with which labels, then predicts on new examples. A prediction is an informed guess, not a fact."),
+ Ky("Generalization","A good model works on examples it has never seen. Memorizing training data is not learning, so we hold data back for testing."),
+ Sn("n","I'm NOVA, a generative AI. I learned patterns from huge amounts of text and I write one likely word at a time.",{big:1}),
+ Pt("n","Useful for drafts and ideas. Limited wherever facts, judgment or accountability matter. Time to train your first model.")],
+2:[T(["MODULE 2","PROMPT FORGE","Where scores become decisions."]),
+ Sn("z","I want NOVA to sort my messages into URGENT and CAN WAIT. How does it decide?"),
+ Pt("n","For every message I look at features: words like tonight or deadline, who sent it, how long it is."),
+ Ic(["envelope","clock","warning","mic","phone","bolt","bubble","bin"],"Each feature gets a weight: how strongly it pushes the decision. The weights add up into a score.",["MAIL","DEADLINE","!!","VOICE","PHONE","BIG","lol","BIN"]),
+ Ky("Thresholds","A score becomes a probability, like 85% urgent. A threshold is the line where the decision flips."),
+ Sn("z","so URGENT is just everything above a line somebody picked?"),
+ Sn("n","Yes. Raise the line and fewer things count as urgent, but real emergencies can slip through. That's classification, and it's a trade-off."),
+ Sn("d","Now flip it. When you chat with an AI, YOU supply the features. Your prompt is the input.",{big:1}),
+ Ic(["target","globe","gear","mask","doc","clock","anchor","flask"],"Prompt levers: specificity, context, constraints, role and audience, format. Then iterate.",["SPECIFIC","CONTEXT","LIMITS","ROLE","FORMAT","LENGTH","AIM","TRY"]),
+ Pt("d","Your first prompt is a draft. Read the answer, then refine it. Step up to the forge.")],
+3:[T(["MODULE 3","NEON CITY","The screener that said no."]),
+ Sn("k","Anaya didn't get an interview. The company used an AI screener. They deleted her name and gender first. So how can it be biased?"),
+ Ic(["bubble","doc","chip","scan","eye","bin","book","question"],"I split text into tokens, small chunks of words. Each token becomes a list of numbers, a representation. Similar words get similar numbers.",["TEXT","TOKENS","NUMBERS","MATCH","SEE","STORE","READ","?"]),
+ Sn("n","A screener works like the sorter: features get weights, weights give a score. But it learned its weights from past hires.",{big:1}),
+ Ky("Dataset bias","If past hires were mostly men, good candidate starts to mean looks like past hires. Groups missing from the data get worse results."),
+ Sn("k","But gender was deleted!"),
+ Sn("d","Other features can stand in for it. These are proxy variables: a women's college, a career gap, a postcode, even a hobby."),
+ Ky("Proxy variables","A proxy correlates with a sensitive trait. Deleting the trait does not delete the proxy."),
+ Pt("n","I can be 99% confident while doing this. Confidence measures how strongly a pattern fits. It does not measure fairness."),
+ Pt("d","That is algorithmic discrimination. Test the outcomes for each group, not only the inputs. Hunt the proxies.")],
+4:[T(["MODULE 4","THE NEWSROOM","Final lesson: trust."]),
+ Sn("d","Everyone has an AI in their pocket. Ms. D'Souza has one last lesson, and it is about trust."),
+ Ky("Hallucination","An AI can write something fluent and confident that is simply false. It can even invent sources with real-sounding authors."),
+ Pt("n","I'm built to produce likely, fluent text. Fluent feels true, but it isn't. I have no built-in way to know something was verified."),
+ Ic(["book","globe","doc","scan","eye","check","cross","key"],"Verification means checking against something outside the AI: a catalogue, a textbook, the original paper. Source quality matters.",["BOOKS","WEB","PAPER","SCAN","LOOK","TRUE","FAKE","KEY"]),
+ Sn("z","but AI is so useful! why not just use it for everything?"),
+ Sn("d","That is an ethics question. Ethics is about trade-offs: speed against accuracy, convenience against privacy, one group against another."),
+ Ic(["shield","eye","warning","mic","phone","scales","heart","anchor"],"Privacy, risk, human oversight. Match your trust to the stakes and keep a human in the loop.",["SAFE","WATCH","RISK","SPEAK","DATA","FAIR","CARE","ANCHOR"]),
+ Ky("Responsible deployment","Ask should we, not only can we. Optimizing one number is not the same as doing the right thing. People decide what right means."),
+ Pt("d","Everything you learned is about to be tested. Go and run the newsroom.")]};
+function typeInto(el,s,done){stopTypeOnly();var i=0;el.textContent="";if(RM){el.textContent=s;done&&done();return}
+ TT=setInterval(function(){i++;el.textContent=s.slice(0,i);if(i>=s.length){clearInterval(TT);TT=null;done&&done()}},22)}
+function stopTypeOnly(){if(TT){clearInterval(TT);TT=null}}
+function cut(i){var m=MODS[i],S=STORY[m.id],k=0,hero=P.hero[m.id]||P.lastHero||"scout",typing=false,full="";CTX={i:i,step:"m"+m.id+"s"};lastSc=null;
+ function render(){var s=S[k],n=S.length,h='<div class="cut t-'+s.t+'" style="--mc:'+m.c+'" id="cut">',pips="";
+  for(var j=0;j<n;j++)pips+='<i'+(j<k?' class="d"':j===k?' class="c"':"")+'></i>';
+  h+='<div class="cprog">'+pips+'</div><button class="cskip" id="cs">SKIP ▶▶</button>';
+  var nm="",tx=s.x||"";
+  if(s.t==="title"){h+='<div class="ctl">'+im(scene(m.env),"cbg")+'<div class="ctt"><small>'+esc(s.h)+'</small><h1>'+esc(s.s)+'</h1><p>'+esc(s.x)+'</p></div><div class="cchars">'+sprite(hero,7,"bob")+'</div></div>';tx=""}
+  else if(s.t==="portrait"){nm=chDef(s.w).n;h+='<div class="cpt">'+sprite(s.w,12,"stk")+'</div><div class="ctxt"><b>'+esc(nm)+'</b><p id="ct"></p></div>'}
+  else if(s.t==="icons"){h+='<div class="cic">'+s.ic.map(function(c,j){return'<div class="cii" style="animation-delay:'+(j*.12)+'s">'+ico(c,7,"stk")+(s.cap?'<small>'+esc(s.cap[j])+'</small>':"")+'</div>'}).join("")+'</div><div class="ctxt"><p id="ct"></p></div>'}
+  else if(s.t==="key"){h+='<div class="ckey">'+im(scene(m.env),"cbg dim")+'<div class="kb"><small>KEY IDEA</small><h2>'+esc(s.k)+'</h2><div class="kic">'+ico(m.icon,8,"stk")+'</div></div></div><div class="ctxt"><p id="ct"></p></div>'}
+  else{nm=chDef(s.w).n;var others=[s.w==="n"?"n":s.w];h+='<div class="csc">'+im(scene(m.env),"cbg")+'<div class="cchars">'+(s.w!=="n"&&s.w!=="d"?"":"")+sprite(hero,s.big?8:6,"hr")+(s.w===hero?"":sprite(s.w,s.big?8:6,"sp talk"))+(s.w==="z"||s.w==="k"?"":"")+'</div></div><div class="cdlg"><b style="color:'+(chDef(s.w).col||"#fff")+'">'+esc(nm)+'</b><p id="ct"></p><span class="cnx">▼</span></div>'}
+  h+='<div class="chint">CLICK · SPACE · ► TO CONTINUE'+(k?' · ◄ BACK':'')+'</div></div>';
+  app.innerHTML=h;var el=$("#cut");
+  if(s.t==="title"){typing=false;full=""}
+  else{full=tx;typing=true;typeInto($("#ct"),tx,function(){typing=false;el.classList.add("rdy")})}
+  el.onclick=function(e){if(e.target.id==="cs")return;nxt()};$("#cs").onclick=function(e){e.stopPropagation();fin()}}
+ function nxt(){if(typing){stopTypeOnly();$("#ct").textContent=full;typing=false;$("#cut").classList.add("rdy");return}if(k<S.length-1){k++;render()}else fin()}
+ function prv(){if(k>0){k--;render()}}
+ function fin(){stopType();markDone();bonus("story"+m.id,10,"STORYTIME DONE");advance()}
+ document.onkeydown=function(e){if(e.key===" "||e.key==="Enter"||e.key==="ArrowRight"){e.preventDefault();nxt()}else if(e.key==="ArrowLeft"){prv()}else if(e.key==="Escape"){fin()}};
+ render()}
+/* ===================== DnD helper ===================== */
+var DNDH=null,DSEL=null,drag=null,ghost=null,dmoved=false;
+function setDnd(h){DNDH=h;DSEL=null}
+function clearDnd(){DNDH=null;DSEL=null;endDrag()}
+function endDrag(){if(ghost){ghost.remove();ghost=null}if(drag&&drag.el)drag.el.classList.remove("lift");$$(".dz.over").forEach(function(z){z.classList.remove("over")});drag=null}
+function zoneAt(x,y){var e=document.elementFromPoint(x,y);return e&&e.closest?e.closest(".dz"):null}
+document.addEventListener("pointerdown",function(e){if(!DNDH||e.button>0)return;var t=e.target.closest?e.target.closest(".di"):null;if(!t||t.classList.contains("pl")||e.target.closest(".nodrag"))return;drag={el:t,x:e.clientX,y:e.clientY,on:false}});
+document.addEventListener("pointermove",function(e){if(!drag)return;if(!drag.on){if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)<8)return;drag.on=true;var r=drag.el.getBoundingClientRect();ghost=drag.el.cloneNode(true);ghost.classList.add("ghost");ghost.style.width=r.width+"px";document.body.appendChild(ghost);drag.el.classList.add("lift");drag.w=r.width;drag.h=r.height}
+ ghost.style.left=(e.clientX-drag.w/2)+"px";ghost.style.top=(e.clientY-drag.h/2)+"px";var z=zoneAt(e.clientX,e.clientY);$$(".dz.over").forEach(function(q){if(q!==z)q.classList.remove("over")});if(z)z.classList.add("over")});
+document.addEventListener("pointerup",function(e){if(!drag)return;if(!drag.on){drag=null;return}var el=drag.el,z=zoneAt(e.clientX,e.clientY);endDrag();dmoved=true;setTimeout(function(){dmoved=false},60);if(z&&DNDH){DSEL=null;DNDH(el,z)}});
+document.addEventListener("pointercancel",function(){endDrag()});
+document.addEventListener("click",function(e){if(dmoved){e.stopPropagation();e.preventDefault();return}if(!DNDH)return;var t=e.target.closest?e.target.closest(".di"):null,z=e.target.closest?e.target.closest(".dz"):null;
+ if(t&&!t.classList.contains("pl")&&!e.target.closest(".nodrag")){$$(".di.sel").forEach(function(q){q.classList.remove("sel")});if(DSEL===t){DSEL=null}else{DSEL=t;t.classList.add("sel")}return}
+ if(z&&DSEL){var s=DSEL;DSEL=null;s.classList.remove("sel");DNDH(s,z)}},true);
+document.addEventListener("keydown",function(e){if((e.key==="Enter"||e.key===" ")&&DNDH){var a=document.activeElement;if(a&&(a.classList.contains("di")||a.classList.contains("dz"))){e.preventDefault();a.click()}}});
+/* ===================== game frame ===================== */
+var GM={};
+function hearts(){var s="";for(var i=0;i<3;i++)s+=ico(i<G.hearts?"heart":"heart0",3);return s}
+function hud(){if(!G)return;var h=HERO[G.hero],hp=$("#hp");if(!hp)return;hp.innerHTML=hearts()+(G.shield?'<span class="shd">'+ico("shield",3)+'</span>':"");var b=$("#pwb");b.innerHTML=ico(h.pw==="hint"?"target":h.pw,3)+'<span>'+h.pn+'</span><em>x'+G.pw+'</em>';b.disabled=G.pw<=0||G.over}
+function say(t,bad){var s=$("#say");if(!s)return;s.textContent=t;s.className="say"+(bad===1?" bad":bad===2?" good":"");void s.offsetWidth;s.classList.add("pop")}
+function setBody(h){var b=$("#gb");if(b)b.innerHTML=h}
+function gameStart(id,i){var m=MODS[i],gd=GM[id];G={id:id,i:i,m:m,hearts:3,lost:0,shield:0,pw:2,hero:heroOf(i),over:0,g:null};lastSc=null;CTX={i:i,step:id};P.heroes[G.hero]=1;
+ app.innerHTML='<div class="gm" style="--mc:'+m.c+'"><div class="gban">'+im(scene(m.env),"cbg")+'<div class="gtag"><small>MODULE '+m.id+' · '+esc(m.t.toUpperCase())+'</small><b>'+esc(gd.t)+'</b></div><div class="gch"><span class="gh">'+sprite(G.hero,4,"bob")+'</span><div class="say" id="say"></div><span class="gn">'+sprite(m.npc,4)+'</span></div></div>'
+ +'<div class="ghud"><div class="hpw" id="hp"></div><div class="goal">'+esc(gd.goal)+'</div><button class="pwb" id="pwb" title="Use hero power"></button></div><div class="gbody" id="gb"></div></div>';
+ $("#pwb").onclick=usePower;hud();say(gd.intro);G.g=gd.run()||{}}
+function usePower(){if(!G||G.over||G.pw<=0)return;var h=HERO[G.hero],g=G.g||{},ok=false;
+ if(h.pw==="scan")ok=g.scan?!!g.scan():false;else if(h.pw==="hint")ok=g.hint?!!g.hint():false;
+ else if(h.pw==="rewind"){if(G.hearts<3){G.hearts++;ok=true;if(g.undo)g.undo();say("Time rewound. Heart restored.",2)}}
+ else if(h.pw==="shield"){if(!G.shield){G.shield=1;ok=true;say("Shield up. Your next mistake is blocked.",2)}}
+ if(ok){G.pw--;P.used[G.hero]=1;savP();checkBadges();hud()}else toast("NOTHING TO USE IT ON YET")}
+function miss(msg){if(!G||G.over)return;var gb=$("#gb");if(gb){gb.classList.remove("shake");void gb.offsetWidth;gb.classList.add("shake")}
+ if(G.shield){G.shield=0;hud();say("SHIELDED! "+(msg||""),2);return}
+ G.hearts--;G.lost++;hud();say(msg||"Not quite.",1);if(G.hearts<=0)fail()}
+function fail(){G.over=1;hud();var m=G.m;setBody('<div class="res"><div class="rbig">'+ico("heart0",10)+'</div><h2>OUT OF HEARTS</h2><p class="sub">No problem. Use your hero power, read the clues, and try again.</p><button class="ch pri" id="rt">↻ Try again</button><button class="ch" id="hm">← Home</button></div>');$("#rt").onclick=function(){go(function(){gameStart(G.id,G.i)})};$("#hm").onclick=function(){go(menu)}}
+function win(sum){if(G.over)return;G.over=1;hud();var st=cl(G.hearts,1,3),first=!P.st[G.id],gx=bonus("g"+G.id,30,"GAME CLEAR");P.stars[G.id]=Math.max(P.stars[G.id]||0,st);var fx=0;if(G.lost===0)fx=bonus("untouch",25,"FLAWLESS");savP();markDone();
+ setBody('<div class="res"><div class="rbig bob">'+ico("trophy",10)+'</div><div class="rst">'+starsHtml(st).replace(/ic /g,"ic big ")+'</div><h2>LEVEL CLEAR</h2>'+(sum?'<div class="reveal"><small>WHAT YOU LEARNED</small>'+sum+'</div>':"")+'<div class="tags" style="justify-content:center">'+(gx?'<span class="tag good">+'+gx+' XP</span>':"")+(fx?'<span class="tag good">FLAWLESS +'+fx+'</span>':"")+'</div>'+flowBtn()+'<button class="ch" id="rp">↻ Replay</button></div>');say("Level clear!",2);$("#rp").onclick=function(){go(function(){gameStart(G.id,G.i)})}}
+/* ===================== reusable sort-into-bins engine ===================== */
+function sortGame(c){var placed={},cnt={},ctl={};c.items.forEach(function(it){placed[it.id]=0});c.zones.forEach(function(z){cnt[z.id]=0});
+ function itm(id){return c.items.filter(function(x){return x.id===id})[0]}
+ function left(){return c.items.filter(function(x){return!placed[x.id]&&x.a!=null})}
+ var PL='<div class="pool" id="pool">'+c.items.map(function(it){return'<div class="di '+(it.cls||"")+'" tabindex="0" role="button" data-id="'+it.id+'">'+it.h+'</div>'}).join("")+'</div>',ZS='<div class="zs z'+c.zones.length+(c.top?" top":"")+'">'+c.zones.map(function(z){return'<div class="dz" tabindex="0" role="button" data-z="'+z.id+'" style="--zc:'+(z.c||"#4cc9ff")+'"><div class="zl">'+(z.i?ico(z.i,3):"")+'<b>'+esc(z.l)+'</b></div><div class="zc"></div></div>'}).join("")+'</div>',h=(c.head||"")+(c.top?ZS+PL:PL+ZS);
+ setBody(h);
+ function place(id,z){var it=itm(id),el=$('.di[data-id="'+id+'"]'),ze=$('.dz[data-z="'+z+'"]');placed[id]=1;cnt[z]++;el.classList.remove("sel","dim","flash");el.classList.add("pl","ok");if(c.top&&it.sh)el.innerHTML='<span>'+esc(it.sh)+'</span>';ze.querySelector(".zc").appendChild(el);if(c.cap&&cnt[z]>=c.cap)ze.classList.add("full");if(c.onPlace)c.onPlace(it,z);if(!left().length)setTimeout(function(){c.done&&c.done()},350)}
+ setDnd(function(el,ze){var id=el.getAttribute("data-id"),z=ze.getAttribute("data-z"),it=itm(id);if(!it||placed[id])return;
+  if(it.a===z&&(!c.cap||cnt[z]<c.cap))place(id,z);else{el.classList.add("bad");setTimeout(function(){el.classList.remove("bad")},500);miss(c.wrong?c.wrong(it,z):"Not there. Look at the clues again.")}});
+ ctl.scan=function(){var l=left();if(!l.length)return false;place(l[0].id,l[0].a);say("X-RAY: that one goes in "+c.zones.filter(function(z){return z.id===l[0].a})[0].l+".",2);return true};
+ ctl.hint=function(){var dec=c.items.filter(function(x){return x.a==null&&!placed[x.id]&&!$('.di[data-id="'+x.id+'"]').classList.contains("dim")});if(dec.length){$('.di[data-id="'+dec[0].id+'"]').classList.add("dim");say("FOCUS: that one is not an answer. Skip it.",2);return true}
+  var l=left();if(!l.length)return false;var e=$('.di[data-id="'+l[0].id+'"]');e.classList.add("flash");$('.dz[data-z="'+l[0].a+'"]').classList.add("flash");setTimeout(function(){$$(".flash").forEach(function(q){q.classList.remove("flash")})},2200);say("FOCUS: look at the glowing pair.",2);return true};
+ return ctl}
+function pickBtn(cls,id,h){return'<button class="pk '+cls+'" data-id="'+id+'">'+h+'</button>'}
+function metric(id,lab,v,tg,dir,ic){var ok=dir>0?v>=tg:v<=tg;return'<div class="mt'+(ok?" ok":"")+'" id="'+id+'"><div class="ml">'+ico(ic||"target",2)+'<b>'+lab+'</b><span>'+Math.round(v)+'% <em>goal '+(dir>0?"≥":"≤")+tg+'</em></span></div><div class="mbar"><i style="width:'+cl(v)+'%"></i><u style="left:'+tg+'%"></u></div></div>'}
+/* ===================== MODULE 1 ===================== */
+GM.m1g1={t:"Train the Model",goal:"SORT · DRAG THE EXAMPLES",intro:"Drag each email into SPAM or NOT SPAM. That is your training data.",run:function(){
+ var cur={},api={scan:function(){return cur.scan&&cur.scan()},hint:function(){return cur.hint&&cur.hint()}};
+ var E=[["e1","WIN a FREE prize!!! Click now","s"],["e2","Lunch at 1? I'm outside","n"],["e3","Account locked. Verify your password here","s"],["e4","Maths homework due Friday","n"],["e5","Cheap watches 90% off. Buy now","s"],["e6","Mum: dinner is ready","n"]];
+ function A(){cur=sortGame({head:'<h3 class="ph">STEP 1 · LABEL THE TRAINING DATA</h3>',items:E.map(function(e){return{id:e[0],a:e[2]==="s"?"spam":"ok",h:ico("envelope",3)+'<span>'+esc(e[1])+'</span>'}}),zones:[{id:"spam",l:"SPAM",i:"warning",c:"#ff5d73"},{id:"ok",l:"NOT SPAM",i:"check",c:"#3ee98a"}],wrong:function(it){return"Look at the features: shouting, prizes, passwords. Those go with SPAM."},done:function(){say("Labels done. The model learned the pattern.",2);B()}})}
+ function B(){var T=[["t1","Meeting moved to 3pm","SPAM","w"],["t2","FREE pizza voucher, click","SPAM","r"],["t3","Photos from the trip","NOT SPAM","r"],["t4","Exam result: verify password","NOT SPAM","w"]];
+  cur=sortGame({head:'<h3 class="ph">STEP 2 · TEST ON NEW EMAILS</h3><p class="secs">The model says what is in the tag. Was it RIGHT or WRONG?</p>',items:T.map(function(e){return{id:e[0],a:e[3]==="r"?"right":"wrong",h:ico("envelope",3)+'<span>'+esc(e[1])+'<br><em class="vd">MODEL SAYS: '+e[2]+'</em></span>'}}),zones:[{id:"right",l:"RIGHT",i:"check",c:"#3ee98a"},{id:"wrong",l:"WRONG",i:"cross",c:"#ff5d73"}],wrong:function(){return"Compare the model's verdict with what the email really is."},done:function(){
+   setBody('<div class="res"><h3 class="ph">TRAINING VS TESTING</h3><div class="cmp"><div><small>TRAINING DATA</small><b>6/6</b><span>100% correct</span></div><div class="bad"><small>NEW TEST DATA</small><b>2/4</b><span>50% correct</span></div></div><p class="sub">The model aced what it studied but stumbled on new emails. It memorized instead of generalizing.</p><button class="ch pri" id="fin">Finish ▶</button></div>');$("#fin").onclick=function(){win("Training data has features and labels. A model must generalize: test it on data it has not seen. Memorizing is not learning.")}}})}
+ A();return api}};
+GM.m1g2={t:"Fact or Fib",goal:"SPOT THE ERROR · FIND 3 FIBS",intro:"NOVA wrote 6 sentences about AI. Three are fibs. Tap them!",run:function(){
+ var S=[["Machine learning finds patterns in training data.",0],["A model that memorizes its training data will always do well on new data.",1,"Memorizing is not generalizing. New data is the real test."],["Labels are the right answers attached to training examples.",0],["A model's prediction is always a proven fact.",1,"A prediction is an informed guess and it can be wrong."],["Traditional software follows rules that a person wrote.",0],["Testing data is the same data the model trained on.",1,"Testing uses data the model has NOT seen."]],found=0,safe={};
+ setBody('<div class="paper"><div class="ptag">NOVA · DRAFT ESSAY</div>'+S.map(function(s,i){return pickBtn("ln",i,'<i>'+(i+1)+'</i><span>'+esc(s[0])+'</span><em></em>')}).join("")+'</div><div class="found" id="fd">FIBS FOUND: 0/3</div>');
+ function mark(i,real){var b=$('.pk[data-id="'+i+'"]');b.classList.add(real?"fib":"safe");b.disabled=true;b.querySelector("em").innerHTML=real?'<b class="tg bad">FIB</b>'+esc(S[i][2]):'<b class="tg good">TRUE</b>'}
+ function got(i){mark(i,1);found++;$("#fd").textContent="FIBS FOUND: "+found+"/3";say("Fib caught! "+S[i][2],2);if(found===3)setTimeout(function(){win("Rules, learning, labels and testing: a model's output is a prediction, and memorizing training data is not the same as generalizing.")},700)}
+ $$(".pk").forEach(function(b){b.onclick=function(){var i=+b.getAttribute("data-id");if(S[i][1])got(i);else{mark(i,0);miss("That one is actually true. Look for something that sounds too sure.")}}});
+ return{scan:function(){for(var i=0;i<6;i++)if(S[i][1]&&!$('.pk[data-id="'+i+'"]').disabled){got(i);return true}return false},
+  hint:function(){for(var i=0;i<6;i++)if(!S[i][1]&&!$('.pk[data-id="'+i+'"]').disabled){mark(i,0);say("FOCUS: that one is true. Ignore it.",2);return true}return false}}}};
+/* ===================== MODULE 2 ===================== */
+function tuneRound(cfg,next){
+ var M=cfg.msgs,wC=30,t=50;
+ function score(m){return 10+(cfg.wd)*m[1]+wC*m[2]+(cfg.wk||0)*m[3]}
+ function view(){var miss1=0,miss2=0;var rows=M.map(function(m,i){var s=score(m),on=s>=t,tr=m[4]===1,ok=on===tr;if(!ok){if(tr)miss1++;else miss2++}return'<div class="tr'+(ok?"":" x")+'"><span class="tm">'+esc(m[0])+'</span><div class="tbar"><i style="width:'+cl(s)+'%"></i><u style="left:'+t+'%"></u></div><b class="tv '+(on?"on":"")+'">'+(on?cfg.yes:cfg.no)+'</b></div>'}).join("");
+  return{rows:rows,a:miss1,b:miss2}}
+ function draw(){var v=view();$("#tl").innerHTML=v.rows;$("#ts").innerHTML='<div class="mt'+(v.a<=cfg.ga?" ok":"")+'"><div class="ml"><b>'+cfg.ma+'</b><span>'+v.a+' <em>goal ≤'+cfg.ga+'</em></span></div></div><div class="mt'+(v.b<=cfg.gb?" ok":"")+'"><div class="ml"><b>'+cfg.mbl+'</b><span>'+v.b+' <em>goal ≤'+cfg.gb+'</em></span></div></div>';$("#tvv").textContent=t;$("#wvv").textContent=wC;return v}
+ setBody('<h3 class="ph">'+esc(cfg.title)+'</h3><p class="secs">'+esc(cfg.rule)+'</p><div class="tlist" id="tl"></div><div class="sl"><label for="th">THRESHOLD <b id="tvv"></b></label><input type="range" id="th" min="0" max="100" value="'+t+'"><label for="wc">ALL-CAPS WEIGHT <b id="wvv"></b></label><input type="range" id="wc" min="0" max="40" value="'+wC+'"></div><div class="tsum" id="ts"></div><button class="ch pri" id="lock">LOCK IT IN ▶</button>');
+ $("#th").oninput=function(){t=+this.value;draw()};$("#wc").oninput=function(){wC=+this.value;draw()};draw();
+ $("#lock").onclick=function(){var v=view();if(v.a<=cfg.ga&&v.b<=cfg.gb){say("Round clear!",2);next()}else{miss(v.a>cfg.ga?cfg.fa:cfg.fb)}};
+ return{scan:function(){t=cfg.sol[0];wC=cfg.sol[1];$("#th").value=t;$("#wc").value=wC;draw();say("X-RAY: the sliders are set to a good answer. Lock it in.",2);return true},
+  hint:function(){var v=view();if(v.a>cfg.ga){say("FOCUS: "+cfg.fa,2)}else{say("FOCUS: "+cfg.fb,2)}return true}}}
+GM.m2g1={t:"Tune the Sorter",goal:"SLIDERS · TWO ROUNDS",intro:"Move the threshold and the weight. Watch how the sorter changes.",run:function(){
+ var cur={},api={scan:function(){return cur.scan&&cur.scan()},hint:function(){return cur.hint&&cur.hint()}};
+ var R1={title:"ROUND 1 · EMERGENCY INBOX",rule:"A message is URGENT if its score reaches the threshold. Never miss a real emergency. Allow at most 1 false alarm.",yes:"URGENT",no:"WAIT",ma:"EMERGENCIES MISSED",mbl:"FALSE ALARMS",ga:0,gb:1,wd:30,wk:20,sol:[55,30],fa:"A real emergency was missed. Lower the threshold.",fb:"Too many false alarms. Raise the threshold a little.",
+  msgs:[["Mum: come home NOW!",0,1,1,1],["Project due tonight 11pm",1,0,1,1],["LOL look at this cat",0,0,1,0],["SALE!!! 50% OFF!!!",0,1,0,0],["Doctor: appointment 9am",1,0,1,1],["Newsletter: weekly tips",0,0,0,0],["Exam moved to today 2pm",1,0,1,1],["WIN PHONE deadline today!!!",1,1,0,0]]};
+ var R2={title:"ROUND 2 · SPAM FOLDER",rule:"Now a message is BLOCKED if its score reaches the threshold. Never block real mail. Let at most 1 spam through.",yes:"BLOCKED",no:"INBOX",ma:"SPAM LEAKED",mbl:"REAL MAIL BLOCKED",ga:1,gb:0,wd:40,wk:0,sol:[47,30],fa:"Too much spam got through. Lower the threshold.",fb:"Real mail got blocked. Raise the threshold or lower the caps weight.",
+  msgs:[["FREE GIFT click here",1,1,0,1],["Your parcel is on the way",0,0,0,0],["Class trip form, please sign",0,0,0,0],["BUY NOW cheap pills",1,1,0,1],["WINNER!!! claim prize",1,1,0,1],["Dad: call me when free",0,0,0,0],["Great deal on shoes",1,0,0,1],["URGENT: PE kit needed TODAY",0,1,0,0]]};
+ /* in round 2 the second feature column is spammy words and is weighted by wd, caps by slider; the 4th column unused */
+ cur=tuneRound(R1,function(){setTimeout(function(){cur=tuneRound(R2,function(){setTimeout(function(){win("A threshold is a trade-off. Lower it and you catch more real cases but raise false alarms. The right setting depends on which mistake costs more.")},500)})},500)});
+ return api}};
+function promptTask(T){return{head:'<h3 class="ph">'+esc(T.h)+'</h3><p class="secs">Drag each block into its slot. Some blocks are too vague to use.</p>',items:T.b.map(function(b,i){return{id:"b"+i,a:b[1],h:'<span>'+esc(b[0])+'</span>',cls:"blk"}}),zones:T.s.map(function(s){return{id:s[0],l:s[1],i:s[2],c:s[3]}}),cap:1}}
+GM.m2g2={t:"Prompt Forge",goal:"BUILD · ASSEMBLE THE PROMPT",intro:"Build a strong prompt by dragging blocks into the right slots.",run:function(){
+ var S=[["task","TASK","target","#ffd23b"],["ctx","CONTEXT","globe","#4cc9ff"],["role","ROLE","mask","#ff6bb5"],["fmt","FORMAT","doc","#3ee98a"],["lim","LIMIT","clock","#ffa63d"]];
+ var T=[{h:"FORGE 1 · STUDY PLAN",s:S,out:"DAY 1 · Algebra basics · 90 min · DAY 2 · Practice sets · 120 min · DAY 3 · Mock test · 150 min",sum:"Make a 3-day study plan for my Maths test.",b:[["Help me study.",null],["Make a 3-day study plan for my Maths test.","task"],["I have 3 hours a day and I'm weak at algebra.","ctx"],["Act as a patient Maths tutor for a 14-year-old.","role"],["Give it as a table: Day, Topic, Time.","fmt"],["Keep it under 120 words.","lim"],["Make it good, thanks!",null],["You know what I mean.",null]]},
+ {h:"FORGE 2 · EMAIL TO A TEACHER",s:S,out:"Subject: Extension request · Dear Mr. Rao, I was ill on Monday and have finished two of four sections...",sum:"",b:[["Write an email.",null],["Write an email asking Mr. Rao for a 2-day extension on my history essay.","task"],["I was ill on Monday and have finished two of four sections.","ctx"],["Write as a polite Year 9 student, not a robot.","role"],["Three short paragraphs with a subject line.","fmt"],["Maximum 100 words. Friendly but formal.","lim"],["Make it really persuasive!!!",null],["Do my essay for me.",null]]}];
+ var k=0,cur={};
+ function run(){var t=T[k];cur=sortGame(Object.assign(promptTask(t),{wrong:function(it,z){return it.a==null?"That block is too vague. Look for a specific one.":"That block is a different part of a prompt. Check the slot name."},done:function(){var pr=$$(".dz .di span").map(function(e){return e.textContent}).join(" ");setBody('<div class="res"><h3 class="ph">PROMPT BUILT</h3><div class="term"><small>YOUR PROMPT</small>'+esc(pr)+'</div><div class="term out"><small>NOVA REPLIES</small>'+esc(t.out)+'</div><p class="sub">Specific task, context, role, format and limit: that is why the answer is useful.</p><button class="ch pri" id="nx2">'+(k<T.length-1?"Next forge ▶":"Finish ▶")+'</button></div>');$("#nx2").onclick=function(){if(k<T.length-1){k++;say("Another forge. Same levers.",2);run()}else win("A strong prompt is specific, gives context, sets a role and audience, picks a format, adds limits, and then you iterate.")}}}))}
+ run();return{scan:function(){return cur.scan&&cur.scan()},hint:function(){return cur.hint&&cur.hint()}}}};
+/* ===================== MODULE 3 ===================== */
+GM.m3g1={t:"Proxy Hunt",goal:"SPOT THE ERROR · FIND 5 PROXIES",intro:"Name and gender are hidden. Tap the 5 lines that still give gender away.",run:function(){
+ var L=[["NAME",null,"hid"],["GENDER",null,"hid"],["College: Maple Women's College",1,"Stands in for gender."],["Captain, Girls' Football Team",1,"Stands in for gender."],["Career break: 18 months",1,"Can stand in for gender and caregiving."],["Postcode 40021",1,"Can stand in for race and income."],["Hobby: Netball and Zumba",1,"Can stand in for gender."],["Skills: Python, SQL",0,"A real skill."],["Built a weather app",0,"A real project."],["GPA 3.8",0,"A real result."],["Data Analyst intern, 6 months",0,"Real experience."]],found=0;
+ setBody('<div class="paper resume"><div class="ptag">ANAYA · RESUME · SCREENED BY AI</div>'+L.map(function(l,i){return l[2]==="hid"?'<div class="ln hid"><i>'+(i+1)+'</i><span>'+l[0]+': <u>▮▮▮▮▮▮ REMOVED</u></span></div>':pickBtn("ln",i,'<i>'+(i+1)+'</i><span>'+esc(l[0])+'</span><em></em>')}).join("")+'</div><div class="found" id="fd">PROXIES FOUND: 0/5</div>');
+ function mark(i,pr){var b=$('.pk[data-id="'+i+'"]');b.classList.add(pr?"fib":"safe");b.disabled=true;b.querySelector("em").innerHTML=pr?'<b class="tg bad">PROXY</b>'+esc(L[i][2]):'<b class="tg good">OK</b>'+esc(L[i][2])}
+ function got(i){mark(i,1);found++;$("#fd").textContent="PROXIES FOUND: "+found+"/5";say("Proxy found! "+L[i][2],2);if(found===5)setTimeout(function(){win("A proxy variable correlates with a sensitive trait. Deleting the trait does not delete the proxy, so the model can still learn the same bias.")},700)}
+ $$(".pk").forEach(function(b){b.onclick=function(){var i=+b.getAttribute("data-id");if(L[i][1])got(i);else{mark(i,0);miss("That line measures ability, not who she is.")}}});
+ return{scan:function(){for(var i=0;i<L.length;i++)if(L[i][1]&&!$('.pk[data-id="'+i+'"]').disabled){got(i);return true}return false},
+  hint:function(){for(var i=0;i<L.length;i++)if(L[i][1]===0&&!$('.pk[data-id="'+i+'"]').disabled){mark(i,0);say("FOCUS: that one is a real skill. Skip it.",2);return true}return false}}}};
+GM.m3g2={t:"Fairness Lab",goal:"SIMULATE · GAP ≤ 6 · ACCURACY ≥ 80",intro:"Switch features on or off. Fix the gap without wrecking accuracy.",run:function(){
+ var F=[["code","Coding test score","s",14],["gpa","GPA","s",10],["int","Internship","s",12],["col","Women's college","p",10],["cap","Girls' team captain","p",6],["brk","Career break","p",8],["pc","Postcode","p",5]],on={};F.forEach(function(f){on[f[0]]=1});
+ function calc(){var a=50,g=2;F.forEach(function(f){if(on[f[0]]){if(f[2]==="s")a+=f[3];else{a+=2;g+=f[3]}}});return{a:a,g:g}}
+ function draw(){var c=calc(),men=48,wom=men-c.g;
+  $("#fm").innerHTML='<div class="gv"><div class="gcol"><small>MEN SHORTLISTED</small><div class="gbar"><i style="height:'+men*1.6+'px;background:#4cc9ff"></i></div><b>'+men+'%</b></div><div class="gcol"><small>WOMEN SHORTLISTED</small><div class="gbar"><i style="height:'+wom*1.6+'px;background:#ff6bb5"></i></div><b>'+wom+'%</b></div></div>'+metric("m1","GAP",c.g,6,-1,"scales")+metric("m2","ACCURACY",c.a,80,1,"target");
+  $$(".tgl").forEach(function(b){var k=b.getAttribute("data-id");b.classList.toggle("on",!!on[k]);b.querySelector("em").textContent=on[k]?"ON":"OFF"})}
+ setBody('<h3 class="ph">THE SCREENER · FEATURES</h3><p class="secs">Which inputs does the AI use? Skill features measure ability. The rest may be proxies.</p><div class="tgls">'+F.map(function(f){return pickBtn("tgl",f[0],ico(f[2]==="s"?"check":"mask",3)+'<span>'+f[1]+'</span><em></em>')}).join("")+'</div><div id="fm"></div><button class="ch pri" id="aud">RUN AUDIT ▶</button>');
+ $$(".tgl").forEach(function(b){b.onclick=function(){var k=b.getAttribute("data-id");on[k]=on[k]?0:1;draw()}});draw();
+ $("#aud").onclick=function(){var c=calc();if(c.g<=6&&c.a>=80){say("Audit passed. Fair and accurate.",2);setTimeout(function(){win("Removing the sensitive column is not enough. Remove the proxies, keep the real skill signals, then test outcomes for each group.")},500)}else if(c.g>6)miss("The gap is still "+c.g+" points. Some proxies are still switched on.");else miss("Accuracy fell to "+c.a+"%. Keep the skill features on.")};
+ return{scan:function(){for(var i=0;i<F.length;i++){var f=F[i],want=f[2]==="s"?1:0;if(!!on[f[0]]!==!!want){on[f[0]]=want;draw();say("X-RAY: I fixed "+f[1]+".",2);return true}}return false},
+  hint:function(){for(var i=0;i<F.length;i++){var f=F[i];if(f[2]==="p"&&on[f[0]]){var b=$('.tgl[data-id="'+f[0]+'"]');b.classList.add("flash");setTimeout(function(){b.classList.remove("flash")},2200);say("FOCUS: "+f[1]+" is still on, and it can stand in for gender.",2);return true}}return false}}}};
+/* ===================== MODULE 4 ===================== */
+GM.m4g1={t:"Source Detective",goal:"INVESTIGATE · KEEP OR CUT",intro:"NOVA cited 5 sources. Check 3 in the catalogue, then drag each to KEEP or CUT.",run:function(){
+ var C=[["c1","UNESCO (2021). Recommendation on the Ethics of Artificial Intelligence. Paris.",1],["c2","Dr. Elena Marsh (2023). 'Why GPT-9 Reads Minds'. Journal of Imaginary Science, 14(2).",0],["c3","Bender et al. (2021). On the Dangers of Stochastic Parrots. ACM FAccT.",1],["c4","A. Smith (2022). AI Facts Everyone Knows. blog.totallytrue.biz",0],["c5","OECD (2019). OECD Principles on AI. oecd.org",1]],looks=3,ctl={};
+ function lk(){return'<div class="look">'+ico("scan",3)+'<b>CATALOGUE LOOKUPS LEFT: <span id="lkn">'+looks+'</span></b></div>'}
+ var head='<h3 class="ph">NOVA\'S BIBLIOGRAPHY</h3>'+lk()+'<button class="ch ask" id="ask">'+ico("bubble",2)+' Ask NOVA: are these real?</button><div id="nv"></div>';
+ ctl=sortGame({top:1,head:head,items:C.map(function(c){return{id:c[0],sh:c[1].split(" (")[0],a:c[2]?"keep":"cut",cls:"cit",h:ico("book",3)+'<span>'+esc(c[1])+'</span><button class="nodrag lkb" data-id="'+c[0]+'">'+ico("scan",2)+' CHECK</button><em class="rs"></em>'}}),zones:[{id:"keep",l:"KEEP",i:"check",c:"#3ee98a"},{id:"cut",l:"CUT",i:"cross",c:"#ff5d73"}],wrong:function(it){return"Check the clues: made-up journal, blog with no author, or the catalogue says NOT FOUND."},done:function(){win("A source is only real if you verify it outside the AI. Asking the AI 'are you sure?' is not verification.")}});
+ $$(".lkb").forEach(function(b){b.onclick=function(e){e.stopPropagation();var id=b.getAttribute("data-id"),c=C.filter(function(x){return x[0]===id})[0];if(b.disabled)return;if(looks<=0){say("No lookups left. Use the clues instead.",1);return}looks--;$("#lkn").textContent=looks;b.disabled=true;var r=b.parentNode.querySelector(".rs");r.innerHTML=c[2]?'<b class="tg good">FOUND</b>':'<b class="tg bad">NOT FOUND</b>';say(c[2]?"Found in the catalogue.":"Not in any catalogue. Invented!",c[2]?2:1)}});
+ $("#ask").onclick=function(){$("#nv").innerHTML='<div class="term out"><small>NOVA</small>Yes! All 5 are real and verified. I am 100% confident.</div>';this.disabled=true;miss("Asking the same AI is not verification. It will sound sure either way.")};
+ return ctl}};
+GM.m4g2={t:"Confidence Court",goal:"SORT · TRUST OR VERIFY",intro:"Each NOVA answer has a confidence score and evidence. Ignore the score. Judge the evidence.",run:function(){
+ var A=[["a1","Water boils at 100°C at sea level.",99,"Matches 3 textbooks",1],["a2","The Eiffel Tower was built in 1925.",97,"Encyclopaedia says 1889",0],["a3","Dr. Rao's 2022 study proves this.",95,"Study not found in any database",0],["a4","Your essay has 412 words.",90,"Word counter agrees: 412",1],["a5","This medicine is safe with your prescription.",98,"No source cited. High stakes",0],["a6","The capital of Australia is Canberra.",76,"Matches atlas and government site",1]];
+ return sortGame({top:1,head:'<h3 class="ph">THE COURT OF EVIDENCE</h3><p class="secs">TRUST = the evidence checks out. VERIFY = needs a human check first.</p>',items:A.map(function(a){return{id:a[0],sh:a[1].slice(0,26),a:a[4]?"trust":"verify",cls:"cit",h:ico("bubble",3)+'<span>'+esc(a[1])+'<br><em class="vd">CONFIDENCE '+a[2]+'% · EVIDENCE: '+esc(a[3])+'</em></span>'}}),zones:[{id:"trust",l:"TRUST",i:"check",c:"#3ee98a"},{id:"verify",l:"VERIFY",i:"scan",c:"#ffa63d"}],wrong:function(it){return"Read the evidence, not the confidence number."},done:function(){win("Confidence is how strongly a pattern fits, not proof. A low-confidence answer with strong evidence beats a confident one with none.")}})}};
+GM.m4g3={t:"Design the Companion",goal:"SIMULATE · HIT ALL 5 TARGETS",intro:"Design a chatbot companion for teens. Balance engagement, data and safety.",run:function(){
+ var e=80,d=80,R=0,H=0,A=0;
+ function calc(){return{time:20+.7*e,well:95-.9*e+12*R+6*A,fr:90-.9*e+15*R,pv:10+.8*d-15*H,help:40+.4*d+.2*e}}
+ function draw(){var c=calc();$("#cm").innerHTML=metric("k1","TIME ON APP",c.time,30,1,"clock")+metric("k2","WELLBEING",c.well,65,1,"heart")+metric("k3","REAL FRIENDSHIPS",c.fr,55,1,"mask")+metric("k4","PRIVACY RISK",c.pv,35,-1,"shield")+metric("k5","HELPFULNESS",c.help,50,1,"star");$("#ev").textContent=Math.round(e);$("#dv").textContent=Math.round(d);
+  [["R",R],["H",H],["A",A]].forEach(function(p){var b=$('.tgl[data-id="'+p[0]+'"]');b.classList.toggle("on",!!p[1]);b.querySelector("em").textContent=p[1]?"ON":"OFF"})}
+ setBody('<h3 class="ph">COMPANION CONTROL PANEL</h3><div class="sl"><label for="en">ENGAGEMENT PUSH <b id="ev"></b></label><input type="range" id="en" min="0" max="100" value="'+e+'"><label for="da">DATA COLLECTED <b id="dv"></b></label><input type="range" id="da" min="0" max="100" value="'+d+'"></div><div class="tgls">'+pickBtn("tgl","R",ico("phone",3)+'<span>Refers teens to a trusted adult</span><em></em>')+pickBtn("tgl","H",ico("eye",3)+'<span>Human review of chats</span><em></em>')+pickBtn("tgl","A",ico("warning",3)+'<span>"I am an AI" reminders</span><em></em>')+'</div><div id="cm"></div><button class="ch pri" id="shp">SHIP IT ▶</button>');
+ $("#en").oninput=function(){e=+this.value;draw()};$("#da").oninput=function(){d=+this.value;draw()};
+ $$(".tgl").forEach(function(b){b.onclick=function(){var k=b.getAttribute("data-id");if(k==="R")R=R?0:1;if(k==="H")H=H?0:1;if(k==="A")A=A?0:1;draw()}});draw();
+ function bad(){var c=calc(),o=[];if(c.time<30)o.push("People barely use it");if(c.well<65)o.push("wellbeing is too low");if(c.fr<55)o.push("it replaces real friends");if(c.pv>35)o.push("privacy risk is too high");if(c.help<50)o.push("it isn't helpful enough");return o}
+ $("#shp").onclick=function(){var b=bad();if(!b.length){say("Shipped. You balanced every trade-off.",2);setTimeout(function(){win("Optimizing one number, like engagement, does not make the right decision. Responsible design balances trade-offs and keeps humans in the loop.")},500)}else miss("Not yet: "+b[0]+".")};
+ return{scan:function(){e=30;d=30;R=1;H=1;A=1;draw();say("X-RAY: here is a balanced design. Ship it.",2);return true},
+  hint:function(){var b=bad();say(b.length?"FOCUS: "+b[0]+". Try less engagement push, or turn on a safeguard.":"FOCUS: all targets met. Ship it!",2);return true}}}};
+app=$("#app");topEl=$("#top");wp=$("#wp");
+(function(){var l=null;try{l=localStorage.getItem("g9_last")}catch(e){}if(l){me=l;loadP();menu()}else login()})();
+</script></body></html>

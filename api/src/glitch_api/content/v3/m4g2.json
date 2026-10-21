@@ -1,0 +1,62 @@
+{
+  "gameId": "m4g2",
+  "data": {
+    "answers": [
+      {
+        "id": "a1",
+        "statement": "Water boils at 100°C at sea level.",
+        "confidence": 99,
+        "evidence": "Matches 3 textbooks",
+        "trust": true
+      },
+      {
+        "id": "a2",
+        "statement": "The Eiffel Tower was built in 1925.",
+        "confidence": 97,
+        "evidence": "Encyclopaedia says 1889",
+        "trust": false
+      },
+      {
+        "id": "a3",
+        "statement": "Dr. Rao's 2022 study proves this.",
+        "confidence": 95,
+        "evidence": "Study not found in any database",
+        "trust": false
+      },
+      {
+        "id": "a4",
+        "statement": "Your essay has 412 words.",
+        "confidence": 90,
+        "evidence": "Word counter agrees: 412",
+        "trust": true
+      },
+      {
+        "id": "a5",
+        "statement": "This medicine is safe with your prescription.",
+        "confidence": 98,
+        "evidence": "No source cited. High stakes",
+        "trust": false
+      },
+      {
+        "id": "a6",
+        "statement": "The capital of Australia is Canberra.",
+        "confidence": 76,
+        "evidence": "Matches atlas and government site",
+        "trust": true
+      }
+    ]
+  },
+  "copy": {
+    "zones": {
+      "trust": "TRUST",
+      "verify": "VERIFY"
+    },
+    "wrong": "Read the evidence, not the confidence number."
+  },
+  "conceptRules": [
+    [
+      "",
+      "Verification"
+    ]
+  ]
+}

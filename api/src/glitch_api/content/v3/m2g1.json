@@ -1,0 +1,40 @@
+{
+  "gameId": "m2g1",
+  "data": {
+    "rounds": [
+      {
+        "id": "r1",
+        "title": "ROUND 1 · EMERGENCY INBOX",
+        "rule": "A message is URGENT if its score reaches the threshold. Never miss a real emergency. Allow at most 1 false alarm.",
+        "ma": "EMERGENCIES MISSED",
+        "mbl": "FALSE ALARMS",
+        "ga": 0,
+        "gb": 1,
+        "fa": "A real emergency was missed. Lower the threshold.",
+        "fb": "Too many false alarms. Raise the threshold a little."
+      },
+      {
+        "id": "r2",
+        "title": "ROUND 2 · SPAM FOLDER",
+        "rule": "Now a message is BLOCKED if its score reaches the threshold. Never block real mail. Let at most 1 spam through.",
+        "ma": "SPAM LEAKED",
+        "mbl": "REAL MAIL BLOCKED",
+        "ga": 1,
+        "gb": 0,
+        "fa": "Too much spam got through. Lower the threshold.",
+        "fb": "Real mail got blocked. Raise the threshold or lower the caps weight."
+      }
+    ]
+  },
+  "copy": {},
+  "conceptRules": [
+    [
+      "r2",
+      "Classification"
+    ],
+    [
+      "",
+      "Weights and thresholds"
+    ]
+  ]
+}
