@@ -67,12 +67,10 @@
   "copy": {
     "zones": {
       "spam": "SPAM",
-      "ok": "NOT SPAM",
-      "right": "RIGHT",
-      "wrong": "WRONG"
+      "ok": "NOT SPAM"
     },
     "trainWrong": "Look at the features: shouting, prizes, passwords. Those go with SPAM.",
-    "testWrong": "Compare the model's verdict with what the email really is."
+    "testWrong": "New emails are harder. Ignore the tone and ask what the email wants from you."
   },
   "conceptRules": [
     [

@@ -1,63 +1,59 @@
-// m1g1 · Train the Model — pure builders for the two sort steps (v3 lines 504–511).
+// m1g1 · Train the Model — pure rules. Each round: the player calls every email, then verifies.
 import type { Mistake } from '../../contracts/game';
-import type { SortConfig, SortItem, SortZone } from '../../dnd/sortEngine';
 import { buildMistake } from '../mistake';
-import {
-  ITEM_ICON, MODEL_SAYS_PREFIX, STEP1_WRONG, STEP2_WRONG, TEST_ZONES, TRAIN_ZONES, V3_SCENARIO,
-  type TestEmail, type TrainEmail, type TrainScenario,
-} from './data';
+import { ROUND1_WRONG, ROUND2_WRONG, V3_SCENARIO, ZONES, type TestEmail, type TrainEmail, type TrainScenario } from './data';
 
 export type Step = 'train' | 'test' | 'result';
+export type Call = 'spam' | 'ok';
 
-export interface TrainItem extends SortItem {
-  /** The email text as shown. */
+export interface EmailRow {
+  id: string;
   email: string;
-  /** Step 2 only: the model's verdict ("SPAM" / "NOT SPAM"). */
-  says?: string;
+  truth: Call;
+  /** Round 2: the model's own call on this email. */
+  model?: { says: string; right: boolean };
 }
 
 /** v3: a = e[2]==="s" ? "spam" : "ok". */
-export function trainAnswer(e: TrainEmail): 'spam' | 'ok' {
+export function trainAnswer(e: TrainEmail): Call {
   return e[2] === 's' ? 'spam' : 'ok';
 }
 
-/** v3: a = e[3]==="r" ? "right" : "wrong". */
-export function testAnswer(e: TestEmail): 'right' | 'wrong' {
-  return e[3] === 'r' ? 'right' : 'wrong';
+/** A test email's truth, from what the model said and whether it was right. */
+export function testAnswer(e: TestEmail): Call {
+  return (e[2] === 'SPAM') === (e[3] === 'r') ? 'spam' : 'ok';
 }
 
-/** "MODEL SAYS: SPAM". */
-export function modelSays(e: TestEmail): string {
-  return MODEL_SAYS_PREFIX + e[2];
+export function trainRows(sc: TrainScenario = V3_SCENARIO): EmailRow[] {
+  return sc.train.map((e) => ({ id: e[0], email: e[1], truth: trainAnswer(e) }));
 }
 
-export function trainingConfig(sc: TrainScenario = V3_SCENARIO): SortConfig<TrainItem> {
-  return {
-    items: sc.train.map((e) => ({ id: e[0], answer: trainAnswer(e), text: e[1], email: e[1], icon: ITEM_ICON })),
-    zones: TRAIN_ZONES,
-    wrong: () => STEP1_WRONG,
-    mistake: (it, z) => zoneMistake(it, z, TRAIN_ZONES),
-  };
+export function testRows(sc: TrainScenario = V3_SCENARIO): EmailRow[] {
+  return sc.test.map((e) => ({ id: e[0], email: e[1], truth: testAnswer(e), model: { says: e[2], right: e[3] === 'r' } }));
 }
 
-export function testConfig(sc: TrainScenario = V3_SCENARIO): SortConfig<TrainItem> {
-  return {
-    // `text` (used for screen-reader labels and announcements) carries the model's verdict too.
-    items: sc.test.map((e) => ({ id: e[0], answer: testAnswer(e), text: `${e[1]}. ${modelSays(e)}`, email: e[1], says: modelSays(e), icon: ITEM_ICON })),
-    zones: TEST_ZONES,
-    wrong: () => STEP2_WRONG,
-    mistake: (it, z) => zoneMistake(it, z, TEST_ZONES),
-  };
-}
+export const zoneLabel = (id: Call): string => ZONES.find((z) => z.id === id)?.label ?? id;
 
-/**
- * Wrong drop (mistake table): itemId = the email id (`e1`–`e6` / `t1`–`t4`, positional for
- * variations), answer = the zone dropped on, correct = the item's own zone; labels = zone labels.
- */
-export function zoneMistake(it: TrainItem, z: SortZone, zones: readonly { id: string; label: string }[]): Mistake | undefined {
-  if (it.answer === null) return undefined;
-  const correct = zones.find((x) => x.id === it.answer);
-  return buildMistake('m1g1', { itemId: it.id, answer: z.id, correct: it.answer, itemText: it.email, answerLabel: z.label, correctLabel: correct ? correct.label : it.answer });
+export type Calls = Readonly<Record<string, Call>>;
+
+export const allCalled = (rows: readonly EmailRow[], calls: Calls): boolean => rows.every((r) => calls[r.id] !== undefined);
+
+export const firstUncalled = (rows: readonly EmailRow[], calls: Calls): EmailRow | undefined => rows.find((r) => calls[r.id] === undefined);
+
+export const wrongRows = (rows: readonly EmailRow[], calls: Calls): EmailRow[] => rows.filter((r) => calls[r.id] !== r.truth);
+
+export const wrongMessage = (step: Step): string => (step === 'test' ? ROUND2_WRONG : ROUND1_WRONG);
+
+/** A wrong call found by VERIFY: itemId = the email id (positional for variations). */
+export function callMistake(row: EmailRow, call: Call): Mistake {
+  return buildMistake('m1g1', {
+    itemId: row.id,
+    answer: call,
+    correct: row.truth,
+    itemText: row.email,
+    answerLabel: zoneLabel(call),
+    correctLabel: zoneLabel(row.truth),
+  });
 }
 
 /** Step order: train → test → result. */

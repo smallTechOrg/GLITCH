@@ -1,5 +1,7 @@
-// All learner-facing shell copy (v3 lines 338–487 + course-shell.md / game-runtime.md /
-// spec/ui.md). Screens import these constants so tests can assert the exact strings.
+// All learner-facing shell copy. Screens import these constants so tests can assert the exact strings.
+import type { HelpLevel } from '../contracts/state';
+import type { AdaptReason } from '../engine/adapt';
+
 export const WELCOME = {
   title: 'GLITCH',
   subtitle: 'AN AI LITERACY ADVENTURE',
@@ -32,10 +34,11 @@ export const HOME = {
 
 export const HERO_SELECT = {
   heading: 'CHOOSE YOUR HERO',
-  sub: 'Each hero has one power. You get 2 uses per game.',
+  sub: 'Meet the crew. Tap a hero to hear from them.',
   enter: (title: string) => `▶ Enter the ${title}`,
   back: '← HOME',
   eyebrow: (mod: number, title: string) => `MODULE ${mod} · ${title.toUpperCase()}`,
+  power: (name: string) => `POWER: ${name}`,
 } as const;
 
 export const STORYTIME = {
@@ -60,7 +63,28 @@ export const GAME = {
   heroAlt: 'Use hero power',
   stars: (n: number) => `${n} stars`, // spec/ui.md: win-stars label "n stars"
   tagLine: (mod: number, title: string) => `MODULE ${mod} · ${title.toUpperCase()}`,
+  howTo: 'HOW TO PLAY',
+  helpLabel: 'How to play',
 } as const;
+
+export const BRIEF = {
+  heading: (name: string) => `MISSION BRIEF · ${name.toUpperCase()}`,
+  howTo: 'HOW TO PLAY',
+  win: 'HOW TO CLEAR IT',
+  winText: 'You start with 3 hearts. A mistake breaks one. Keep at least 1 to clear the level.',
+  stars: 'Every heart you keep earns a star.',
+  power: (name: string, uses: number) => `Your hero power: ${name}, ${uses} ${uses === 1 ? 'use' : 'uses'}.`,
+  start: '▶ Start mission',
+  resume: '▶ Back to the mission',
+  adapted: (r: Exclude<AdaptReason, null>): string => BRIEF_ADAPTED[r],
+} as const;
+
+const BRIEF_ADAPTED: Readonly<Record<Exclude<AdaptReason, null>, string>> = {
+  more: 'You asked for more help: +1 power use.',
+  less: 'You asked for less help: -1 power use.',
+  struggling: 'NOVA noticed this one was tricky: +1 power use.',
+  mastered: 'You mastered this one, so here is a tougher run: -1 power use.',
+};
 
 export const COMPLETE = {
   tag: (n: number) => `MODULE ${n} COMPLETE`,
@@ -78,10 +102,13 @@ export const SETTINGS = {
   title: 'SETTINGS',
   nickname: 'NICKNAME',
   nicknameHelp: 'Optional, up to 20 characters. Leave empty to play as PLAYER 1.',
-  save: 'Save nickname',
+  save: 'Save',
   saved: 'SAVED',
   readable: 'READABLE FONT',
   readableHelp: 'Long text (story, game items, NOVA replies, tips) switches to a plain font at 16 px.',
+  help: 'HOW MUCH HELP',
+  helpHelp: 'Sets how many hero-power uses you get in each game.',
+  helpLabels: { auto: 'ADAPT TO ME', more: 'MORE HELP', less: 'MORE CHALLENGE' } as Readonly<Record<HelpLevel, string>>,
   privacyTitle: 'PRIVACY',
   privacy: "Everything saves on this device. NOVA's server never keeps what you type.",
   reset: 'Reset progress',

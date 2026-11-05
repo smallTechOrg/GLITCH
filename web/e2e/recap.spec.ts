@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test';
 import { STATE_STORAGE_KEY } from '../src/contracts/state';
 import type { HeroId } from '../src/contracts/ids';
 import { test, expect, waitForApp } from './helpers/fixtures';
-import { expectWin, pickLines } from './helpers/flows';
+import { callByTap, expectWin, pickLines } from './helpers/flows';
 
 const PROXIES = [2, 3, 4, 5, 6] as const; // m3g1 v3 lines 3–7
 const REAL = [7, 8, 9, 10] as const; // m3g1 v3 lines 8–11
@@ -55,25 +55,30 @@ async function openGame(page: Page, path: string): Promise<void> {
 }
 
 test.describe('Mistake recap', () => {
-  test('three wrong drops in Train the Model → fail screen recap with three rows and the right zone labels (server unreachable)', async ({ page, apiUrl }) => {
+  test('three wrong calls in Train the Model → fail screen recap, one mistake per page, with the right labels (server unreachable)', async ({ page, apiUrl }) => {
     const tried = await offline(page, apiUrl);
     await seed(page, ['m1h', 'm1s'], 'scout');
     await openGame(page, './module/1/game/m1g1');
-    for (const [item, zone] of [['e1', 'ok'], ['e2', 'spam'], ['e3', 'ok']] as const) {
-      await page.getByTestId(`dnd-item-${item}`).click();
-      await page.getByTestId(`dnd-zone-${zone}`).click();
-    }
+    await callByTap(page, [['e1', 'ok'], ['e2', 'spam'], ['e3', 'ok'], ['e4', 'ok'], ['e5', 'spam'], ['e6', 'ok']]);
+    await page.getByTestId('m1g1-verify').click();
     await expect(page.getByTestId('fail-screen')).toBeVisible();
     const recap = page.getByTestId('recap');
     await expect(recap).toContainText('MISTAKE RECAP');
+    await expect(page.getByTestId('recap-page')).toHaveText('1/3');
+    await expect(page.getByTestId('recap-prev')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.getByTestId('recap-item-0')).toHaveText('WIN a FREE prize!!! Click now');
     await expect(page.getByTestId('recap-said-0')).toHaveText('YOU SAID: NOT SPAM');
     await expect(page.getByTestId('recap-was-0')).toHaveText('IT WAS: SPAM');
-    await expect(page.getByTestId('recap-said-1')).toHaveText('YOU SAID: SPAM');
-    await expect(page.getByTestId('recap-was-1')).toHaveText('IT WAS: NOT SPAM');
-    await expect(page.getByTestId('recap-was-2')).toHaveText('IT WAS: SPAM');
     await expect(page.getByTestId('recap-why-0')).toContainText('Look at the features');
     await expect(page.getByTestId('recap-row-0')).toHaveAttribute('aria-label', /^WIN a FREE prize!!! Click now\. You said NOT SPAM\. It was SPAM\. /);
+    await page.getByTestId('recap-next').click();
+    await expect(page.getByTestId('recap-row-0')).toHaveCount(0);
+    await expect(page.getByTestId('recap-said-1')).toHaveText('YOU SAID: SPAM');
+    await expect(page.getByTestId('recap-was-1')).toHaveText('IT WAS: NOT SPAM');
+    await page.getByTestId('recap-next').click();
+    await expect(page.getByTestId('recap-page')).toHaveText('3/3');
+    await expect(page.getByTestId('recap-was-2')).toHaveText('IT WAS: SPAM');
+    await expect(page.getByTestId('recap-next')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.getByTestId('recap-row-3')).toHaveCount(0);
     await expect(page.getByTestId('recap-more')).toHaveCount(0);
     await expect(page.getByTestId('recap-clean')).toHaveCount(0);
@@ -107,11 +112,12 @@ test.describe('Mistake memory · REVIEW', () => {
     await expect(page.getByTestId('hearts')).toHaveAttribute('aria-label', /Hearts 2 of 3/);
     await pickLines(page, PROXIES);
     await expectWin(page, 2);
-    await expect(page.getByTestId('recap-row-1')).toBeVisible();
-    await expect(page.getByTestId('recap-row-2')).toHaveCount(0);
     await expect(page.getByTestId('recap-shielded-0')).toHaveText('SHIELDED');
-    await expect(page.getByTestId('recap-shielded-1')).toHaveCount(0);
     await expect(page.getByTestId('recap-was-0')).toContainText('IT WAS:');
+    await page.getByTestId('recap-next').click();
+    await expect(page.getByTestId('recap-row-1')).toBeVisible();
+    await expect(page.getByTestId('recap-shielded-1')).toHaveCount(0);
+    await expect(page.getByTestId('recap-row-2')).toHaveCount(0);
 
     await page.goto('./');
     await waitForApp(page);

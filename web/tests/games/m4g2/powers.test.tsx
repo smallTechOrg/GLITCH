@@ -24,6 +24,8 @@ async function setup(hero: HeroId): Promise<TestGameApi> {
 }
 
 async function place(item: string, zone: string): Promise<void> {
+  const tab = screen.queryByTestId(`deck-tab-${item}`);
+  if (tab) await fireEvent.press(tab);
   await fireEvent.press(screen.getByTestId(`dnd-item-${item}`));
   await fireEvent.press(screen.getByTestId(`dnd-zone-${zone}`));
 }
@@ -38,7 +40,8 @@ async function power(api: TestGameApi): Promise<boolean> {
 
 async function solveRemaining(): Promise<void> {
   for (const it of ITEMS) {
-    if (within(screen.getByTestId('dnd-pool')).queryByTestId(`dnd-item-${it.id}`)) await place(it.id, it.answer as string);
+    const pool = within(screen.getByTestId('dnd-pool'));
+    if (pool.queryByTestId(`deck-tab-${it.id}`) || pool.queryByTestId(`dnd-item-${it.id}`)) await place(it.id, it.answer as string);
   }
   await act(async () => {
     jest.advanceTimersByTime(400);

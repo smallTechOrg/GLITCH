@@ -74,7 +74,7 @@ export function PromptLog(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 16, gap: 8 },
+  wrap: { gap: 4 },
   toggle: { minHeight: layout.minTouch, justifyContent: 'center' },
   list: { gap: 6 },
   entry: { borderWidth: border.thin, borderColor: colors.ln, backgroundColor: colors.deep, padding: 8, gap: 6, minHeight: layout.minTouch },

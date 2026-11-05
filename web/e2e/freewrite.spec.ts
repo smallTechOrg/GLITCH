@@ -96,7 +96,6 @@ async function stalledEvaluate(route: Route): Promise<void> {
 test.describe('FORGE 3 · FREE WRITE', () => {
   test('first screen: goal, energy, empty editor with counter, send disabled', async ({ page }) => {
     await open(page);
-    await expect(page.getByText('Now write your own. Use the five levers: task, context, role, format, limit.')).toBeVisible();
     await expect(page.getByTestId('fw-goal')).toHaveText('YOUR GOAL: Explain photosynthesis to a 10-year-old.');
     await energy(page, 10);
     await expect(page.getByTestId('fw-input')).toHaveAttribute('placeholder', 'e.g. Act as…');

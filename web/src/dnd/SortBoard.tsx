@@ -5,13 +5,14 @@
 //   RN Web maps Enter/Space on role=button to onPress).
 // X-RAY / FOCUS are registered with the frame via api.registerPowers on mount.
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { GameApi } from '../contracts/game';
 import { Icon } from '../art/Icon';
 import { announce } from '../a11y/announce';
 import { ANIM, FLASH_HOLD_MS } from '../a11y/stepped';
 import { useStepAnimation } from '../a11y/useStepAnimation';
 import { border, colors, fontSize, layout as L, shadows } from '../theme/tokens';
+import { PixelButton } from '../ui/PixelButton';
 import { PixelText } from '../ui/PixelText';
 import { useFocusRing } from '../ui/focus';
 import {
@@ -19,9 +20,11 @@ import {
   clearFlash, createSort, drop, dropSelected, focus, getItem, getZone, isDone, placedIn, poolItems, select, wrongMessage, wrongMistake, xray, xrayLine, zoneFull,
   type DropResult, type SortConfig, type SortItem, type SortState, type SortZone,
 } from './sortEngine';
+import { shuffled } from '../engine/shuffle';
 import { hitTest, useDragItem, useDropZones, type ZoneRect } from './useDrag';
 
-export type SortLayout = 'pool-first' | 'zones-top';
+/** `side`: zones on the left, items on the right (stacked on phones). */
+export type SortLayout = 'pool-first' | 'zones-top' | 'side';
 
 export interface SortItemRenderContext {
   placed: boolean;
@@ -39,6 +42,8 @@ export interface SortBoardProps<I extends SortItem> {
   /** Fires 350 ms after the last real placement. */
   onDone: (state: SortState<I>) => void;
   layout?: SortLayout;
+  /** Show one item at a time, with numbered tabs. Tapping a zone drops the item on show. */
+  deck?: boolean;
   header?: React.ReactNode;
   /** Custom item body (icon + text by default). Wrap inner controls in <NoDrag>. */
   renderItem?: (item: I, ctx: SortItemRenderContext) => React.ReactNode;
@@ -88,9 +93,13 @@ interface DragApi {
 }
 
 export function SortBoard<I extends SortItem>({
-  cfg, api, onDone, layout = 'pool-first', header, renderItem, onPlace, onChange, registerPowers = true, testID,
+  cfg, api, onDone, layout = 'pool-first', deck = false, header, renderItem, onPlace, onChange, registerPowers = true, testID,
 }: SortBoardProps<I>): React.JSX.Element {
-  const [state, setState] = useState<SortState<I>>(() => createSort(cfg));
+  // Items are shown in a fresh random order each play, so answers can't be learnt by position.
+  const [state, setState] = useState<SortState<I>>(() => createSort({ ...cfg, items: shuffled(cfg.items) }));
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const activeRef = useRef<string | null>(null);
+  const narrow = useWindowDimensions().width <= L.mobileBreakpoint;
   const sref = useRef(state);
   const apiRef = useRef(api);
   apiRef.current = api;
@@ -169,11 +178,13 @@ export function SortBoard<I extends SortItem>({
   const onZonePress = useCallback(
     (zoneId: string) => {
       if (apiRef.current.over) return;
-      const r = dropSelected(sref.current, zoneId);
+      const current = sref.current;
+      const shown = deck && !current.selected ? (poolItems(current).find((x) => x.id === activeRef.current) ?? poolItems(current)[0]) : undefined;
+      const r = dropSelected(shown ? { ...current, selected: shown.id } : current, zoneId);
       if (!r.itemId) return;
       handleResult(r.state, r.result, r.itemId, zoneId);
     },
-    [handleResult],
+    [deck, handleResult],
   );
 
   // Powers (v3 ctl.scan / ctl.hint). Registered once per board instance — remount the
@@ -232,8 +243,14 @@ export function SortBoard<I extends SortItem>({
     [zones, dropItem],
   );
 
-  const top = layout === 'zones-top';
   const pool = poolItems(state);
+  const beside = layout === 'side' && !narrow;
+  const top = layout === 'zones-top' || (layout === 'side' && narrow);
+  const compactZones = top || beside;
+  // FOCUS may point at any remaining item, so a deck follows it.
+  const shownId = state.flash?.itemId ?? (pool.some((x) => x.id === activeId) ? activeId : (pool[0]?.id ?? null));
+  activeRef.current = shownId;
+  const poolShown = deck ? pool.filter((x) => x.id === shownId) : pool;
 
   const renderBody = (it: I, placed: boolean): React.ReactNode => {
     const ctx: SortItemRenderContext = {
@@ -242,7 +259,7 @@ export function SortBoard<I extends SortItem>({
       dimmed: !!state.dimmed[it.id],
       flashing: state.flash?.itemId === it.id,
       wrong: wrongId === it.id,
-      compact: placed && top,
+      compact: placed && compactZones,
     };
     if (renderItem) return renderItem(it, ctx);
     return (
@@ -256,8 +273,29 @@ export function SortBoard<I extends SortItem>({
   };
 
   const poolView = (
-    <View testID="dnd-pool" style={styles.pool} accessibilityLabel="Items to sort">
-      {pool.map((it) => (
+    <View testID="dnd-pool" style={[styles.pool, beside ? styles.poolBeside : null, deck ? styles.poolDeck : null]} accessibilityLabel="Items to sort">
+      {deck && pool.length > 1 ? (
+        <View style={styles.tabs} accessibilityRole="tablist">
+          {pool.map((it, i) => (
+            <PixelButton
+              key={it.id}
+              testID={`deck-tab-${it.id}`}
+              variant="small"
+              label={String(i + 1)}
+              accessibilityRole="tab"
+              accessibilityLabel={`Item ${i + 1} of ${pool.length}: ${it.short ?? it.text}`}
+              color={it.id === shownId ? colors.ac : undefined}
+              onPress={() => {
+                // A selection on the previous item would otherwise be dropped while hidden.
+                setActiveId(it.id);
+                if (sref.current.selected) commit({ ...sref.current, selected: null });
+              }}
+              style={styles.tab}
+            />
+          ))}
+        </View>
+      ) : null}
+      {poolShown.map((it) => (
         <DraggableItem
           key={it.id}
           id={it.id}
@@ -278,7 +316,7 @@ export function SortBoard<I extends SortItem>({
   );
 
   const zonesView = (
-    <View style={[styles.zones, top ? styles.zonesTop : null]}>
+    <View style={[styles.zones, beside ? styles.zonesBeside : null]}>
       {state.cfg.zones.map((z) => {
         const inZone = placedIn(state, z.id);
         return (
@@ -289,12 +327,13 @@ export function SortBoard<I extends SortItem>({
             hovered={hover === z.id}
             full={zoneFull(state, z.id)}
             flashing={state.flash?.zoneId === z.id}
-            compact={top}
+            compact={compactZones}
             count={inZone.length}
             disabled={api.over}
-            hasSelection={!!state.selected}
+            hasSelection={!!state.selected || deck}
             onPress={onZonePress}
             wide={state.cfg.zones.length > 2}
+            beside={beside}
           >
             {inZone.map((it) => (
               <View
@@ -302,7 +341,7 @@ export function SortBoard<I extends SortItem>({
                 testID={`dnd-item-${it.id}`}
                 accessible
                 accessibilityLabel={`${it.text}, placed in ${z.label}`}
-                style={[styles.item, styles.placed, top ? styles.placedCompact : null]}
+                style={[styles.item, styles.placed, compactZones ? styles.placedCompact : null]}
               >
                 {renderBody(it, true)}
               </View>
@@ -317,8 +356,17 @@ export function SortBoard<I extends SortItem>({
     <SuppressCtx.Provider value={suppress}>
       <View testID={testID} style={styles.board}>
         {header}
-        {top ? zonesView : poolView}
-        {top ? poolView : zonesView}
+        {beside ? (
+          <View style={styles.besideRow}>
+            {zonesView}
+            {poolView}
+          </View>
+        ) : (
+          <>
+            {top ? zonesView : poolView}
+            {top ? poolView : zonesView}
+          </>
+        )}
       </View>
     </SuppressCtx.Provider>
   );
@@ -394,6 +442,7 @@ interface ZoneViewProps {
   flashing: boolean;
   compact: boolean;
   wide: boolean;
+  beside: boolean;
   count: number;
   disabled: boolean;
   hasSelection: boolean;
@@ -401,12 +450,12 @@ interface ZoneViewProps {
   children: React.ReactNode;
 }
 
-function ZoneView({ zone, zref, hovered, full, flashing, compact, wide, count, disabled, hasSelection, onPress, children }: ZoneViewProps): React.JSX.Element {
+function ZoneView({ zone, zref, hovered, full, flashing, compact, wide, beside, count, disabled, hasSelection, onPress, children }: ZoneViewProps): React.JSX.Element {
   const f = useFocusRing();
   const fl = useStepAnimation({ ...ANIM.flash, loop: true, play: flashing, restValue: 0 });
   const zc = zone.color ?? colors.bl;
   return (
-    <View ref={zref} collapsable={false} style={[styles.zoneWrap, wide ? styles.zoneWide : null]}>
+    <View ref={zref} collapsable={false} style={[styles.zoneWrap, wide ? styles.zoneWide : null, beside ? styles.zoneBeside : null]}>
       <Pressable
         testID={`dnd-zone-${zone.id}`}
         onPress={() => onPress(zone.id)}
@@ -416,10 +465,10 @@ function ZoneView({ zone, zref, hovered, full, flashing, compact, wide, count, d
         accessibilityRole="button"
         accessibilityLabel={`${zone.label} zone, ${count} placed${full ? ', full' : ''}`}
         accessibilityHint={hasSelection ? 'Drop the selected item here' : 'Select an item first'}
-        style={[styles.zone, compact ? styles.zoneCompact : null, { borderColor: zc, borderStyle: hovered || full ? 'solid' : 'dashed' }, hovered ? styles.zoneOver : null, f.ring]}
+        style={[styles.zone, compact ? styles.zoneCompact : null, beside ? styles.zoneFill : null, { borderColor: zc, borderStyle: hovered || full ? 'solid' : 'dashed' }, hovered ? styles.zoneOver : null, f.ring]}
       >
         <View style={styles.zoneLabel}>
-          {zone.icon ? <Icon name={zone.icon} scale={3} /> : null}
+          {zone.icon ? <Icon name={zone.icon} scale={2} /> : null}
           <PixelText size={fontSize.small} color={zc} bold>{zone.label}</PixelText>
         </View>
         <View style={[styles.zoneContent, compact ? styles.zoneContentRow : null]}>{children}</View>
@@ -431,12 +480,15 @@ function ZoneView({ zone, zref, hovered, full, flashing, compact, wide, count, d
   );
 }
 
-const STICKY: ViewStyle = Platform.OS === 'web' ? ({ position: 'sticky', top: 58 } as unknown as ViewStyle) : {};
-
 const styles = StyleSheet.create({
-  board: { gap: 4 },
-  pool: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginVertical: 14, padding: 12, borderWidth: border.width, borderStyle: 'dashed', borderColor: colors.ln, minHeight: 70 },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 12, minHeight: L.minTouch, backgroundColor: colors.cd, borderWidth: border.width, borderColor: colors.ln, boxShadow: shadows.item, maxWidth: '100%' },
+  board: { flexGrow: 1, gap: 6 },
+  besideRow: { flexGrow: 1, flexDirection: 'row', gap: 8 },
+  pool: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, padding: 6, borderWidth: border.width, borderStyle: 'dashed', borderColor: colors.ln, minHeight: 56, zIndex: 10 },
+  poolBeside: { flex: 1, minWidth: 0, alignContent: 'flex-start' },
+  poolDeck: { flexDirection: 'column', flexWrap: 'nowrap', flexGrow: 1 },
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  tab: { minWidth: 36, minHeight: 36, paddingVertical: 0, paddingHorizontal: 4 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4, paddingHorizontal: 8, minHeight: L.minTouch, backgroundColor: colors.cd, borderWidth: border.thin, borderColor: colors.ln, boxShadow: shadows.item, maxWidth: '100%' },
   // The drag wrapper must not grow past its row, or the item's maxWidth:'100%' is measured
   // against an unbounded box and long items overflow the screen instead of wrapping.
   itemWrap: { maxWidth: '100%', flexShrink: 1, minWidth: 0 },
@@ -447,18 +499,20 @@ const styles = StyleSheet.create({
   dimmed: { opacity: 0.3 },
   strike: { textDecorationLine: 'line-through' },
   wrong: { borderColor: colors.no },
-  placed: { borderColor: colors.ok, boxShadow: 'none' },
+  placed: { borderColor: colors.ln, boxShadow: 'none' },
   placedCompact: { paddingVertical: 4, paddingHorizontal: 8, minHeight: 0 },
   dragging: { zIndex: 200, elevation: 20, opacity: 0.95 },
   flash: { borderWidth: 4, borderColor: colors.ac },
-  zones: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  zonesTop: { ...STICKY, zIndex: 30, backgroundColor: colors.bg, paddingVertical: 8, marginBottom: 8 },
-  zoneWrap: { flexGrow: 1, flexBasis: '45%', minWidth: 140 },
+  zones: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  zonesBeside: { width: 360, flexDirection: 'column', flexWrap: 'nowrap' },
+  zoneWrap: { flexGrow: 1, flexBasis: '45%', minWidth: 130 },
   zoneWide: { flexBasis: 150 },
-  zone: { minHeight: 120, padding: 10, borderWidth: border.width, backgroundColor: colors.zoneBg },
-  zoneCompact: { minHeight: L.zoneMinHeight },
+  zoneBeside: { flexBasis: 'auto', flex: 1 },
+  zone: { minHeight: 76, paddingVertical: 4, paddingHorizontal: 6, borderWidth: border.width, backgroundColor: colors.zoneBg },
+  zoneCompact: { minHeight: 52 },
+  zoneFill: { flex: 1 },
   zoneOver: { backgroundColor: colors.zoneOver },
-  zoneLabel: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  zoneContent: { gap: 8 },
+  zoneLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  zoneContent: { gap: 4 },
   zoneContentRow: { flexDirection: 'row', flexWrap: 'wrap' },
 });

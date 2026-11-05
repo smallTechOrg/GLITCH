@@ -24,7 +24,7 @@ describe('badges (v3 BD)', () => {
 
   it('each rule fires on exactly its condition', () => {
     const s = fresh();
-    for (const id of STEP_IDS.filter((x) => x.startsWith('m1'))) s.steps[id] = true;
+    for (const id of STEP_IDS.filter((x) => x.startsWith('m2'))) s.steps[id] = true;
     expect(BADGE_RULES.boot(s)).toBe(true);
     expect(BADGE_RULES.grad(s)).toBe(false);
     s.steps = Object.fromEntries((['m1s', 'm2s', 'm3s'] as StepId[]).map((k) => [k, true]));

@@ -1,35 +1,38 @@
-// Storytime content is v3 verbatim (spec/idea/GLITCH v3.html lines 382–428): 41 slides in
-// 11/10/10/10, every text, heading, title line and icon caption present in the source.
-import fs from 'fs';
-import path from 'path';
+// Storytime is deliberately short: at most 7 slides a module, one short line a slide.
+import { COURSE_ORDER, moduleNumber } from '@/content/modules';
 import { STORY, slideText } from '@/content/story';
 import { storyHint, storyKeyAction, storyKeyForTarget } from '@/screens/StoryScreen';
 
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn(), replace: jest.fn() } }));
 
-const V3 = fs.readFileSync(path.join(__dirname, '../../../spec/idea/GLITCH v3.html'), 'utf8').replace(/\\'/g, "'");
+const words = (s: string): number => s.split(/\s+/).filter(Boolean).length;
 
 describe('STORY content', () => {
-  it('has 41 slides split 11/10/10/10', () => {
-    expect([1, 2, 3, 4].map((m) => STORY[m as 1 | 2 | 3 | 4].length)).toEqual([11, 10, 10, 10]);
+  it('has at most 7 slides in each module', () => {
+    for (const m of COURSE_ORDER) expect(STORY[m].length).toBeLessThanOrEqual(7);
   });
 
-  it('every string appears verbatim in the v3 source', () => {
-    const missing: string[] = [];
-    for (const m of [1, 2, 3, 4] as const) {
-      for (const s of STORY[m]) {
-        const parts = [s.x, ...(s.t === 'key' ? [s.k] : []), ...(s.t === 'title' ? [s.h, s.s] : []), ...(s.t === 'icons' ? s.cap : [])];
-        for (const p of parts) if (!V3.includes(p)) missing.push(p);
-      }
-    }
-    expect(missing).toEqual([]);
+  it('keeps every slide to at most 20 words', () => {
+    const long = COURSE_ORDER.flatMap((m) => STORY[m].filter((s) => words(s.x) > 20).map((s) => s.x));
+    expect(long).toEqual([]);
   });
 
-  it('every slide starts with a title and icons slides have 8 icons with 8 captions', () => {
-    for (const m of [1, 2, 3, 4] as const) {
-      expect(STORY[m][0]?.t).toBe('title');
-      for (const s of STORY[m]) if (s.t === 'icons') expect([s.ic.length, s.cap.length]).toEqual([8, 8]);
+  it('title slides carry the number players see, in course order', () => {
+    for (const m of COURSE_ORDER) {
+      const title = STORY[m][0];
+      expect(title?.t).toBe('title');
+      if (title?.t === 'title') expect(title.h).toBe(`MODULE ${moduleNumber(m)}`);
     }
+  });
+
+  it('icons slides have one caption per icon', () => {
+    for (const m of COURSE_ORDER) {
+      for (const s of STORY[m]) if (s.t === 'icons') expect(s.cap).toHaveLength(s.ic.length);
+    }
+  });
+
+  it('the first module introduces NOVA, because players now meet NOVA there', () => {
+    expect(STORY[COURSE_ORDER[0]!].some((s) => s.t === 'scene' && s.w === 'n' && s.x.includes("I'm NOVA"))).toBe(true);
   });
 
   it('title slides type nothing (shown at once); other slides type their text', () => {

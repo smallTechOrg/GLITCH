@@ -17,14 +17,14 @@ export function Terminal({ label, text, variant = 'default', children, testID, s
   return (
     <View testID={testID} style={[styles.term, variant === 'out' ? styles.out : null, style]}>
       {label ? <PixelText size={fontSize.tiny} color={colors.ac} style={styles.label}>{label}</PixelText> : null}
-      {text !== undefined ? <PixelText long>{text}</PixelText> : null}
+      {text !== undefined ? <PixelText long size={fontSize.small}>{text}</PixelText> : null}
       {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  term: { backgroundColor: colors.deep, borderWidth: border.width, borderColor: colors.ln, padding: 12, marginVertical: 10 },
-  out: { borderColor: colors.ok },
-  label: { marginBottom: 4 },
+  term: { backgroundColor: colors.deep, borderWidth: border.width, borderColor: colors.ln, paddingVertical: 6, paddingHorizontal: 8 },
+  out: { borderColor: colors.ln, borderLeftColor: colors.ok },
+  label: { marginBottom: 2 },
 });

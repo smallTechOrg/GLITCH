@@ -1,4 +1,4 @@
-// m1g2 · Fact or Fib — component tests against createTestGameApi (frame semantics).
+// m1g2 · Fact or Glitch — component tests against createTestGameApi (frame semantics).
 // Lines are role=button Pressables, so Enter/Space (keyboard) and tap share onPress.
 import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
@@ -35,25 +35,25 @@ async function power(api: TestGameApi): Promise<boolean> {
 }
 
 describe('<FactOrFib>', () => {
-  it("renders NOVA's draft essay with six numbered, labelled lines and FIBS FOUND: 0/3", async () => {
+  it("renders NOVA's draft essay with six numbered, labelled lines and GLITCHES FOUND: 0/3", async () => {
     await setup();
     expect(screen.getByText('NOVA · DRAFT ESSAY')).toBeTruthy();
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 0/3');
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 0/3');
     for (let i = 0; i < 6; i++) expect(line(i).props.accessibilityRole).toBe('button');
     expect(line(0).props.accessibilityLabel).toBe('1. Machine learning finds patterns in training data.');
     expect(line(5).props.accessibilityLabel).toBe('6. Testing data is the same data the model trained on.');
     expect(screen.queryByTestId('pick-line-6')).toBeNull();
   });
 
-  it('tapping a fib tags it FIB with its explanation, counts it and says "Fib caught! …"', async () => {
+  it('tapping a fib tags it GLITCH and speaks its explanation, counts it and says "Glitch caught! …"', async () => {
     const api = await setup();
     await tapLine(1);
-    expect(line(1)).toHaveTextContent(/FIB/);
-    expect(line(1)).toHaveTextContent(/Memorizing is not generalizing. New data is the real test./);
-    expect(line(1).props.accessibilityLabel).toMatch(/, FIB$/);
+    expect(line(1)).toHaveTextContent(/GLITCH/);
+    expect(line(1).props.accessibilityLabel).toMatch(/Memorizing is not generalizing. New data is the real test./);
+    expect(line(1).props.accessibilityLabel).toMatch(/, GLITCH\. /);
     expect(line(1).props.accessibilityState).toMatchObject({ disabled: true });
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 1/3');
-    expect(api.lastSay()).toEqual({ text: 'Fib caught! Memorizing is not generalizing. New data is the real test.', mood: 'good' });
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 1/3');
+    expect(api.lastSay()).toEqual({ text: 'Glitch caught! Memorizing is not generalizing. New data is the real test.', mood: 'good' });
     expect(api.hearts).toBe(3);
   });
 
@@ -65,7 +65,7 @@ describe('<FactOrFib>', () => {
     expect(line(0).props.accessibilityState).toMatchObject({ disabled: true });
     expect(api.calls.miss).toEqual([TRUE_MISS]);
     expect(api.hearts).toBe(2);
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 0/3');
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 0/3');
   });
 
   it('a marked line ignores further taps (no double count, no double heart loss)', async () => {
@@ -75,7 +75,7 @@ describe('<FactOrFib>', () => {
     await tapLine(3);
     await tapLine(3);
     expect(api.calls.miss).toHaveLength(1);
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 1/3');
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 1/3');
   });
 
   it('wins with the v3 summary exactly 700 ms after the third fib', async () => {
@@ -83,7 +83,7 @@ describe('<FactOrFib>', () => {
     await tapLine(1);
     await tapLine(3);
     await tapLine(5);
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 3/3');
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 3/3');
     await tick(699);
     expect(api.calls.win).toHaveLength(0);
     await tick(1);
@@ -115,17 +115,17 @@ describe('<FactOrFib>', () => {
     await tapLine(5);
     await tick(1000);
     expect(api.calls.win).toHaveLength(0);
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 0/3');
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 0/3');
   });
 
   it('X-RAY (SCOUT) catches the next fib, and the third catch by X-RAY still wins after 700 ms', async () => {
     const api = await setup({ hero: 'scout' });
     expect(await power(api)).toBe(true);
-    expect(line(1)).toHaveTextContent(/FIB/);
-    expect(api.lastSay()?.text).toBe('Fib caught! Memorizing is not generalizing. New data is the real test.');
+    expect(line(1)).toHaveTextContent(/GLITCH/);
+    expect(api.lastSay()?.text).toBe('Glitch caught! Memorizing is not generalizing. New data is the real test.');
     await tapLine(3);
     expect(await power(api)).toBe(true);
-    expect(line(5)).toHaveTextContent(/FIB/);
+    expect(line(5)).toHaveTextContent(/GLITCH/);
     await tick(700);
     expect(api.calls.win).toEqual([WIN_SUMMARY]);
     expect(api.powerUses).toBe(0);
@@ -192,7 +192,7 @@ describe('<FactOrFib>', () => {
     expect(api.powerUses).toBe(1);
     expect(api.hearts).toBe(3);
     expect(api.lastSay()).toEqual({ text: REWIND_LINE, mood: 'good' });
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 0/3');
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 0/3');
     expect(line(0).props.accessibilityState).toMatchObject({ disabled: true });
     await tapLine(0);
     expect(api.calls.miss).toHaveLength(1);
@@ -207,6 +207,6 @@ describe('<FactOrFib>', () => {
     expect(api.powerUses).toBe(2);
     expect(api.hearts).toBe(3);
     expect(api.calls.toast).toEqual([NOTHING_TO_USE]);
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 1/3');
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 1/3');
   });
 });

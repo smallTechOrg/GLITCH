@@ -2,7 +2,7 @@
 
 With ``first=1`` (a device's first play of the game) the server only draws at random among the
 classic v3 case and the cached unseen variations: no generation, no energy. Drawing v3 (or
-having nothing cached, or ``GLITCH_FIRST_PLAY_RANDOM=false``) answers ``NO_CASE_FILE``.
+having nothing cached, or ``GLITCH_FIRST_PLAY_RANDOM=false``) answers ``200 {gameId, classic: true}``.
 
 Order: device header (``BAD_DEVICE``) → game id / ``seen`` (``BAD_REQUEST``, with energy) →
 ``run_scenario``: a cached variation not in ``seen`` (free) or ONE generation (1 device
@@ -75,8 +75,10 @@ async def next_scenario(game_id: str, request: Request, device: Device = Depends
                 repo=repository_for(request.app, provider),
                 request_id=request.scope.get("state", {}).get("request_id"),
             )
+        # The classic case is an expected outcome, not an error: a 404 here showed up as a red
+        # console error in every browser on every first play.
         if result is None:
-            raise ApiError("NO_CASE_FILE", energy=await energy.energy(device.hash))
+            return ok({"gameId": game_id, "classic": True}, energy=await energy.energy(device.hash))
         return ok(result.to_json(), energy=await energy.energy(device.hash))
 
     provider = provider_for(request.app)

@@ -1,6 +1,6 @@
-// m3g2 · Fairness Lab — Phase 3 mistake payloads (RUN AUDIT fails: gap / accuracy), X-RAY/FOCUS record nothing.
+// m3g2 · Fairness Lab — Phase 3 mistake payloads (RUN AUDIT fails, wrong decision), X-RAY/FOCUS record nothing.
 import game from '@/games/m3g2';
-import { accuracyFailMessage, gapFailMessage } from '@/games/m3g2/data';
+import { CASES, DECISION_WRONG, accuracyFailMessage, gapFailMessage, type FairnessCase } from '@/games/m3g2/data';
 import { mount, power, press } from '../mistakeHelpers';
 
 beforeEach(() => jest.useFakeTimers());
@@ -11,13 +11,24 @@ const audit = (answer: string, answerLabel: string) => ({
 });
 
 describe('m3g2 mistakes', () => {
-  it('gap over goal → `gap`; skills switched off → `accuracy`', async () => {
+  it('skills off → `accuracy`; proxies on → `gap`', async () => {
     const api = await mount(game);
+    await press('m3g2-audit'); // all off: accuracy 50, gap 2
+    for (const id of ['code', 'gpa', 'int', 'col', 'cap', 'brk', 'pc']) await press(`toggle-${id}`);
     await press('m3g2-audit'); // all on: gap 31
-    for (const id of ['gpa', 'col', 'cap', 'brk', 'pc']) await press(`toggle-${id}`);
-    await press('m3g2-audit'); // code + int: accuracy 76, gap 2
-    expect(api.calls.miss).toEqual([gapFailMessage(31), accuracyFailMessage(76)]);
-    expect(api.recorded.map((r) => r.mistake)).toEqual([audit('gap', 'GAP 31 · GOAL ≤ 6'), audit('accuracy', 'ACCURACY 76% · GOAL ≥ 80')]);
+    expect(api.calls.miss).toEqual([accuracyFailMessage(50), gapFailMessage(31)]);
+    expect(api.recorded.map((r) => r.mistake)).toEqual([audit('accuracy', 'ACCURACY 50% · GOAL ≥ 80'), audit('gap', 'GAP 31 · GOAL ≤ 6')]);
+  });
+
+  it('a wrong decision → option payload with explain: false', async () => {
+    const api = await mount(game);
+    for (const id of ['code', 'gpa', 'int']) await press(`toggle-${id}`);
+    await press('m3g2-audit');
+    const c = CASES[0] as FairnessCase;
+    const wrong = c.options.find((o) => !o.right)!;
+    await press(`m3g2-option-${wrong.id}`);
+    expect(api.calls.miss).toEqual([DECISION_WRONG]);
+    expect(api.recorded[0]?.mistake).toMatchObject({ itemId: 'decide-hiring', answer: wrong.id, correct: 'b', explain: false });
   });
 
   it('X-RAY and FOCUS never record a mistake', async () => {

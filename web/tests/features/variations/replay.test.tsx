@@ -7,7 +7,7 @@ import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { FIRST_PLAY_TIMEOUT_MS, SCENARIO_TIMEOUT_MS } from '@/contracts/api';
-import { STATE_STORAGE_KEY, type PersistedState } from '@/contracts/state';
+import { STATE_STORAGE_KEY, STATE_VERSION, type PersistedState } from '@/contracts/state';
 import { CASE_FILE, setCaseFileClientForTests } from '@/features/variations';
 import { SENTENCES } from '@/games/m1g2/data';
 import { GameScreen } from '@/screens/GameScreen';
@@ -187,11 +187,11 @@ describe('replay after the clear', () => {
     expect(announcements().filter((a) => a === CASE_FILE.loadedAnnounce)).toHaveLength(1);
   });
 
-  it('the seen list survives a reload (persisted v3 state)', async () => {
+  it('the seen list survives a reload (persisted state)', async () => {
     await open(M1G2_DONE);
     await settle();
     const raw = JSON.parse((await AsyncStorage.getItem(STATE_STORAGE_KEY)) ?? '{}') as { version: number; seenScenarios: unknown };
-    expect(raw.version).toBe(3);
+    expect(raw.version).toBe(STATE_VERSION);
     expect(raw.seenScenarios).toEqual({ m1g2: ['m1g2-v1aaaa'] });
     // Cold start: wipe memory (this also writes a fresh state), put the saved text back, re-read.
     const disk = await AsyncStorage.getItem(STATE_STORAGE_KEY);

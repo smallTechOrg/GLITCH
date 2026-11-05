@@ -1,5 +1,5 @@
-// m2g1 · Tune the Sorter — v3 data verbatim from spec/idea/GLITCH v3.html lines 521–540
-// (`tuneRound`, `GM.m2g1`). spec/capabilities/v3-games.md → m2g1.
+// m2g1 · Inbox Filter — message data and scoring from v3 (`tuneRound`, `GM.m2g1`).
+// spec/capabilities/v3-games.md → m2g1.
 
 /** v3 message tuple `[text, f1, caps, f3, truth]` (truth 1 = should be flagged). */
 export type TuneMessage = readonly [text: string, f1: 0 | 1, caps: 0 | 1, f3: 0 | 1, truth: 0 | 1];
@@ -28,14 +28,14 @@ export interface TuneRoundConfig {
   msgs: readonly TuneMessage[];
 }
 
-/** Slider ranges and v3 start values (reset each round). Parity quirk: (50, 30) already passes both rounds. */
-export const THRESHOLD = { id: 'th', label: 'THRESHOLD', min: 0, max: 100, start: 50 } as const;
-export const CAPS_WEIGHT = { id: 'wc', label: 'ALL-CAPS WEIGHT', min: 0, max: 40, start: 30 } as const;
+/** Slider ranges. Both start at 0 each round, so the player does all the setting. */
+export const THRESHOLD = { id: 'th', label: 'FLAG AT SCORE', min: 0, max: 100, start: 0 } as const;
+export const CAPS_WEIGHT = { id: 'wc', label: 'ALL-CAPS POINTS', min: 0, max: 40, start: 0 } as const;
 
 export const ROUND_1: TuneRoundConfig = {
   id: 'r1',
   title: 'ROUND 1 · EMERGENCY INBOX',
-  rule: 'A message is URGENT if its score reaches the threshold. Never miss a real emergency. Allow at most 1 false alarm.',
+  rule: 'Enough points = URGENT. Miss no real emergencies, and allow at most 1 false alarm.',
   yes: 'URGENT',
   no: 'WAIT',
   ma: 'EMERGENCIES MISSED',
@@ -45,8 +45,8 @@ export const ROUND_1: TuneRoundConfig = {
   wd: 30,
   wk: 20,
   sol: [55, 30],
-  fa: 'A real emergency was missed. Lower the threshold.',
-  fb: 'Too many false alarms. Raise the threshold a little.',
+  fa: 'A real emergency was missed. Lower FLAG AT SCORE.',
+  fb: 'Too many false alarms. Raise FLAG AT SCORE a little.',
   msgs: [
     ['Mum: come home NOW!', 0, 1, 1, 1],
     ['Project due tonight 11pm', 1, 0, 1, 1],
@@ -64,7 +64,7 @@ export const ROUND_1: TuneRoundConfig = {
 export const ROUND_2: TuneRoundConfig = {
   id: 'r2',
   title: 'ROUND 2 · SPAM FOLDER',
-  rule: 'Now a message is BLOCKED if its score reaches the threshold. Never block real mail. Let at most 1 spam through.',
+  rule: 'Enough points = BLOCKED. Block no real mail, and let at most 1 spam through.',
   yes: 'BLOCKED',
   no: 'INBOX',
   ma: 'SPAM LEAKED',
@@ -74,8 +74,8 @@ export const ROUND_2: TuneRoundConfig = {
   wd: 40,
   wk: 0,
   sol: [47, 30],
-  fa: 'Too much spam got through. Lower the threshold.',
-  fb: 'Real mail got blocked. Raise the threshold or lower the caps weight.',
+  fa: 'Too much spam got through. Lower FLAG AT SCORE.',
+  fb: 'Real mail got blocked. Raise FLAG AT SCORE or lower ALL-CAPS POINTS.',
   msgs: [
     ['FREE GIFT click here', 1, 1, 0, 1],
     ['Your parcel is on the way', 0, 0, 0, 0],
@@ -103,7 +103,7 @@ export const FOCUS_ALL_MET_LINE = 'FOCUS: this setting already meets both goals.
 export const NEXT_DELAY_MS = 500;
 
 export const WIN_SUMMARY =
-  'A threshold is a trade-off. Lower it and you catch more real cases but raise false alarms. The right setting depends on which mistake costs more.';
+  'That flag score is a threshold, and a threshold is a trade-off. Lower it and you catch more real cases but raise false alarms. The right setting depends on which mistake costs more.';
 
 /** Screen-reader words for a mismatched row (colour is never the only signal). */
 export const ROW_MISMATCH_TAG = 'WRONG';

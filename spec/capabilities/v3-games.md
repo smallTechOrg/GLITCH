@@ -1,8 +1,30 @@
 # Capability: The Nine v3 Games
 
-## What It Does
-Delivers the nine v3 mini-games with v3's exact content, scoring, thresholds,
-power behaviour and copy, hosted in the Game Runtime (`game-runtime.md`).
+## Playtest revision (2026-11-02) — overrides the v3 rules below where they differ
+Game ids and the v3 scoring maths are unchanged; these changes came from playtest feedback.
+- **Order:** Prompt Forge (id 2) is shown as Module 1, then Training Lab (id 1) as Module 2
+  (`COURSE_ORDER`, `moduleNumber`). Inside Prompt Forge, m2g2 now comes before m2g1. Ids stay put
+  so saves, routes and the API keep working; a module with progress stays open.
+- **Names:** m1g2 is **Fact or Glitch** (GLITCH tag, "GLITCHES FOUND"; the wire field stays `fib`).
+  m2g1 is **Inbox Filter** (sliders FLAG AT SCORE and ALL-CAPS POINTS).
+- **m1g1 is one activity:** emails one per line on the right, SPAM / NOT SPAM bins on the left, drag
+  sideways (or tap then bin). Calls are unjudged until VERIFY, which fills the verify column beside
+  each email; each wrong call costs a heart. Round 1 uses the train emails; round 2 the test emails,
+  also revealing the model's call. Then the result screen. Mistake answers are `spam` / `ok` for all.
+- **Start at zero:** m2g1 sliders (0, 0), m3g2 every input OFF, m4g3 sliders (0, 0). None of these
+  pass as they start, so the v3 parity quirk at (50, 30) is gone. m3g2 FOCUS also points at a skill
+  still off; m4g3 FOCUS gives advice per failing metric.
+- **m3g2 has five cases** (`CASES`): hiring, loans, hospital triage, exam grades, comment moderation,
+  each with its own inputs and groups. After the audit passes, the case asks one ethics question
+  with its own concern (transparency, privacy, human oversight, right to appeal, free expression); a
+  wrong answer costs a heart. Clearing a case moves the next play on (`fairnessCases`); a retry stays.
+  ASK NOVA WHY is offered on the hiring audit only, the one case the API has content for.
+- **m4g1 shows evidence:** every citation carries an `excerpt` under WHAT IT SAYS. Real sources use
+  hand-written summaries held on the server (`REAL_EXCERPTS`), never model text. A case file without
+  excerpts is refused, so the classic plays until the bank is re-stocked.
+- **m4g1 and m4g2 are decks:** one item at a time with numbered tabs; tapping a zone drops it.
+- **Adaptation** (`engine/adapt.ts`): power uses per game follow Settings → HOW MUCH HELP. In auto,
+  +1 on an uncleared game with 3+ remembered mistakes, −1 on a game already cleared with 3 stars.
 
 **Porting rule:** each game's `data.ts` copies the v3 arrays and strings verbatim from the
 lines cited below (titles, goal lines, intros, items, wrong-messages, FOCUS/X-RAY lines,

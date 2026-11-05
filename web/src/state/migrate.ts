@@ -5,8 +5,8 @@ import {
   type BadgeId, type GameId, type HeroId, type ModuleId, type StepId,
 } from '../contracts/ids';
 import {
-  MISTAKES_MAX, NICKNAME_MAX, PROMPT_HISTORY_MAX, SEEN_SCENARIOS_MAX, STATE_VERSION,
-  type LeverMap, type MistakeRecord, type PersistedState, type PromptHistoryEntry, type PromptSource, type SeenScenarios,
+  HELP_LEVELS, MISTAKES_MAX, NICKNAME_MAX, PROMPT_HISTORY_MAX, SEEN_SCENARIOS_MAX, STATE_VERSION,
+  type HelpLevel, type LeverMap, type MistakeRecord, type PersistedState, type PromptHistoryEntry, type PromptSource, type SeenScenarios,
 } from '../contracts/state';
 import { isConcept } from '../content/concepts';
 
@@ -22,10 +22,17 @@ export function migrateV2toV3(s: Record<string, unknown>): Record<string, unknow
   return { ...s, version: 3, mistakes: [] };
 }
 
+/** v3 → v4: additive — the readable-font choice is kept, help starts automatic. */
+export function migrateV3toV4(s: Record<string, unknown>): Record<string, unknown> {
+  const settings = typeof s.settings === 'object' && s.settings !== null ? (s.settings as Record<string, unknown>) : {};
+  return { ...s, version: 4, settings: { ...settings, help: 'auto' }, fairnessCases: 0 };
+}
+
 /** vN → vN+1 steps. */
 export const MIGRATIONS: Readonly<Record<number, (s: Record<string, unknown>) => Record<string, unknown>>> = {
   1: migrateV1toV2,
   2: migrateV2toV3,
+  3: migrateV3toV4,
 };
 
 /** Variation ids are server-generated, content-derived (`<gameId>-<hash>`) and URL-safe — the
@@ -48,7 +55,7 @@ export function createInitialState(now: Date = new Date()): PersistedState {
   return {
     version: STATE_VERSION,
     profile: { nickname: null, onboarded: false, createdAt: now.toISOString() },
-    settings: { readableFont: false },
+    settings: { readableFont: false, help: 'auto' },
     xp: 0,
     streak: { current: 0, best: 0, lastPlayDay: null },
     steps: {},
@@ -62,6 +69,7 @@ export function createInitialState(now: Date = new Date()): PersistedState {
     promptHistory: [],
     seenScenarios: {},
     mistakes: [],
+    fairnessCases: 0,
   };
 }
 
@@ -187,7 +195,10 @@ export function sanitizeState(raw: Record<string, unknown>, now: Date = new Date
       onboarded: profile.onboarded === true,
       createdAt: isIso(profile.createdAt) ? profile.createdAt : base.profile.createdAt,
     },
-    settings: { readableFont: settings.readableFont === true },
+    settings: {
+      readableFont: settings.readableFont === true,
+      help: HELP_LEVELS.includes(settings.help as HelpLevel) ? (settings.help as HelpLevel) : 'auto',
+    },
     xp: nonNegInt(raw.xp),
     streak: {
       current,
@@ -205,6 +216,7 @@ export function sanitizeState(raw: Record<string, unknown>, now: Date = new Date
     promptHistory: history,
     seenScenarios: cleanSeenScenarios(raw.seenScenarios),
     mistakes: cleanMistakes(raw.mistakes),
+    fairnessCases: nonNegInt(raw.fairnessCases),
   };
 }
 

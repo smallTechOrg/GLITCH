@@ -1,4 +1,4 @@
-// m2g1 · Tune the Sorter — the two non-button slider inputs, through the shipped ui/Slider:
+// m2g1 · Inbox Filter — the two non-button slider inputs, through the shipped ui/Slider:
 // web keyboard (←/→ ±1, PageUp/PageDown ±10, Home/End; RN Web only, so Platform.OS is
 // switched to 'web' for this file) and a pointer drag/tap on the track (PanResponder).
 // The real-browser keyboard run is e2e/module2.spec.ts.
@@ -45,19 +45,19 @@ describe('<TuneTheSorterGame> slider keyboard (web)', () => {
   it('arrow keys step the threshold by 1 and the rows re-score live', async () => {
     await setup();
     await key('th', 'ArrowRight', 5);
-    expect(value('th')).toBe(55);
-    expect(screen.getByTestId('slider-th-value')).toHaveTextContent('55');
+    expect(value('th')).toBe(5);
+    expect(screen.getByTestId('slider-th-value')).toHaveTextContent('5');
     await key('th', 'ArrowLeft', 2);
     await key('th', 'ArrowDown');
-    expect(value('th')).toBe(52);
+    expect(value('th')).toBe(2);
     await key('th', 'ArrowUp');
-    expect(value('th')).toBe(53);
+    expect(value('th')).toBe(3);
   });
 
   it('PageUp / PageDown step by 10; Home / End jump to the range ends', async () => {
     await setup();
     await key('th', 'PageUp');
-    expect(value('th')).toBe(60);
+    expect(value('th')).toBe(10);
     await key('th', 'End');
     expect(value('th')).toBe(100);
     expect(screen.getByTestId('metric-a').props.accessibilityLabel).toBe('EMERGENCIES MISSED 4, goal at most 0, not met');
@@ -76,7 +76,7 @@ describe('<TuneTheSorterGame> slider keyboard (web)', () => {
     expect((await key('th', 'ArrowRight')).prevented).toBe(1);
     expect((await key('th', 'Tab')).prevented).toBe(0);
     expect((await key('th', 'a')).prevented).toBe(0);
-    expect(value('th')).toBe(51);
+    expect(value('th')).toBe(1);
   });
 
   it('keyboard-only: tune to the R1 solution with keys and LOCK IT IN clears the round', async () => {
@@ -84,7 +84,10 @@ describe('<TuneTheSorterGame> slider keyboard (web)', () => {
     await key('th', 'End'); // A=4: would fail
     await key('th', 'PageDown', 4); // 60
     await key('th', 'ArrowLeft', 5); // 55 = X-RAY solution
+    await key('wc', 'End');
+    await key('wc', 'PageDown'); // 30
     expect(value('th')).toBe(ROUND_1.sol[0]);
+    expect(value('wc')).toBe(ROUND_1.sol[1]);
     await fireEvent.press(screen.getByTestId('m2g1-lock'));
     expect(api.calls.miss).toHaveLength(0);
     expect(api.lastSay()?.text).toBe('Round clear!');

@@ -12,12 +12,12 @@ describe('m4g3 data (v3 verbatim)', () => {
     expect(game.id).toBe('m4g3');
     expect(game.module).toBe(4);
     expect(game.title).toBe('Design the Companion');
-    expect(game.goal).toBe('SIMULATE · HIT ALL 5 TARGETS');
-    expect(game.intro).toBe('Design a chatbot companion for teens. Balance engagement, data and safety.');
+    expect(game.goal).toBe('MISSION: Hit all 5 targets, then ship it');
+    expect(game.intro).toBe('Everything starts at 0. Design a chatbot companion for teens.');
   });
 
-  it('starts with both sliders at 80 and every safeguard off', () => {
-    expect(START_DESIGN).toEqual({ e: 80, d: 80, R: 0, H: 0, A: 0 });
+  it('starts at zero: both sliders at 0 and every safeguard off', () => {
+    expect(START_DESIGN).toEqual({ e: 0, d: 0, R: 0, H: 0, A: 0 });
   });
 
   it('has the three v3 safeguards', () => {
@@ -54,11 +54,11 @@ describe('m4g3 formulas', () => {
     }
   });
 
-  it('start design reads 76 / 23 / 18 / 74 / 88 and fails with "Not yet: wellbeing is too low."', () => {
+  it('the zero start reads 20 / 95 / 90 / 10 / 40 and does not ship: "Not yet: People barely use it."', () => {
     const c = calc(START_DESIGN);
-    expect([c.time, c.well, c.fr, c.pv, c.help].map(Math.round)).toEqual([76, 23, 18, 74, 88]);
-    expect(failures(START_DESIGN)).toEqual(['wellbeing is too low', 'it replaces real friends', 'privacy risk is too high']);
-    expect(ship(START_DESIGN)).toEqual({ ok: false, message: 'Not yet: wellbeing is too low.' });
+    expect([c.time, c.well, c.fr, c.pv, c.help].map(Math.round)).toEqual([20, 95, 90, 10, 40]);
+    expect(failures(START_DESIGN)).toEqual(['People barely use it', "it isn't helpful enough"]);
+    expect(ship(START_DESIGN)).toEqual({ ok: false, message: 'Not yet: People barely use it.' });
   });
 
   it('the X-RAY design (30, 30, all on) reads 41 / 86 / 78 / 19 / 58 and passes', () => {
@@ -112,8 +112,12 @@ describe('m4g3 formulas', () => {
 });
 
 describe('m4g3 FOCUS + editing helpers', () => {
-  it('FOCUS names the first failure, or says all targets are met', () => {
-    expect(focusHint(START_DESIGN)).toBe('FOCUS: wellbeing is too low. Try less engagement push, or turn on a safeguard.');
+  it('FOCUS names the first failure with a fix that points the right way, or says all targets are met', () => {
+    expect(focusHint(START_DESIGN)).toBe('FOCUS: People barely use it. Try a little more engagement push.');
+    expect(focusHint(D(80, 0))).toBe('FOCUS: wellbeing is too low. Try less engagement push, or turn on a safeguard.');
+    expect(focusHint(D(40, 30, 0, 0, 1))).toBe('FOCUS: it replaces real friends. Try less engagement push, or refer teens to a trusted adult.');
+    expect(focusHint(D(30, 80, 1, 0, 1))).toBe('FOCUS: privacy risk is too high. Try collecting less data, or add human review.');
+    expect(focusHint(D(30, 0, 1, 1, 1))).toBe("FOCUS: it isn't helpful enough. Try collecting a little more data.");
     expect(focusHint(XRAY_DESIGN)).toBe(FOCUS_ALL_MET);
     expect(FOCUS_ALL_MET).toBe('FOCUS: all targets met. Ship it!');
   });

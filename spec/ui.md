@@ -1,9 +1,32 @@
 # GLITCH — UI
 
 Visual identity = v3 (dark indigo grid background, chunky 3 px pixel borders with hard
-drop shadows, Press Start 2P, v3 colour tokens `--bg #0d0a24 … --pk #ff6bb5` from line 4,
-sprite palette `PAL` from line 160). Upgrade = crisper, richer, smoother, mobile-first and
-accessible; never a different look.
+drop shadows, v3 colour tokens `--bg #0d0a24 … --pk #ff6bb5` from line 4, sprite palette `PAL`
+from line 160). Upgrade = crisper, richer, smoother, mobile-first and accessible.
+
+## Playtest revision (2026-11-02) — overrides the rest of this file where they differ
+- **One screen, no scrolling** for games, the mission brief, hero select, storytime, settings and the
+  win/fail screens: `e2e/fit.spec.ts` fails on anything that scrolls or falls off screen at 1366×768,
+  1280×720 and 390×844. On smaller phones the game body scrolls as a last resort. Home is the
+  original long course page and scrolls by design.
+- **Fonts.** The original v3 fonts: Press Start 2P everywhere; READABLE FONT (default OFF) switches
+  long text to a system sans-serif at 16 px.
+- **GLITCH logo** (`ui/GlitchLogo`): tears every ~3 s (colour split + slipped slice), static under
+  reduced motion.
+- **Game frame.** HUD row (title, hearts, power, HOW TO PLAY), an always-visible `game-goal` mission
+  strip, characters + bubble beside the activity (above it under 860 px). `heartbreak` plays when a
+  heart is lost (none on a shielded miss or under reduced motion).
+- **Mission brief** `brief`: mission, numbered how-to steps, how to clear it, this run's power and any
+  adaptation. Opens before an uncleared game; `brief-open` reopens it; `brief-start` closes it.
+- **Home** is the original layout (greeting, stats, energy, review, quest box, course, badges), with
+  the module cards in play order and numbered by their place in the course.
+- **Hero select:** `hero-intro` / `hero-intro-text`: the selected hero introduces themself.
+- **Recap** shows one mistake at a time: `recap-prev`, `recap-next`, `recap-page`.
+- **Deck mode** (`SortBoard deck`): `deck-tab-<itemId>`; layout `side` puts zones left of the items.
+- **Other test ids:** m1g1 `m1g1-verify`, `m1g1-next`, `m1g1-called`, `m1g1-call-<id>`,
+  `m1g1-verify-<id>`, `m1g1-model-<id>`; m3g2 `m3g2-case-<id>`, `m3g2-group-a|b`, `m3g2-decide`,
+  `m3g2-question`, `m3g2-option-a|b|c`; m4g1 `m4g1-excerpt-<id>`, `m4g1-citation-<id>`;
+  `settings-help-auto|more|less`; `fw-edit` (phones).
 
 ## Screens (Phase 1 — all REAL unless marked STUB)
 

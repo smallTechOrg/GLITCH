@@ -58,9 +58,9 @@ function build(gameId: GameId): ContentFile {
           })),
         },
         copy: {
-          zones: { ...zoneLabels(m1g1.TRAIN_ZONES), ...zoneLabels(m1g1.TEST_ZONES) },
-          trainWrong: m1g1.STEP1_WRONG,
-          testWrong: m1g1.STEP2_WRONG,
+          zones: zoneLabels(m1g1.ZONES),
+          trainWrong: m1g1.ROUND1_WRONG,
+          testWrong: m1g1.ROUND2_WRONG,
         },
         conceptRules: [['e', 'Training data'], ['t', 'Generalization']],
       };

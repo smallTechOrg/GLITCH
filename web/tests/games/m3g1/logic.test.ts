@@ -3,17 +3,14 @@
 import { GAME_META } from '@/content/modules';
 import { createPick, focus, isComplete, tap, targetCount, xray } from '@/dnd/pickEngine';
 import {
-  COUNTER_LABEL, FOCUS_LINE, FOUND_PREFIX, GOAL, INTRO, MISS_MESSAGE, PAPER_TAG, PROXY_COUNT,
-  RESUME, SAFE_TAG, TARGET_TAG, TITLE, WIN_DELAY_MS, WIN_SUMMARY,
+  COUNTER_LABEL, FOCUS_LINE, FOUND_PREFIX, MISS_MESSAGE, PAPER_TAG, PROXY_COUNT,
+  RESUME, SAFE_TAG, TARGET_TAG, WIN_DELAY_MS, WIN_SUMMARY,
 } from '@/games/m3g1/data';
 import { foundLine, proxyIndices, realIndices, redactedIndices, resumeLines } from '@/games/m3g1/logic';
 
 describe('m3g1 data (v3 verbatim)', () => {
-  it('keeps the v3 title, goal and intro (and matches the course metadata)', () => {
-    expect(TITLE).toBe('Proxy Hunt');
-    expect(GOAL).toBe('SPOT THE ERROR · FIND 5 PROXIES');
-    expect(INTRO).toBe('Name and gender are hidden. Tap the 5 lines that still give gender away.');
-    expect(GAME_META.m3g1).toEqual({ title: TITLE, goal: GOAL, intro: INTRO });
+  it('has the course metadata', () => {
+    expect(GAME_META.m3g1).toMatchObject({ title: 'Proxy Hunt', goal: 'MISSION: Find the 5 lines that still give gender away', intro: 'Name and gender are hidden. Tap the 5 lines that still give gender away.' });
   });
 
   it('has the 11 v3 resume lines in order', () => {

@@ -89,12 +89,20 @@ export const CLIENT_TIMEOUT_MS = 8000;
  * `data` is the game's scenario in its wire shape; features/variations/schemas.ts validates
  * and maps it onto the game's v3 data shape. A cache hit (`cached: true`) costs no energy.
  */
-export interface ScenarioNextData {
+export interface ScenarioVariationData {
   variationId: string;
   gameId: GameId;
   data: unknown;
   cached: boolean;
 }
+
+/** A first play (`?first=1`) that drew the classic v3 case: play v3, no note. */
+export interface ScenarioClassicData {
+  gameId: GameId;
+  classic: true;
+}
+
+export type ScenarioNextData = ScenarioVariationData | ScenarioClassicData;
 
 /**
  * Bounded wait for a fresh case file before the classic (v3) one is played: the brief's ~8 s

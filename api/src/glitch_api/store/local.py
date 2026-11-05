@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import fcntl
 import os
 import threading
 import time
@@ -36,6 +35,26 @@ from glitch_api.store.base import (
 )
 
 LOCK_FILE = ".lock"
+
+if os.name == "nt":  # Windows has no fcntl; lock the first byte of the lock file instead
+    import msvcrt
+
+    def _flock(fh) -> None:
+        fh.seek(0)
+        msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)  # blocks (retries ~10 s), then raises OSError
+
+    def _funlock(fh) -> None:
+        fh.seek(0)
+        msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+
+else:
+    import fcntl
+
+    def _flock(fh) -> None:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+
+    def _funlock(fh) -> None:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
 
 _root_locks: dict[str, threading.Lock] = {}
 _root_locks_guard = threading.Lock()
@@ -69,11 +88,11 @@ class LocalBlobStore:
             raise StoreError(f"cannot create local blob root ({type(exc).__name__})") from exc
         with self._lock:
             with open(self.root / LOCK_FILE, "a+") as fh:
-                fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+                _flock(fh)
                 try:
                     yield
                 finally:
-                    fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+                    _funlock(fh)
 
     @staticmethod
     def _generation(path: Path) -> int | None:

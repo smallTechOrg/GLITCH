@@ -158,6 +158,16 @@ describe('m4g1 Source Detective', () => {
     const s = parseDetective(WIRE.m4g1);
     expect(s?.citations.map((c) => c[0])).toEqual(['c1', 'c2', 'c3', 'c4', 'c5']);
     expect(s?.citations.map((c) => c[2])).toEqual([0, 1, 1, 0, 1]);
+    expect(s?.citations[0]?.[3]).toBe('Robots dream every night, we are certain. Our method is secret.');
+  });
+
+  it('refuses a citation with a missing or empty excerpt (a case file cached before excerpts)', () => {
+    const missing = clone(WIRE.m4g1) as { citations: Rec[] };
+    delete (missing.citations[2] as Rec).excerpt;
+    expect(parseDetective(missing)).toBeNull();
+    const empty = clone(WIRE.m4g1) as { citations: Rec[] };
+    (empty.citations[0] as Rec).excerpt = '   ';
+    expect(parseDetective(empty)).toBeNull();
   });
 
   it('rejects non-positional citation ids', () => {

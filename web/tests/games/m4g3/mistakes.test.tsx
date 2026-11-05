@@ -10,11 +10,11 @@ const ship = (answer: string, answerLabel: string) => ({
 });
 
 describe('m4g3 mistakes', () => {
-  it('SHIP IT at the start → first failing metric `well`; the metric the message names', async () => {
+  it('SHIP IT at the start → first failing metric `time`; the metric the message names', async () => {
     const api = await mount(game);
     await press('m4g3-ship');
-    expect(api.calls.miss).toEqual(['Not yet: wellbeing is too low.']);
-    expect(api.recorded.map((r) => r.mistake)).toEqual([ship('well', 'WELLBEING OFF TARGET')]);
+    expect(api.calls.miss).toEqual(['Not yet: People barely use it.']);
+    expect(api.recorded.map((r) => r.mistake)).toEqual([ship('time', 'TIME ON APP OFF TARGET')]);
   });
 
   it('X-RAY and FOCUS never record a mistake', async () => {

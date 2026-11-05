@@ -21,6 +21,7 @@ export const ANIM = {
   flash: { durationMs: 500, steps: 2 },
   toastPop: { durationMs: 250, steps: 3 },
   sayPop: { durationMs: 250, steps: 3 },
+  heartbreak: { durationMs: 800, steps: 12 },
 } as const satisfies Record<string, StepTiming>;
 
 export const TYPE_MS_PER_CHAR = 22; // storytime typing

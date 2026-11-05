@@ -110,15 +110,9 @@ function StoryPlayer({ mod }: { mod: ModuleId }): React.JSX.Element {
   }, []);
 
   const skipFocus = useFocusRing();
+  // SKIP sits outside the tappable slide: a button inside a button is invalid HTML (React logs it).
   return (
-    <Pressable
-      testID="story-root"
-      onPress={next}
-      accessibilityRole="button"
-      accessibilityLabel={STORYTIME.rootLabel}
-      accessibilityHint={storyHint(k, touch)}
-      style={[styles.cut, { borderColor: m.color }]}
-    >
+    <View style={[styles.cut, { borderColor: m.color }]}>
       <View style={styles.top}>
         <View testID="story-progress" accessible accessibilityLabel={STORYTIME.progress(k + 1, slides.length)} style={styles.pips}>
           {slides.map((_, j) => (
@@ -127,10 +121,7 @@ function StoryPlayer({ mod }: { mod: ModuleId }): React.JSX.Element {
         </View>
         <Pressable
           testID="story-skip"
-          onPress={(e) => {
-            e.stopPropagation?.();
-            fin();
-          }}
+          onPress={fin}
           onFocus={skipFocus.onFocus}
           onBlur={skipFocus.onBlur}
           accessibilityRole="button"
@@ -140,11 +131,20 @@ function StoryPlayer({ mod }: { mod: ModuleId }): React.JSX.Element {
           <PixelText size={fontSize.tiny} color={colors.white}>{STORY_COPY.skip}</PixelText>
         </Pressable>
       </View>
-      <View style={styles.stage}>
-        <SlideView slide={slide} m={m} hero={hero} text={tw.shown} done={tw.done} />
-      </View>
-      <PixelText size={fontSize.tiny} color={colors.cutHint} style={styles.hint}>{storyHint(k, touch)}</PixelText>
-    </Pressable>
+      <Pressable
+        testID="story-root"
+        onPress={next}
+        accessibilityRole="button"
+        accessibilityLabel={STORYTIME.rootLabel}
+        accessibilityHint={storyHint(k, touch)}
+        style={styles.tap}
+      >
+        <View style={styles.stage}>
+          <SlideView slide={slide} m={m} hero={hero} text={tw.shown} done={tw.done} />
+        </View>
+        <PixelText size={fontSize.tiny} color={colors.cutHint} style={styles.hint}>{storyHint(k, touch)}</PixelText>
+      </Pressable>
+    </View>
   );
 }
 
@@ -178,14 +178,14 @@ function SlideView({ slide, m, hero, text, done }: SlideViewProps): React.JSX.El
             <PixelText testID="story-text" long size={fontSize.body} color={colors.white} style={styles.center}>{slide.x}</PixelText>
           </View>
           <View style={styles.chars}>
-            <Sprite id={hero} scale={7} animate="bob" />
+            <Sprite id={hero} scale={5} animate="bob" />
           </View>
         </View>
       );
     case 'portrait':
       return (
         <View style={styles.portrait}>
-          <Sprite id={slide.w} scale={10} outlined animate={done ? 'none' : 'talk'} />
+          <Sprite id={slide.w} scale={6} outlined animate={done ? 'none' : 'talk'} />
           <View style={styles.ptext}>
             <PixelText size={fontSize.h3} bold color={characterColor(slide.w)}>{characterName(slide.w)}</PixelText>
             <TypedText text={text} />
@@ -213,7 +213,7 @@ function SlideView({ slide, m, hero, text, done }: SlideViewProps): React.JSX.El
             <View style={styles.kb}>
               <PixelText size={fontSize.tiny} color={colors.ac}>{STORY_COPY.keyIdea}</PixelText>
               <PixelText size={fontSize.h2} bold color={colors.white} accessibilityRole="header" style={styles.center}>{slide.k}</PixelText>
-              <Icon name={m.icon} scale={8} outlined />
+              <Icon name={m.icon} scale={5} outlined />
             </View>
           </View>
           <TypedText text={text} />
@@ -222,7 +222,7 @@ function SlideView({ slide, m, hero, text, done }: SlideViewProps): React.JSX.El
     case 'scene':
     default: {
       const who: CharacterId = slide.w;
-      const scale = slide.big ? 8 : 6;
+      const scale = slide.big ? 6 : 5;
       return (
         <View style={styles.sceneSlide}>
           <View style={[styles.sceneBan, slide.big ? styles.sceneBig : null]}>
@@ -256,31 +256,32 @@ function PopIcon({ name, caption, delayMs }: { name: IconId; caption: string; de
 }
 
 const styles = StyleSheet.create({
-  cut: { flex: 1, minHeight: '100%', backgroundColor: colors.cutBg, padding: layout.pagePadding, gap: 12, borderTopWidth: border.width },
+  cut: { flex: 1, minHeight: 0, backgroundColor: colors.cutBg, padding: 8, gap: 6, borderTopWidth: border.width },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  tap: { flex: 1, minHeight: 0, gap: 6 },
   pips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   pip: { flexGrow: 1, flexBasis: 10, maxWidth: 40, height: 6 },
   pipDone: { backgroundColor: colors.white },
   pipAhead: { backgroundColor: colors.cutPipAhead },
   skip: { minHeight: layout.minTouch, minWidth: layout.minTouch, justifyContent: 'center', paddingHorizontal: 10, borderWidth: border.thin, borderColor: colors.white },
-  stage: { flex: 1, width: '100%', maxWidth: layout.maxWidth, alignSelf: 'center', justifyContent: 'center' },
+  stage: { flex: 1, minHeight: 0, width: '100%', maxWidth: layout.maxWidth, alignSelf: 'center', justifyContent: 'center' },
   hint: { textAlign: 'center' },
   center: { textAlign: 'center' },
-  typed: { minHeight: 60 },
-  titleSlide: { height: 420, borderWidth: border.width, borderColor: colors.ln, overflow: 'hidden' },
+  typed: { minHeight: 48 },
+  titleSlide: { flex: 1, maxHeight: 420, borderWidth: border.width, borderColor: colors.ln, overflow: 'hidden' },
   titleText: { position: 'absolute', top: 30, left: 12, right: 12, alignItems: 'center', gap: 10 },
   chars: { position: 'absolute', bottom: 8, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 30 },
-  portrait: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 24 },
-  ptext: { flex: 1, minWidth: 240, gap: 10 },
-  iconsSlide: { gap: 20 },
-  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14 },
-  ii: { alignItems: 'center', gap: 6, width: 90 },
-  keySlide: { gap: 16 },
-  keyBan: { height: 280, borderWidth: border.width, borderColor: colors.ln, overflow: 'hidden' },
-  kb: { position: 'absolute', top: 0, bottom: 0, left: 12, right: 12, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  sceneSlide: { gap: 0 },
-  sceneBan: { height: 300, borderWidth: border.width, borderColor: colors.ln, overflow: 'hidden' },
-  sceneBig: { height: 360 },
-  dlg: { backgroundColor: colors.deep, borderWidth: border.width, borderColor: colors.white, borderTopWidth: 0, padding: 14, gap: 8 },
+  portrait: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 16 },
+  ptext: { flex: 1, minWidth: 200, gap: 8 },
+  iconsSlide: { gap: 16 },
+  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 },
+  ii: { alignItems: 'center', gap: 4, width: 90 },
+  keySlide: { flex: 1, maxHeight: 420, gap: 10 },
+  keyBan: { flex: 1, minHeight: 0, borderWidth: border.width, borderColor: colors.ln, overflow: 'hidden' },
+  kb: { position: 'absolute', top: 0, bottom: 0, left: 12, right: 12, alignItems: 'center', justifyContent: 'center', gap: 10 },
+  sceneSlide: { flex: 1, maxHeight: 460, gap: 0 },
+  sceneBan: { flex: 1, minHeight: 0, borderWidth: border.width, borderColor: colors.ln, overflow: 'hidden' },
+  sceneBig: { maxHeight: 400 },
+  dlg: { backgroundColor: colors.deep, borderWidth: border.width, borderColor: colors.white, borderTopWidth: 0, padding: 10, gap: 4 },
   nx: { alignSelf: 'flex-end' },
 });

@@ -1,8 +1,8 @@
 // m4g3 · Design the Companion — render + wiring only (v3 lines 581–592). Maths in logic.ts.
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { GameApi } from '../../contracts/game';
-import { colors, fontSize } from '../../theme/tokens';
+import { colors, fontSize, layout } from '../../theme/tokens';
 import { MetricBar } from '../../ui/MetricBar';
 import { PixelButton } from '../../ui/PixelButton';
 import { PixelText } from '../../ui/PixelText';
@@ -21,6 +21,9 @@ export function DesignCompanionGame({ api }: { api: GameApi }): React.JSX.Elemen
   apiRef.current = api;
   const shipped = useRef(false);
   const winTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { width } = useWindowDimensions();
+  const wide = width >= layout.sideBySide;
+  const narrow = width <= layout.mobileBreakpoint;
 
   const commit = (next: Design): void => {
     ref.current = next;
@@ -74,43 +77,45 @@ export function DesignCompanionGame({ api }: { api: GameApi }): React.JSX.Elemen
 
   return (
     <View style={styles.wrap} testID="m4g3-panel">
-      <PixelText size={fontSize.h3} color={colors.ac} bold accessibilityRole="header">
-        {HEADING}
-      </PixelText>
-      <View style={styles.sliders}>
-        {SLIDERS.map((s) => (
-          <Slider
-            key={s.id}
-            id={s.id}
-            label={s.label}
-            value={Math.round(design[s.key])}
-            min={SLIDER_MIN}
-            max={SLIDER_MAX}
-            disabled={disabled}
-            onChange={(v) => onSlide(s.key, v)}
-          />
-        ))}
+      {narrow ? null : (
+        <PixelText size={fontSize.h3} color={colors.ac} bold accessibilityRole="header">
+          {HEADING}
+        </PixelText>
+      )}
+      <View style={[styles.columns, wide ? styles.columnsWide : null]}>
+        <View style={[styles.controls, wide ? styles.column : null]}>
+          {SLIDERS.map((s) => (
+            <Slider
+              key={s.id}
+              id={s.id}
+              label={s.label}
+              value={Math.round(design[s.key])}
+              min={SLIDER_MIN}
+              max={SLIDER_MAX}
+              disabled={disabled}
+              onChange={(v) => onSlide(s.key, v)}
+            />
+          ))}
+          {TOGGLES.map((t) => (
+            <ToggleTile key={t.id} id={t.id} label={t.label} icon={t.icon} on={design[t.id] === 1} disabled={disabled} onToggle={() => onToggle(t.id)} />
+          ))}
+        </View>
+        <View style={[styles.metrics, wide ? styles.column : null]}>
+          {METRICS.map((m) => (
+            <MetricBar key={m.id} id={m.testId} label={m.label} value={c[m.id]} target={m.target} direction={m.dir} icon={m.icon} />
+          ))}
+          <PixelButton label={SHIP_LABEL} variant="primary" testID="m4g3-ship" disabled={disabled} onPress={onShip} fullWidth />
+        </View>
       </View>
-      <View style={styles.toggles}>
-        {TOGGLES.map((t) => (
-          <ToggleTile key={t.id} id={t.id} label={t.label} icon={t.icon} on={design[t.id] === 1} disabled={disabled} onToggle={() => onToggle(t.id)} style={styles.toggle} />
-        ))}
-      </View>
-      <View style={styles.metrics}>
-        {METRICS.map((m) => (
-          <MetricBar key={m.id} id={m.testId} label={m.label} value={c[m.id]} target={m.target} direction={m.dir} icon={m.icon} />
-        ))}
-      </View>
-      <PixelButton label={SHIP_LABEL} variant="primary" testID="m4g3-ship" disabled={disabled} onPress={onShip} style={styles.ship} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 12 },
-  sliders: { gap: 4 },
-  toggles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  toggle: { flexGrow: 1, flexBasis: 220 },
-  metrics: { gap: 8 },
-  ship: { alignSelf: 'flex-start' },
+  wrap: { gap: 4 },
+  columns: { gap: 3 },
+  columnsWide: { flexDirection: 'row' },
+  column: { flex: 1, minWidth: 0 },
+  controls: { gap: 2 },
+  metrics: { gap: 2 },
 });

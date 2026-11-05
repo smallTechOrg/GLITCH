@@ -69,7 +69,6 @@ describe('initial state', () => {
   it('shows the header, goal, energy, empty editor and the intro bubble', async () => {
     const { api, server } = await setup();
     expect(screen.getByText(COPY.header)).toBeTruthy();
-    expect(screen.getByText(COPY.sub)).toBeTruthy();
     expect(screen.getByTestId('fw-goal')).toHaveTextContent(`YOUR GOAL: ${GOAL_BANK[0]!.goal}`);
     expect(screen.getByTestId('fw-energy').props.accessibilityLabel).toBe('AI energy 10 of 10');
     expect(screen.getByTestId('fw-count')).toHaveTextContent(`0/${FREEWRITE_PROMPT_MAX}`);

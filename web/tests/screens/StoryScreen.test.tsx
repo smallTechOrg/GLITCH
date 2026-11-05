@@ -41,9 +41,9 @@ describe('StoryScreen (reduced motion: text appears at once)', () => {
 
   it('starts on the title slide with progress, SKIP and the hint', async () => {
     await renderWithProviders(<StoryScreen mod={1} />, { state: READY, now: NOW });
-    expect(progress()).toBe('Slide 1 of 11');
+    expect(progress()).toBe(`Slide 1 of ${STORY[1].length}`);
     expect(screen.getByText('TRAINING LAB')).toBeTruthy();
-    expect(screen.getByTestId('story-text')).toHaveTextContent('Week one. A question on the board.');
+    expect(screen.getByTestId('story-text')).toHaveTextContent('Nobody wrote the rules.');
     expect(screen.getByTestId('story-skip')).toHaveTextContent('SKIP ▶▶');
     expect(screen.getByText('TAP TO CONTINUE')).toBeTruthy(); // jest runs as a touch (native) platform
   });
@@ -51,25 +51,27 @@ describe('StoryScreen (reduced motion: text appears at once)', () => {
   it('tap advances one slide; the speaker name and full text are shown at once', async () => {
     await renderWithProviders(<StoryScreen mod={1} />, { state: READY, now: NOW });
     await tapRoot();
-    expect(progress()).toBe('Slide 2 of 11');
-    expect(screen.getByText("MS. D'SOUZA")).toBeTruthy();
+    expect(progress()).toBe(`Slide 2 of ${STORY[1].length}`);
+    expect(screen.getByText('ZARA')).toBeTruthy();
     expect(screen.getByTestId('story-text')).toHaveTextContent(STORY[1][1]!.x);
   });
 
-  it('renders icons and key slides with captions and KEY IDEA', async () => {
-    await renderWithProviders(<StoryScreen mod={1} />, { state: READY, now: NOW });
-    for (let i = 0; i < 4; i++) await tapRoot(); // → slide 5 (icons)
-    expect(progress()).toBe('Slide 5 of 11');
-    expect(screen.getByText('RULES')).toBeTruthy();
-    await tapRoot(); // → slide 6 (key)
+  it('renders icons slides with captions, and key slides with KEY IDEA', async () => {
+    const steps = { m2h: true } as const;
+    await renderWithProviders(<StoryScreen mod={2} />, { state: { ...READY, steps, heroByModule: { 2: 'chrono' } }, now: NOW });
+    const icons = STORY[2].findIndex((s) => s.t === 'icons');
+    for (let i = 0; i < icons; i++) await tapRoot();
+    expect(progress()).toBe(`Slide ${icons + 1} of ${STORY[2].length}`);
+    expect(screen.getByText('CONTEXT')).toBeTruthy();
+    await tapRoot();
     expect(screen.getByText('KEY IDEA')).toBeTruthy();
-    expect(screen.getByText('Machine learning')).toBeTruthy();
+    expect(screen.getByText('Thresholds')).toBeTruthy();
   });
 
   it('tapping past the last slide finishes: m1s done, +10 XP "STORYTIME DONE", next step', async () => {
     await renderWithProviders(<StoryScreen mod={1} />, { state: READY, now: NOW });
     const xp0 = useGlitchStore.getState().xp;
-    for (let i = 0; i < 11; i++) await tapRoot();
+    for (let i = 0; i < STORY[1].length; i++) await tapRoot();
     const s = useGlitchStore.getState();
     expect(s.steps.m1s).toBe(true);
     expect(s.xp).toBe(xp0 + 10);
@@ -113,8 +115,8 @@ describe('StoryScreen typing (motion on)', () => {
   });
 
   it('types at 22 ms per character; the first tap completes the text, the second advances', async () => {
-    await renderWithProviders(<StoryScreen mod={2} />, { state: { ...READY, steps: { m1h: true, m1s: true, m1g1: true, m1g2: true, m2h: true } }, now: NOW });
-    await tapRoot(); // title → slide 2 (scene, ZARA)
+    await renderWithProviders(<StoryScreen mod={2} />, { state: { ...READY, steps: { m2h: true } }, now: NOW });
+    await tapRoot(); // title → slide 2 (scene, NOVA)
     const full = STORY[2][1]!.x;
     await act(async () => {
       jest.advanceTimersByTime(22 * 5);
@@ -125,9 +127,9 @@ describe('StoryScreen typing (motion on)', () => {
     expect(full.startsWith(partial)).toBe(true);
     await tapRoot();
     expect(screen.getByTestId('story-text')).toHaveTextContent(full);
-    expect(progress()).toBe('Slide 2 of 10');
+    expect(progress()).toBe(`Slide 2 of ${STORY[2].length}`);
     await tapRoot();
-    expect(progress()).toBe('Slide 3 of 10');
+    expect(progress()).toBe(`Slide 3 of ${STORY[2].length}`);
   });
 
   it('finishes typing on its own after length × 22 ms', async () => {

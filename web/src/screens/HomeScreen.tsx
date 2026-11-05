@@ -8,7 +8,7 @@ import { stepHref } from '../contracts/routes';
 import { displayName } from '../contracts/state';
 import { Sprite } from '../art/Sprite';
 import { BADGES } from '../content/badges';
-import { MODULES } from '../content/modules';
+import { COURSE_MODULES, MODULES } from '../content/modules';
 import { badgesEarned } from '../engine/badges';
 import { modulesDone, questBox } from '../engine/progression';
 import { levelOf, xpIntoLevel } from '../engine/xp';
@@ -74,7 +74,7 @@ export function HomeScreen(): React.JSX.Element {
       <PixelText size={fontSize.h3} color={colors.ac} bold accessibilityRole="header" style={styles.sec}>{HOME.course}</PixelText>
       <PixelText long size={fontSize.small} color={colors.mu}>{HOME.courseSub}</PixelText>
       <View style={styles.path}>
-        {MODULES.map((m) => (
+        {COURSE_MODULES.map((m) => (
           <ModuleCard key={m.id} mod={m} state={s} />
         ))}
       </View>

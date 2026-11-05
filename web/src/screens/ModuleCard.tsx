@@ -1,9 +1,10 @@
 // One module on the Home course path (v3 `.mod`, line 356): number/check/lock, scene banner
 // (greyscale when locked), chosen hero's head, status, title, subtitle, tags, progress bar, steps.
+// The number shown is the module's place in the course (moduleNumber), not its id.
 import React from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ModuleDef } from '../content/modules';
-import { stepsOf } from '../content/modules';
+import { moduleNumber, previousModule, stepsOf } from '../content/modules';
 import type { PersistedState } from '../contracts/state';
 import { stepHref } from '../contracts/routes';
 import { Icon } from '../art/Icon';
@@ -28,6 +29,8 @@ export function ModuleCard({ mod, state }: ModuleCardProps): React.JSX.Element {
   const steps = stepsOf(mod.id);
   const dc = stepsDoneIn(state, mod.id);
   const hero = state.heroByModule[mod.id];
+  const n = moduleNumber(mod.id);
+  const prev = previousModule(mod.id);
   const status = open ? `${dc}/${steps.length} STEPS` : HOME.locked;
   // Phones: the number badge sits above the card so step rows keep enough width (no sideways scroll at 320 px).
   const stacked = useWindowDimensions().width < STACK_BELOW;
@@ -36,9 +39,9 @@ export function ModuleCard({ mod, state }: ModuleCardProps): React.JSX.Element {
       <View
         style={[styles.num, { borderColor: mod.color }, done ? { backgroundColor: mod.color } : null]}
         accessible
-        accessibilityLabel={done ? `Module ${mod.id} done` : open ? `Module ${mod.id}` : `Module ${mod.id} locked`}
+        accessibilityLabel={done ? `Module ${n} done` : open ? `Module ${n}` : `Module ${n} locked`}
       >
-        {done ? <Icon name="check" scale={3} /> : open ? <PixelText size={fontSize.h3} color={mod.color}>{String(mod.id)}</PixelText> : <Icon name="lock" scale={3} />}
+        {done ? <Icon name="check" scale={3} /> : open ? <PixelText size={fontSize.h3} color={mod.color}>{String(n)}</PixelText> : <Icon name="lock" scale={3} />}
       </View>
       <View style={[styles.body, open ? { borderColor: mod.color } : null]}>
         <View style={styles.banner}>
@@ -50,7 +53,7 @@ export function ModuleCard({ mod, state }: ModuleCardProps): React.JSX.Element {
         </View>
         <View style={[styles.inner, stacked ? styles.innerStacked : null]}>
           <View style={styles.statusRow}>
-            <PixelText size={fontSize.tiny} color={colors.mu}>{`MODULE ${mod.id} · `}</PixelText>
+            <PixelText size={fontSize.tiny} color={colors.mu}>{`MODULE ${n} · `}</PixelText>
             <PixelText testID={`module-status-${mod.id}`} size={fontSize.tiny} color={colors.mu}>{status}</PixelText>
           </View>
           <PixelText size={fontSize.h3} bold accessibilityRole="header" style={styles.title}>{mod.title}</PixelText>
@@ -64,7 +67,7 @@ export function ModuleCard({ mod, state }: ModuleCardProps): React.JSX.Element {
           </View>
           {open ? (
             <>
-              <Bar value={dc / steps.length} accessibilityLabel={`Module ${mod.id} progress`} />
+              <Bar value={dc / steps.length} accessibilityLabel={`Module ${n} progress`} />
               <View style={styles.steps}>
                 {steps.map((st) => (
                   <StepRow
@@ -79,7 +82,7 @@ export function ModuleCard({ mod, state }: ModuleCardProps): React.JSX.Element {
               </View>
             </>
           ) : (
-            <PixelText size={fontSize.tiny} color={colors.mu}>{HOME.lockedMsg(mod.id - 1)}</PixelText>
+            <PixelText size={fontSize.tiny} color={colors.mu}>{prev ? HOME.lockedMsg(moduleNumber(prev)) : ''}</PixelText>
           )}
         </View>
       </View>

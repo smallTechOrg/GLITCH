@@ -68,7 +68,9 @@ export const fontSize = { tiny: 10, small: 11, body: 12, ui: 12, h3: 14, h2: 18,
 export const lineHeightFor = (size: number): number => Math.ceil(size * 1.9);
 
 export const layout = {
-  maxWidth: 960,
+  maxWidth: 1180,
+  /** From this width the game frame puts the characters beside the activity. */
+  sideBySide: 860,
   mobileBreakpoint: 640,
   minTouch: 44,
   zoneMinHeight: 64,

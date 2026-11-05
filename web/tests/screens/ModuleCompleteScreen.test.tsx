@@ -17,6 +17,7 @@ jest.mock('expo-router', () => ({
 
 const NOW = new Date(2026, 9, 20, 10);
 const BASE: Partial<PersistedState> = { profile: { nickname: null, onboarded: true, createdAt: NOW.toISOString() } };
+const M2_DONE = { m2h: true, m2s: true, m2g1: true, m2g2: true } as const;
 const M1_DONE = { m1h: true, m1s: true, m1g1: true, m1g2: true } as const;
 const ALL_DONE = Object.fromEntries(STEP_IDS.map((s) => [s, true])) as PersistedState['steps'];
 
@@ -28,20 +29,27 @@ afterEach(() => setReducedMotionOverride(null));
 
 describe('ModuleCompleteScreen', () => {
   it('grants +50 XP once with the tag, Boot Up, title, covered tags and what is next', async () => {
-    await renderWithProviders(<ModuleCompleteScreen mod={1} />, { state: { ...BASE, steps: M1_DONE, xp: 100 }, now: NOW });
+    await renderWithProviders(<ModuleCompleteScreen mod={2} />, { state: { ...BASE, steps: M2_DONE, xp: 100 }, now: NOW });
     expect(screen.getByText('MODULE 1 COMPLETE')).toBeTruthy();
     expect(screen.getByTestId('complete-xp-tag')).toHaveTextContent('+50 XP');
-    expect(screen.getByText('Training Lab')).toBeTruthy();
+    expect(screen.getByText('Prompt Forge')).toBeTruthy();
     expect(screen.getByText('You covered:')).toBeTruthy();
-    expect(screen.getByText('Generalization')).toBeTruthy();
+    expect(screen.getByText('Prompt engineering')).toBeTruthy();
     expect(screen.getByText("WHAT'S NEXT")).toBeTruthy();
-    expect(screen.getByText('Module 2 is unlocked: Prompt Forge.')).toBeTruthy();
+    expect(screen.getByText('Module 2 is unlocked: Training Lab.')).toBeTruthy();
     expect(screen.getByTestId('complete-next')).toHaveTextContent('Start Module 2 ▶');
     const s = useGlitchStore.getState();
     expect(s.xp).toBe(150);
-    expect(s.onceBonuses.mod1).toBe(true);
+    expect(s.onceBonuses.mod2).toBe(true);
     expect(s.badges.boot).toBeDefined();
     expect(CONFETTI_COUNT).toBe(28);
+  });
+
+  it('numbers by course position: the Training Lab is Module 2 and Neon City comes next', async () => {
+    await renderWithProviders(<ModuleCompleteScreen mod={1} />, { state: { ...BASE, steps: { ...M2_DONE, ...M1_DONE } }, now: NOW });
+    expect(screen.getByText('MODULE 2 COMPLETE')).toBeTruthy();
+    expect(screen.getByText('Module 3 is unlocked: Neon City.')).toBeTruthy();
+    expect(screen.getByTestId('complete-next')).toHaveTextContent('Start Module 3 ▶');
   });
 
   it('revisiting grants 0 XP and shows no XP tag', async () => {
@@ -51,9 +59,9 @@ describe('ModuleCompleteScreen', () => {
   });
 
   it('Start Module n+1 opens its hero select; Home goes home', async () => {
-    await renderWithProviders(<ModuleCompleteScreen mod={1} />, { state: { ...BASE, steps: M1_DONE }, now: NOW });
+    await renderWithProviders(<ModuleCompleteScreen mod={2} />, { state: { ...BASE, steps: M2_DONE }, now: NOW });
     await fireEvent.press(screen.getByTestId('complete-next'));
-    expect(router.navigate).toHaveBeenLastCalledWith('/module/2/hero');
+    expect(router.navigate).toHaveBeenLastCalledWith('/module/1/hero');
     await fireEvent.press(screen.getByTestId('complete-home'));
     expect(router.navigate).toHaveBeenLastCalledWith('/');
   });

@@ -1,9 +1,6 @@
 // m3g1 · Proxy Hunt — v3 data and copy, verbatim from spec/idea/GLITCH v3.html lines 550–557
 // (GM.m3g1). Tuple shape kept from v3: [text, isProxy (1/0, null = redacted), note].
 
-export const TITLE = 'Proxy Hunt';
-export const GOAL = 'SPOT THE ERROR · FIND 5 PROXIES';
-export const INTRO = 'Name and gender are hidden. Tap the 5 lines that still give gender away.';
 
 export type ResumeLine = readonly [text: string, proxy: 1 | 0 | null, note: string];
 

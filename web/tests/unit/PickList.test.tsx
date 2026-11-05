@@ -1,4 +1,4 @@
-// <PickList>: taps, misses, counter, 700 ms done, X-RAY / FOCUS (Fact or Fib shape).
+// <PickList>: taps, misses, counter, 700 ms done, X-RAY / FOCUS (Fact or Glitch shape).
 import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { PickList } from '@/dnd/PickList';
@@ -43,11 +43,11 @@ describe('<PickList>', () => {
     expect(screen.getByTestId('pick-line-2').props.accessibilityRole).toBeUndefined();
   });
 
-  it('a target tap marks FIB, shows its note, counts it and says the found line', async () => {
+  it('a target tap marks FIB, speaks its note, counts it and says the found line', async () => {
     const { api } = await setup();
     await fireEvent.press(screen.getByTestId('pick-line-1'));
     expect(screen.getByTestId('pick-line-1')).toHaveTextContent(/FIB/);
-    expect(screen.getByTestId('pick-line-1')).toHaveTextContent(/Memorizing is not generalizing/);
+    expect(screen.getByTestId('pick-line-1').props.accessibilityLabel).toMatch(/Memorizing is not generalizing/);
     expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 1/2');
     expect(api.lastSay()).toEqual({ text: 'Fib caught! Memorizing is not generalizing. New data is the real test.', mood: 'good' });
   });

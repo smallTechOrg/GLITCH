@@ -1,11 +1,11 @@
-// m1g1 · Train the Model — v3 data verbatim from `GM.m1g1` (spec/idea/GLITCH v3.html lines 504–511).
-// Every learner-facing string lives here so tests can import the exact copy.
+// m1g1 · Train the Model. Email data keeps the v3 shape; every learner-facing string lives here
+// so tests can import the exact copy.
 import type { IconId } from '../../contracts/art';
 import { colors } from '../../theme/tokens';
 
-/** Step 1 email: [id, text, "s" = spam | "n" = not spam] (v3 `E`). */
+/** Round 1 email: [id, text, "s" = spam | "n" = not spam] (v3 `E`). */
 export type TrainEmail = readonly [id: string, text: string, label: 's' | 'n'];
-/** Step 2 email: [id, text, model verdict, "r" = model right | "w" = model wrong] (v3 `T`). */
+/** Round 2 email: [id, text, model verdict, "r" = model right | "w" = model wrong] (v3 `T`). */
 export type TestEmail = readonly [id: string, text: string, says: 'SPAM' | 'NOT SPAM', verdict: 'r' | 'w'];
 
 export const TRAIN_EMAILS: readonly TrainEmail[] = [
@@ -44,27 +44,29 @@ export interface ZoneDef {
 }
 
 /** v3 zones: SPAM #ff5d73 (= colors.no), NOT SPAM #3ee98a (= colors.ok). */
-export const TRAIN_ZONES: readonly ZoneDef[] = [
+export const ZONES: readonly ZoneDef[] = [
   { id: 'spam', label: 'SPAM', icon: 'warning', color: colors.no },
   { id: 'ok', label: 'NOT SPAM', icon: 'check', color: colors.ok },
 ];
 
-/** v3 zones: RIGHT #3ee98a, WRONG #ff5d73. */
-export const TEST_ZONES: readonly ZoneDef[] = [
-  { id: 'right', label: 'RIGHT', icon: 'check', color: colors.ok },
-  { id: 'wrong', label: 'WRONG', icon: 'cross', color: colors.no },
-];
+export const ROUND1_HEAD = 'ROUND 1 · TRAIN IT: MAKE YOUR CALLS';
+export const ROUND2_HEAD = 'ROUND 2 · TEST IT: NEW EMAILS';
+export const CALL_HINT = 'Drag each email left into a bin.';
+export const callCount = (n: number, total: number): string => `${n}/${total} CALLED`;
+export const VERIFY_LABEL = 'VERIFY MY CALLS ▶';
+export const NEXT_LABEL = 'Next round ▶';
+export const RESULTS_LABEL = 'See results ▶';
+export const VERIFY_COLUMN = 'VERIFY';
+export const verifiedAs = (label: string): string => `IT'S ${label}`;
+export const modelSaid = (says: string, right: boolean): string => `MODEL: ${says} ${right ? '✓' : '✗'}`;
+/** Phone versions: the pixel font is too wide for the full verify lines. */
+export const modelSaidShort = (right: boolean): string => `MODEL ${right ? '✓' : '✗'}`;
+export const verifyRowA11y = (right: boolean, label: string): string => `${right ? 'Correct' : 'Wrong'}, it is ${label}`;
 
-export const ITEM_ICON: IconId = 'envelope';
-
-export const STEP1_HEAD = 'STEP 1 · LABEL THE TRAINING DATA';
-export const STEP2_HEAD = 'STEP 2 · TEST ON NEW EMAILS';
-export const STEP2_SUB = 'The model says what is in the tag. Was it RIGHT or WRONG?';
-export const MODEL_SAYS_PREFIX = 'MODEL SAYS: ';
-
-export const STEP1_WRONG = 'Look at the features: shouting, prizes, passwords. Those go with SPAM.';
-export const STEP2_WRONG = "Compare the model's verdict with what the email really is.";
-export const STEP1_DONE_LINE = 'Labels done. The model learned the pattern.';
+export const ROUND1_WRONG = 'Look at the features: shouting, prizes, passwords. Those go with SPAM.';
+export const ROUND2_WRONG = 'New emails are harder. Ignore the tone and ask what the email wants from you.';
+export const ALL_RIGHT_LINE = 'All correct. Nice calls!';
+export const ROUND1_DONE_LINE = 'Your labels trained the model. Now test it.';
 
 /** Result screen (fixed copy, v3 line 509). */
 export const RESULT_HEAD = 'TRAINING VS TESTING';
@@ -74,3 +76,6 @@ export const RESULT_EXPLAIN = 'The model aced what it studied but stumbled on ne
 export const FINISH_LABEL = 'Finish ▶';
 
 export const WIN_SUMMARY = 'Training data has features and labels. A model must generalize: test it on data it has not seen. Memorizing is not learning.';
+
+export const xrayCallLine = (label: string): string => `X-RAY: that one is ${label}.`;
+export const FOCUS_CALL_LINE = 'FOCUS: look at the glowing pair.';

@@ -17,7 +17,7 @@ export const LOAD_ERROR_TOAST = "Couldn't read saved progress. Starting fresh.";
 const PERSISTED_KEYS = [
   'version', 'profile', 'settings', 'xp', 'streak', 'steps', 'stars', 'heroByModule',
   'lastHero', 'heroesPlayed', 'powersUsed', 'badges', 'onceBonuses', 'promptHistory', 'seenScenarios',
-  'mistakes',
+  'mistakes', 'fairnessCases',
 ] as const satisfies readonly (keyof PersistedState)[];
 
 /** The persisted slice of the store (no runtime flags, no functions). */
@@ -78,6 +78,7 @@ export const useGlitchStore = create<GlitchStoreState>()(
       setNickname: (n) => set((s) => ({ profile: { ...s.profile, nickname: cleanNickname(n) } })),
       setOnboarded: () => set((s) => ({ profile: { ...s.profile, onboarded: true } })),
       setReadableFont: (b) => set((s) => ({ settings: { ...s.settings, readableFont: !!b } })),
+      setHelp: (help) => set((s) => ({ settings: { ...s.settings, help } })),
 
       patch: (fn) => {
         const draft = clone(pickPersisted(get()));
