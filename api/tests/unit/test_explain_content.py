@@ -64,18 +64,20 @@ def test_every_item_has_correct_answer_wrong_answers_canned_and_concept(game_id:
 def test_table_derivations_match_the_v3_data() -> None:
     m1g1 = _items("m1g1")
     assert m1g1["e1"].correct == "spam" and m1g1["e2"].correct == "ok" and m1g1["e1"].concept == "Training data"
-    assert m1g1["t1"].correct == "wrong" and m1g1["t2"].correct == "right" and m1g1["t1"].concept == "Generalization"
+    # Test emails are called like training emails; the truth comes from the model's verdict.
+    assert m1g1["t1"].correct == "ok" and m1g1["t2"].correct == "spam" and m1g1["t1"].concept == "Generalization"
     assert m1g1["e1"].canned["ok"].startswith("Look at the features")
-    assert m1g1["t1"].answers == {"right": "RIGHT", "wrong": "WRONG"}
+    assert m1g1["t1"].answers == {"spam": "SPAM", "ok": "NOT SPAM"}
+    assert "model said SPAM, which was wrong" in m1g1["t1"].context
 
     s0 = _items("m1g2")["s0"]
-    assert (s0.correct, s0.correct_label, s0.answers["fib"]) == ("true", "TRUE", "FIB")
+    assert (s0.correct, s0.correct_label, s0.answers["fib"]) == ("true", "TRUE", "GLITCH")
     assert s0.canned == {"fib": "That one is actually true. Look for something that sounds too sure."}
 
     r1, r2 = _items("m2g1")["r1"], _items("m2g1")["r2"]
     assert r1.answers == {"missed": "EMERGENCIES MISSED OVER GOAL", "false_alarms": "FALSE ALARMS OVER GOAL",
                           "pass": "BOTH GOALS MET"}
-    assert r1.canned["missed"] == "A real emergency was missed. Lower the threshold."
+    assert r1.canned["missed"] == "A real emergency was missed. Lower FLAG AT SCORE."
     assert (r1.concept, r2.concept) == ("Weights and thresholds", "Classification")
 
     m2g2 = _items("m2g2")
@@ -90,7 +92,7 @@ def test_table_derivations_match_the_v3_data() -> None:
 
     audit = _items("m3g2")["audit"]
     assert audit.canned["gap"] == "The gap is still some points. Some proxies are still switched on."
-    assert audit.canned["accuracy"] == "Accuracy fell to some%. Keep the skill features on."
+    assert audit.canned["accuracy"] == "Accuracy is only some%. Switch on more inputs that really measure this."
     assert audit.correct == "pass"
 
     m4g1 = _items("m4g1")

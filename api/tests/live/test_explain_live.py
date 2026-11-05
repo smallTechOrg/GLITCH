@@ -1,6 +1,6 @@
 """[live] Ask NOVA why with the real OpenRouter key — exactly 2 provider calls.
 
-Two real explanations: an m1g2 Fact or Fib v3 mistake (``s0``/``fib``) and the m4g3
+Two real explanations: an m1g2 Fact or Glitch v3 mistake (``s0``/``fib``) and the m4g3
 ``ship``/``well`` mistake. Each is word-limited, moderated and stored, and the repeat ask
 from a second device is a free cache hit (``cached: true``, energy unchanged, no call).
 The cache lives in a temp directory, never the developer's ``api/.cache``.

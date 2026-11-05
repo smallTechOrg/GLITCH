@@ -6,7 +6,7 @@ import { Icon } from '../art/Icon';
 import { ANIM } from '../a11y/stepped';
 import { spaceActivates } from '../a11y/spaceActivates';
 import { useStepAnimation } from '../a11y/useStepAnimation';
-import { border, colors, fontSize, layout } from '../theme/tokens';
+import { border, colors, fontSize } from '../theme/tokens';
 import { PixelText } from './PixelText';
 import { useFocusRing } from './focus';
 
@@ -39,7 +39,7 @@ export function ToggleTile({ id, label, on, onToggle, icon, flash = false, disab
       {...spaceActivates(onToggle, disabled)}
       style={[styles.tile, on ? styles.on : null, f.ring, style]}
     >
-      {icon ? <Icon name={icon} scale={3} /> : null}
+      {icon ? <Icon name={icon} scale={2} /> : null}
       <PixelText size={fontSize.small} style={styles.label}>{label}</PixelText>
       <View style={[styles.tag, { backgroundColor: on ? colors.okDark : colors.no }]}>
         <PixelText size={fontSize.tiny} color={on ? colors.white : colors.ink}>{on ? 'ON' : 'OFF'}</PixelText>
@@ -51,10 +51,12 @@ export function ToggleTile({ id, label, on, onToggle, icon, flash = false, disab
   );
 }
 
+const TILE_MIN = 40;
+
 const styles = StyleSheet.create({
-  tile: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, minHeight: layout.minTouch, backgroundColor: colors.cd, borderWidth: border.width, borderColor: colors.ln },
+  tile: { minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 2, paddingHorizontal: 6, minHeight: TILE_MIN, backgroundColor: colors.cd, borderWidth: border.width, borderColor: colors.ln },
   on: { borderColor: colors.ok },
-  label: { flex: 1 },
+  label: { flex: 1, minWidth: 0 },
   tag: { paddingVertical: 2, paddingHorizontal: 6 },
   flash: { borderWidth: 4, borderColor: colors.ac },
 });

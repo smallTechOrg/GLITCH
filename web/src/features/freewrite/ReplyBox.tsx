@@ -25,7 +25,7 @@ export function ReplyBox({ label, reply, demo }: ReplyBoxProps): React.JSX.Eleme
       </View>
       <View testID="fw-reply-text" style={styles.body}>
         {lines.map((l, i) => (
-          <PixelText key={i} long>{l}</PixelText>
+          <PixelText key={i} long size={fontSize.small}>{l}</PixelText>
         ))}
       </View>
     </Terminal>
@@ -33,6 +33,6 @@ export function ReplyBox({ label, reply, demo }: ReplyBoxProps): React.JSX.Eleme
 }
 
 const styles = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 },
-  body: { gap: 4 },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 2 },
+  body: { gap: 2 },
 });

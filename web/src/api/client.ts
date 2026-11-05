@@ -72,7 +72,13 @@ export const isFreewriteData = (d: unknown): d is FreewriteEvaluateData => {
   );
 };
 
+const isScenarioClassic = (d: unknown): boolean =>
+  isObj(d) && d.classic === true && typeof d.gameId === 'string' && (GAME_IDS as readonly string[]).includes(d.gameId);
+
 export const isScenarioNext = (d: unknown): d is ScenarioNextData =>
+  isScenarioClassic(d) || isScenarioVariation(d);
+
+const isScenarioVariation = (d: unknown): boolean =>
   isObj(d) &&
   typeof d.variationId === 'string' &&
   d.variationId.length > 0 &&

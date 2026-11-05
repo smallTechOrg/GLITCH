@@ -16,7 +16,6 @@ jest.mock('expo-router', () => ({
 
 const NOW = new Date(2026, 9, 20, 10);
 const BASE: Partial<PersistedState> = { profile: { nickname: null, onboarded: true, createdAt: NOW.toISOString() } };
-const M1_DONE = { m1h: true, m1s: true, m1g1: true, m1g2: true } as const;
 
 beforeEach(() => {
   setReducedMotionOverride(true);
@@ -28,35 +27,45 @@ const checked = (id: string): boolean => !!screen.getByTestId(`hero-card-${id}`)
 
 describe('HeroSelectScreen', () => {
   it('shows the module heading, the v3 copy and four hero cards; SCOUT preselected on a fresh device', async () => {
-    await renderWithProviders(<HeroSelectScreen mod={1} />, { state: BASE, now: NOW });
-    expect(screen.getByText('MODULE 1 · TRAINING LAB')).toBeTruthy();
+    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: BASE, now: NOW });
+    expect(screen.getByText('MODULE 1 · PROMPT FORGE')).toBeTruthy();
     expect(screen.getByText('CHOOSE YOUR HERO')).toBeTruthy();
-    expect(screen.getByText('Each hero has one power. You get 2 uses per game.')).toBeTruthy();
+    expect(screen.getByText('Meet the crew. Tap a hero to hear from them.')).toBeTruthy();
     for (const id of ['scout', 'chrono', 'guard', 'oracle']) expect(screen.getByTestId(`hero-card-${id}`)).toBeTruthy();
     expect(checked('scout')).toBe(true);
     expect(screen.getByTestId('hero-card-guard').props.accessibilityLabel).toBe('GUARDIAN, SHIELD power. Blocks your next mistake. No heart lost.');
-    expect(screen.getByTestId('hero-enter')).toHaveTextContent('▶ Enter the Training Lab');
+    expect(screen.getByTestId('hero-enter')).toHaveTextContent('▶ Enter the Prompt Forge');
   });
 
   it('preselects the module hero, else the last hero', async () => {
-    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: { ...BASE, steps: M1_DONE, lastHero: 'oracle' }, now: NOW });
+    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: { ...BASE, lastHero: 'oracle' }, now: NOW });
     expect(checked('oracle')).toBe(true);
-    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: { ...BASE, steps: M1_DONE, lastHero: 'oracle', heroByModule: { 2: 'chrono' } }, now: NOW });
+    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: { ...BASE, lastHero: 'oracle', heroByModule: { 2: 'chrono' } }, now: NOW });
     expect(checked('chrono')).toBe(true);
   });
 
+  it('the selected hero introduces themself by the player name, and the intro follows the selection', async () => {
+    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: { ...BASE, profile: { nickname: 'Ada', onboarded: true, createdAt: NOW.toISOString() } }, now: NOW });
+    expect(screen.getByTestId('hero-intro-text')).toHaveTextContent(/Hi Ada! I'm SCOUT\./);
+    expect(screen.getByTestId('hero-intro')).toHaveTextContent(/POWER: X-RAY/);
+    await fireEvent.press(screen.getByTestId('hero-card-guard'));
+    expect(screen.getByTestId('hero-intro-text')).toHaveTextContent(/Hi Ada! I'm GUARDIAN\./);
+    expect(screen.getByTestId('hero-intro')).toHaveTextContent(/POWER: SHIELD/);
+    expect(screen.getByTestId('hero-intro')).toHaveTextContent(/Blocks your next mistake/);
+  });
+
   it('Enter saves the chosen hero for the module, marks the step and goes to Storytime', async () => {
-    await renderWithProviders(<HeroSelectScreen mod={1} />, { state: BASE, now: NOW });
+    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: BASE, now: NOW });
     await fireEvent.press(screen.getByTestId('hero-card-guard'));
     expect(checked('guard')).toBe(true);
     expect(checked('scout')).toBe(false);
     await fireEvent.press(screen.getByTestId('hero-enter'));
     const s = useGlitchStore.getState();
-    expect(s.heroByModule[1]).toBe('guard');
+    expect(s.heroByModule[2]).toBe('guard');
     expect(s.lastHero).toBe('guard');
     expect(s.heroesPlayed.guard).toBe(true);
-    expect(s.steps.m1h).toBe(true);
-    expect(router.navigate).toHaveBeenCalledWith('/module/1/story');
+    expect(s.steps.m2h).toBe(true);
+    expect(router.navigate).toHaveBeenCalledWith('/module/2/story');
   });
 
   it('a replayed hero select advances to the first not-done step', async () => {
@@ -66,7 +75,7 @@ describe('HeroSelectScreen', () => {
   });
 
   it('playing with the 4th hero unlocks Hero Collector (with its toast)', async () => {
-    await renderWithProviders(<HeroSelectScreen mod={1} />, { state: { ...BASE, heroesPlayed: { scout: true, chrono: true, guard: true } }, now: NOW });
+    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: { ...BASE, heroesPlayed: { scout: true, chrono: true, guard: true } }, now: NOW });
     await fireEvent.press(screen.getByTestId('hero-card-oracle'));
     await fireEvent.press(screen.getByTestId('hero-enter'));
     expect(useGlitchStore.getState().badges.heroes).toBeDefined();
@@ -75,14 +84,14 @@ describe('HeroSelectScreen', () => {
   });
 
   it('← HOME returns home without saving', async () => {
-    await renderWithProviders(<HeroSelectScreen mod={1} />, { state: BASE, now: NOW });
+    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: BASE, now: NOW });
     await fireEvent.press(screen.getByTestId('hero-back'));
     expect(router.navigate).toHaveBeenCalledWith('/');
-    expect(useGlitchStore.getState().steps.m1h).toBeUndefined();
+    expect(useGlitchStore.getState().steps.m2h).toBeUndefined();
   });
 
   it('a locked module shows the locked message and a Home button', async () => {
-    await renderWithProviders(<HeroSelectScreen mod={2} />, { state: BASE, now: NOW });
+    await renderWithProviders(<HeroSelectScreen mod={1} />, { state: BASE, now: NOW });
     expect(screen.getByText('This step is locked. Finish the earlier steps first.')).toBeTruthy();
     expect(screen.queryByTestId('hero-enter')).toBeNull();
     await fireEvent.press(screen.getByTestId('locked-home'));

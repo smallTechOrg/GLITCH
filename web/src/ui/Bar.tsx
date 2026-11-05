@@ -38,5 +38,5 @@ export function Bar({ value, color = colors.ok, height = 10, marker, accessibili
 const styles = StyleSheet.create({
   trough: { backgroundColor: colors.deep, borderWidth: border.thin, borderColor: colors.ln, position: 'relative', overflow: 'visible' },
   fill: { height: '100%' },
-  marker: { position: 'absolute', top: -4, width: 3, height: 18, backgroundColor: colors.ac },
+  marker: { position: 'absolute', top: -3, bottom: -3, width: 3, backgroundColor: colors.ac },
 });

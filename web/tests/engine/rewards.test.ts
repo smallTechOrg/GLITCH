@@ -78,12 +78,12 @@ describe('rewards', () => {
 
   it('module complete grants +50 once and unlocks Boot Up / Graduate', () => {
     const s = fresh();
-    for (const id of STEP_IDS.filter((x) => x.startsWith('m1'))) s.steps[id] = true;
-    const r = completeModule(s, 1, NOW);
+    for (const id of STEP_IDS.filter((x) => x.startsWith('m2'))) s.steps[id] = true;
+    const r = completeModule(s, 2, NOW);
     expect(r.xp).toBe(50);
     expect(r.toasts[0]).toBe('+50 XP · MODULE COMPLETE');
     expect(s.badges.boot).toBeDefined();
-    expect(completeModule(s, 1, NOW)).toEqual({ xp: 0, toasts: [] });
+    expect(completeModule(s, 2, NOW)).toEqual({ xp: 0, toasts: [] });
   });
 
   it('level-up toasts fire at 100 and 200 through real awards', () => {

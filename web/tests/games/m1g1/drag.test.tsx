@@ -2,9 +2,8 @@
 // Only zone measuring is stubbed (the test renderer has no layout): each zone gets a fixed
 // window rect, everything else (8 px threshold, hover hit-test, drop) is the shipped code.
 import React from 'react';
-import { act, screen, within } from '@testing-library/react-native';
+import { act, screen } from '@testing-library/react-native';
 import { TrainTheModel } from '@/games/m1g1/Game';
-import { STEP1_WRONG } from '@/games/m1g1/data';
 import { createTestGameApi, renderWithProviders } from '@/testing/renderWithProviders';
 
 const mockRects = [
@@ -84,36 +83,46 @@ beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
 
 describe('<TrainTheModel> drag', () => {
-  it('dragging an email past 8 px onto its zone places it', async () => {
+  it('dragging an email past 8 px onto a bin calls it', async () => {
     const api = createTestGameApi();
     await renderWithProviders(<TrainTheModel api={api} />);
     await drag('e1', [[66, 106], [40, 300], [60, 450]]);
-    expect(within(screen.getByTestId('dnd-zone-spam')).getByTestId('dnd-item-e1')).toBeTruthy();
+    expect(screen.getByTestId('m1g1-call-e1')).toHaveTextContent('SPAM?');
+    expect(screen.getByTestId('m1g1-count-spam')).toHaveTextContent('1');
     expect(api.calls.miss).toHaveLength(0);
   });
 
-  it('dragging an email onto the wrong zone costs a heart with the v3 message', async () => {
+  it('dragging an email onto the wrong bin is still only a call: no heart until VERIFY', async () => {
     const api = createTestGameApi();
     await renderWithProviders(<TrainTheModel api={api} />);
     await drag('e1', [[66, 106], [200, 300], [240, 450]]);
-    expect(api.calls.miss).toEqual([STEP1_WRONG]);
-    expect(api.hearts).toBe(2);
-    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e1')).toBeTruthy();
+    expect(screen.getByTestId('m1g1-call-e1')).toHaveTextContent('NOT SPAM?');
+    expect(api.calls.miss).toHaveLength(0);
+    expect(api.hearts).toBe(3);
+  });
+
+  it('a second drag changes the call', async () => {
+    const api = createTestGameApi();
+    await renderWithProviders(<TrainTheModel api={api} />);
+    await drag('e1', [[66, 106], [200, 300], [240, 450]]);
+    await drag('e1', [[66, 106], [40, 300], [60, 450]]);
+    expect(screen.getByTestId('m1g1-call-e1')).toHaveTextContent('SPAM?');
+    expect(screen.getByTestId('m1g1-count-ok')).toHaveTextContent('0');
   });
 
   it('a movement under 8 px never starts a drag', async () => {
     const api = createTestGameApi();
     await renderWithProviders(<TrainTheModel api={api} />);
     await drag('e1', [[63, 104]]);
-    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e1')).toBeTruthy();
+    expect(screen.queryByTestId('m1g1-call-e1')).toBeNull();
     expect(api.calls.miss).toHaveLength(0);
   });
 
-  it('releasing outside every zone drops nothing and costs nothing', async () => {
+  it('releasing outside every bin makes no call and costs nothing', async () => {
     const api = createTestGameApi();
     await renderWithProviders(<TrainTheModel api={api} />);
     await drag('e2', [[70, 110], [160, 200], [500, 50]]);
-    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e2')).toBeTruthy();
+    expect(screen.queryByTestId('m1g1-call-e2')).toBeNull();
     expect(api.calls.miss).toHaveLength(0);
   });
 });

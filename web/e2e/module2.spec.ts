@@ -1,45 +1,18 @@
-// Module 2 · Prompt Forge — E2E for m2g1 Tune the Sorter and m2g2 Prompt Forge (forges 1–2 +
-// hand-off to FORGE 3 · FREE WRITE). Authored against spec/ui.md → Test IDs; runs at the
-// Phase 1 gate (needs A1's Game Frame and E's free-write round).
-//
-// Each test is a fresh device seeded (once, before the app boots) with Module 1 finished and
-// Module 2's hero + story done, so the deep link to the game is unlocked.
+// Prompt Forge (course Module 1) — E2E for m2g2 Prompt Forge (forges 1–2 + hand-off to FORGE 3 ·
+// FREE WRITE) and m2g1 Inbox Filter. Each test is a fresh device seeded (once, before the app
+// boots) with the module's hero + story done, so the deep link to the game is unlocked.
 import type { Page } from '@playwright/test';
 import { test, expect, waitForApp } from './helpers/fixtures';
-import { dragTo, expectWin, sortByKeyboard, sortByTap } from './helpers/flows';
+import { dragTo, expectWin, seedSteps, setSlider, sortByKeyboard, sortByTap } from './helpers/flows';
 
 type Hero = 'scout' | 'chrono' | 'guard' | 'oracle';
 
-async function seedModule2(page: Page, hero: Hero, extraSteps: string[] = []): Promise<void> {
-  const now = new Date().toISOString();
-  const steps: Record<string, true> = {};
-  for (const s of ['m1h', 'm1s', 'm1g1', 'm1g2', 'm2h', 'm2s', ...extraSteps]) steps[s] = true;
-  const state = {
-    version: 1,
-    profile: { nickname: 'TESTER', onboarded: true, createdAt: now },
-    settings: { readableFont: false },
-    xp: 0,
-    streak: { current: 0, best: 0, lastPlayDay: null },
-    steps,
-    // Every seeded-done game carries stars too (a done game always has a star record).
-    stars: { m1g1: 3, m1g2: 3, ...Object.fromEntries(extraSteps.filter((x) => /^m\dg\d$/.test(x)).map((x) => [x, 3])) },
-    heroByModule: { 1: hero, 2: hero },
-    lastHero: hero,
-    heroesPlayed: {},
-    powersUsed: {},
-    badges: {},
-    onceBonuses: {},
-    promptHistory: [],
-  };
-  await page.addInitScript((s: string) => {
-    if (!window.localStorage.getItem('glitch.v1.state')) window.localStorage.setItem('glitch.v1.state', s);
-  }, JSON.stringify(state));
-}
-
-async function openGame(page: Page, id: 'm2g1' | 'm2g2'): Promise<void> {
+async function openGame(page: Page, id: 'm2g1' | 'm2g2', hero: Hero = 'scout'): Promise<void> {
+  // Prompt Forge is the module's first game, so opening the Inbox Filter needs it done.
+  await seedSteps(page, ['m2h', 'm2s', ...(id === 'm2g1' ? ['m2g2'] : [])], hero);
   await page.goto(`./module/2/game/${id}`);
   await waitForApp(page);
-  await expect(page.getByTestId('game-title')).toContainText(id === 'm2g1' ? 'Tune the Sorter' : 'Prompt Forge');
+  await expect(page.getByTestId('game-title')).toContainText(id === 'm2g1' ? 'Inbox Filter' : 'Prompt Forge');
 }
 
 const hearts = (page: Page, n: number) => expect(page.getByTestId('hearts')).toHaveAttribute('aria-label', new RegExp(`^Hearts ${n} of 3`));
@@ -56,45 +29,44 @@ const FORGE_PAIRS: ReadonlyArray<readonly [string, string]> = [
 const STRONG_PROMPT =
   'Act as a friendly science teacher. Explain photosynthesis to my 10-year-old brother, who loves plants. Use 3 short bullet points. Keep it under 80 words.';
 
-test.describe('m2g1 · Tune the Sorter', () => {
-  test('keyboard-only sliders walk both rounds to LEVEL CLEAR with 3 stars', async ({ page }) => {
-    await seedModule2(page, 'scout');
+test.describe('m2g1 · Inbox Filter', () => {
+  test('both sliders start at 0 and locking there fails; keyboard sliders walk both rounds to LEVEL CLEAR', async ({ page }) => {
     await openGame(page, 'm2g1');
     await expect(page.getByTestId('m2g1-round-title')).toHaveText('ROUND 1 · EMERGENCY INBOX');
-    await expect(page.getByTestId('slider-th-value')).toHaveText('50');
-    await expect(page.getByTestId('slider-wc-value')).toHaveText('30');
+    await expect(page.getByTestId('slider-th-value')).toHaveText('0');
+    await expect(page.getByTestId('slider-wc-value')).toHaveText('0');
+    await expect(page.getByText('FLAG AT SCORE')).toBeVisible();
+    await expect(page.getByText('ALL-CAPS POINTS')).toBeVisible();
+    await expect(page.getByTestId('metric-b')).toHaveAttribute('aria-label', /^FALSE ALARMS 4, goal at most 1, not met/);
 
-    const th = page.getByTestId('slider-th');
-    await th.focus();
-    for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight');
-    await expect(page.getByTestId('slider-th-value')).toHaveText('55');
-    await expect(th).toHaveAttribute('aria-valuenow', '55');
+    await setSlider(page, 'th', 55);
+    await setSlider(page, 'wc', 30);
+    await expect(page.getByTestId('slider-th')).toHaveAttribute('aria-valuenow', '55');
     await page.getByTestId('m2g1-lock').focus();
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('say-bubble')).toContainText('Round clear!');
 
     await expect(page.getByTestId('m2g1-round-title')).toHaveText('ROUND 2 · SPAM FOLDER');
-    await expect(page.getByTestId('slider-th-value')).toHaveText('50'); // reset each round
-    await th.focus();
-    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowLeft');
-    await expect(page.getByTestId('slider-th-value')).toHaveText('47');
+    await expect(page.getByTestId('slider-th-value')).toHaveText('0'); // back to 0 each round
+    await expect(page.getByTestId('slider-wc-value')).toHaveText('0');
+    await setSlider(page, 'th', 47);
+    await setSlider(page, 'wc', 30);
     await page.getByTestId('m2g1-lock').click();
     await expectWin(page, 3);
-    await expect(page.getByTestId('win-screen')).toContainText('A threshold is a trade-off.');
+    await expect(page.getByTestId('win-screen')).toContainText('a threshold is a trade-off');
   });
 
   test('PageUp/PageDown/Home/End move the sliders; a bad lock costs a heart; win with 2 stars', async ({ page }) => {
-    await seedModule2(page, 'scout');
     await openGame(page, 'm2g1');
     const th = page.getByTestId('slider-th');
     await th.focus();
     await page.keyboard.press('PageUp');
-    await expect(page.getByTestId('slider-th-value')).toHaveText('60');
+    await expect(page.getByTestId('slider-th-value')).toHaveText('10');
     await page.keyboard.press('End');
     await expect(page.getByTestId('slider-th-value')).toHaveText('100');
     await expect(page.getByTestId('metric-a')).toHaveAttribute('aria-label', /^EMERGENCIES MISSED 4, goal at most 0, not met/);
     await page.getByTestId('m2g1-lock').click();
-    await expect(page.getByTestId('say-bubble')).toContainText('A real emergency was missed. Lower the threshold.');
+    await expect(page.getByTestId('say-bubble')).toContainText('A real emergency was missed. Lower FLAG AT SCORE.');
     await hearts(page, 2);
 
     await th.focus();
@@ -102,22 +74,24 @@ test.describe('m2g1 · Tune the Sorter', () => {
     await expect(page.getByTestId('slider-th-value')).toHaveText('0');
     for (let i = 0; i < 5; i++) await page.keyboard.press('PageUp');
     await expect(page.getByTestId('slider-th-value')).toHaveText('50');
-    await page.getByTestId('slider-wc-dec').click();
-    await expect(page.getByTestId('slider-wc-value')).toHaveText('29');
     await page.getByTestId('slider-wc-inc').click();
+    await expect(page.getByTestId('slider-wc-value')).toHaveText('1');
+    await page.getByTestId('slider-wc-dec').click();
+    await expect(page.getByTestId('slider-wc-value')).toHaveText('0');
+    await setSlider(page, 'wc', 30);
     await page.getByTestId('m2g1-lock').click();
     await expect(page.getByTestId('m2g1-round-title')).toHaveText('ROUND 2 · SPAM FOLDER');
+    await setSlider(page, 'th', 50);
+    await setSlider(page, 'wc', 30);
     await page.getByTestId('m2g1-lock').click();
     await expectWin(page, 2);
   });
 
   test('X-RAY sets the sliders to the round solution', async ({ page }) => {
-    await seedModule2(page, 'scout');
     await openGame(page, 'm2g1');
-    await page.getByTestId('slider-th').focus();
-    await page.keyboard.press('Home');
     await page.getByTestId('power-button').click();
     await expect(page.getByTestId('slider-th-value')).toHaveText('55');
+    await expect(page.getByTestId('slider-wc-value')).toHaveText('30');
     await expect(page.getByTestId('say-bubble')).toContainText('X-RAY: the sliders are set to a good answer. Lock it in.');
     await expect(page.getByTestId('power-button')).toHaveAttribute('aria-label', /1 use/);
   });
@@ -125,8 +99,7 @@ test.describe('m2g1 · Tune the Sorter', () => {
 
 test.describe('m2g2 · Prompt Forge', () => {
   test('forge 1 by drag + tap, forge 2 by keyboard, then FREE WRITE → LEVEL CLEAR (2 stars, heart lost in forge 1)', async ({ page }) => {
-    await seedModule2(page, 'guard', ['m2g1']);
-    await openGame(page, 'm2g2');
+    await openGame(page, 'm2g2', 'guard');
     await expect(page.getByText('FORGE 1 · STUDY PLAN')).toBeVisible();
 
     // A decoy in a slot costs a heart.
@@ -164,8 +137,7 @@ test.describe('m2g2 · Prompt Forge', () => {
     await expect(page.getByTestId('win-screen')).toContainText('A strong prompt is specific');
   });
 
-  test('Module 2 out of hearts: three decoys in three slots → OUT OF HEARTS; retry starts a fresh forge 1', async ({ page }) => {
-    await seedModule2(page, 'scout', ['m2g1']);
+  test('out of hearts: three decoys in three slots → OUT OF HEARTS; retry starts a fresh forge 1', async ({ page }) => {
     await openGame(page, 'm2g2');
     for (const [item, zone] of [['b0', 'task'], ['b6', 'fmt'], ['b7', 'lim']] as const) {
       await page.getByTestId(`dnd-item-${item}`).click();

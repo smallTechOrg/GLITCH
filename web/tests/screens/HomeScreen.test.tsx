@@ -2,7 +2,7 @@
 // 2–4 LOCKED, 0/12 badges; quest box states; step statuses; badge labels; daily on focus;
 // AI energy meter (durable-ai-budget.md: same component as the free-write round).
 import React from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, Dimensions, type AppStateStatus } from 'react-native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { getEnergy } from '@/api/client';
 import type { ApiResult, EnergyData } from '@/contracts/api';
@@ -37,8 +37,10 @@ beforeEach(() => {
 });
 afterEach(() => setReducedMotionOverride(null));
 
+const windowWidth = (width: number) => jest.spyOn(Dimensions, 'get').mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+
 describe('HomeScreen · fresh device', () => {
-  it('greets PLAYER 1 at LVL 1 with 10 XP and streak 1 (daily on focus), Module 1 open, 2–4 locked, 0/12 badges', async () => {
+  it('greets PLAYER 1 at LVL 1 with 10 XP and streak 1 (daily on focus), Prompt Forge open as Module 1, the rest locked, 0/12 badges', async () => {
     await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
     expect(screen.getByTestId('home-greeting')).toHaveTextContent('PLAYER 1');
     expect(screen.getByText('WELCOME BACK')).toBeTruthy();
@@ -48,34 +50,72 @@ describe('HomeScreen · fresh device', () => {
     expect(screen.getByTestId('home-stat-level')).toHaveTextContent(/LVL 1/);
     expect(screen.getByTestId('home-stat-xp')).toHaveTextContent(/10/);
     expect(screen.getByTestId('home-stat-streak')).toHaveTextContent(/Day streak \(best 1\)/);
-    expect(screen.getByTestId('module-status-1')).toHaveTextContent('0/4 STEPS');
-    for (const n of [2, 3, 4]) expect(screen.getByTestId(`module-status-${n}`)).toHaveTextContent('LOCKED');
+    expect(screen.getByTestId('module-status-2')).toHaveTextContent('0/4 STEPS');
+    for (const n of [1, 3, 4]) expect(screen.getByTestId(`module-status-${n}`)).toHaveTextContent('LOCKED');
     expect(screen.getByText('Finish Module 1 to unlock this one.')).toBeTruthy();
+    expect(screen.getByText('COURSE · AI LITERACY')).toBeTruthy();
     expect(screen.getByTestId('badges-count')).toHaveTextContent('BADGES · 0/12');
     expect(useToastStore.getState().current?.text).toBe('+10 XP · DAILY x1');
   });
 
-  it('quest box says START HERE and opens Module 1 hero select', async () => {
+  it('shows the course in play order, numbered by position', async () => {
+    await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
+    const titles = ['Prompt Forge', 'Training Lab', 'Neon City', 'The Newsroom'];
+    const order = [2, 1, 3, 4].map((id) => screen.getByTestId(`module-card-${id}`));
+    order.forEach((card, i) => expect(card).toHaveTextContent(new RegExp(`MODULE ${i + 1} · .*${titles[i]!}`)));
+    expect(screen.getByLabelText('Module 1')).toBeTruthy();
+    expect(screen.getByLabelText('Module 2 locked')).toBeTruthy();
+  });
+
+  it('quest box says START HERE and opens the Prompt Forge hero select', async () => {
     await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
     const q = screen.getByTestId('home-quest');
     expect(q).toHaveTextContent(/START HERE/);
-    expect(q).toHaveTextContent(/Module 1: Training Lab · Choose your hero/);
+    expect(q).toHaveTextContent(/Module 1: Prompt Forge · Choose your hero/);
     expect(screen.getByTestId('home-quest-button')).toHaveTextContent('▶ Start');
     await fireEvent.press(screen.getByTestId('home-quest-button'));
-    expect(router.navigate).toHaveBeenCalledWith('/module/1/hero');
+    expect(router.navigate).toHaveBeenCalledWith('/module/2/hero');
   });
 
   it('only the first step is startable; later ones are locked', async () => {
     await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
-    expect(screen.getByTestId('step-m1h-status')).toHaveTextContent('START');
-    expect(screen.getByTestId('step-m1s').props.accessibilityState).toMatchObject({ disabled: true });
-    expect(screen.getByTestId('step-m1s-status').props.accessibilityLabel).toBe('LOCKED');
+    expect(screen.getByTestId('step-m2h-status')).toHaveTextContent('START');
+    expect(screen.getByTestId('step-m2s').props.accessibilityState).toMatchObject({ disabled: true });
+    expect(screen.getByTestId('step-m2s-status').props.accessibilityLabel).toBe('LOCKED');
   });
 
   it('every badge is greyed with its label "<Name>, locked"', async () => {
     await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
     expect(screen.getByTestId('badge-boot').props.accessibilityLabel).toBe('Boot Up, locked');
     expect(screen.getByTestId('badge-boot')).toHaveTextContent(/Finish Module 1/);
+  });
+});
+
+describe('HomeScreen · one page', () => {
+  const mistake = { gameId: 'm1g2' as const, variationId: 'v3', itemId: 's0', answer: 'fib', concept: 'Machine learning' as const, shielded: false, at: NOW.toISOString() };
+
+  it('course, badges and footer are all on the page, with no tabs', async () => {
+    await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
+    expect(screen.getByTestId('module-card-2')).toBeTruthy();
+    expect(screen.getByTestId('badge-boot')).toBeTruthy();
+    expect(screen.getByText('Progress saves on this device.')).toBeTruthy();
+    expect(screen.queryByTestId('home-tab-course')).toBeNull();
+  });
+
+  it('REVIEW appears on the page once there is a mistake to practise', async () => {
+    await renderWithProviders(<HomeScreen />, { state: ONBOARDED });
+    expect(screen.queryByTestId('home-review')).toBeNull();
+    await renderWithProviders(<HomeScreen />, { state: { ...ONBOARDED, mistakes: [mistake] } });
+    expect(screen.getByTestId('home-review')).toHaveTextContent(/Machine learning/);
+  });
+
+  it('phones show every module card in full', async () => {
+    windowWidth(360);
+    await renderWithProviders(<HomeScreen />, { state: { ...ONBOARDED, steps: { m2h: true, m1h: true } } });
+    expect(screen.getByTestId('step-m2s')).toBeTruthy();
+    expect(screen.getByTestId('step-m1s')).toBeTruthy();
+    expect(screen.getByTestId('module-card-3')).toHaveTextContent(/Neon City/);
+    jest.restoreAllMocks();
   });
 });
 
@@ -89,39 +129,39 @@ describe('HomeScreen · in progress and complete', () => {
         profile: { nickname: 'Ada', onboarded: true, createdAt: NOW.toISOString() },
         xp: 120,
         streak: { current: 2, best: 5, lastPlayDay: day },
-        steps: { m1h: true, m1s: true, m1g1: true },
-        stars: { m1g1: 2 },
+        steps: { m2h: true, m2s: true, m2g2: true },
+        stars: { m2g2: 2 },
         badges: { eye: NOW.toISOString() },
       },
     });
     expect(screen.getByTestId('home-greeting')).toHaveTextContent('Ada');
     expect(useGlitchStore.getState().xp).toBe(120); // same day → no daily XP
     expect(screen.getByTestId('home-quest')).toHaveTextContent(/CONTINUE/);
-    expect(screen.getByTestId('home-quest')).toHaveTextContent(/Module 1: Training Lab · Fact or Fib/);
-    expect(screen.getByTestId('module-status-1')).toHaveTextContent('3/4 STEPS');
-    expect(screen.getByTestId('step-m1g1-status').props.accessibilityLabel).toBe('2 stars');
-    expect(screen.getByTestId('step-m1h-status')).toHaveTextContent('DONE');
-    expect(screen.getByTestId('step-m1g2-status')).toHaveTextContent('START');
+    expect(screen.getByTestId('home-quest')).toHaveTextContent(/Module 1: Prompt Forge · Inbox Filter/);
+    expect(screen.getByTestId('module-status-2')).toHaveTextContent('3/4 STEPS');
+    expect(screen.getByTestId('step-m2g2-status').props.accessibilityLabel).toBe('2 stars');
+    expect(screen.getByTestId('step-m2h-status')).toHaveTextContent('DONE');
+    expect(screen.getByTestId('step-m2g1-status')).toHaveTextContent('START');
     expect(screen.getByTestId('home-stat-level')).toHaveTextContent(/LVL 2/);
     expect(screen.getByTestId('badges-count')).toHaveTextContent('BADGES · 1/12');
+    await fireEvent.press(screen.getByTestId('step-m2g2'));
+    expect(router.navigate).toHaveBeenCalledWith('/module/2/game/m2g2');
     expect(screen.getByTestId('badge-eye').props.accessibilityLabel).toBe('Sharp Eye, unlocked');
-    await fireEvent.press(screen.getByTestId('step-m1g1'));
-    expect(router.navigate).toHaveBeenCalledWith('/module/1/game/m1g1');
   });
 
   it('a done game with stars missing still shows at least 1 star', async () => {
-    await renderWithProviders(<HomeScreen />, { state: { ...ONBOARDED, steps: { m1h: true, m1s: true, m1g1: true } } });
-    expect(screen.getByTestId('step-m1g1-status').props.accessibilityLabel).toBe('1 star');
+    await renderWithProviders(<HomeScreen />, { state: { ...ONBOARDED, steps: { m2h: true, m2s: true, m2g2: true } } });
+    expect(screen.getByTestId('step-m2g2-status').props.accessibilityLabel).toBe('1 star');
   });
 
-  it('all done: COURSE COMPLETE and ▶ Replay opens Module 1 storytime', async () => {
+  it('all done: COURSE COMPLETE and ▶ Replay opens the first module storytime', async () => {
     await renderWithProviders(<HomeScreen />, { state: { ...ONBOARDED, steps: ALL_DONE } });
     expect(screen.getByTestId('home-quest')).toHaveTextContent(/COURSE COMPLETE/);
     expect(screen.getByTestId('home-quest')).toHaveTextContent(/You finished all four modules\. Replay any game to earn more stars\./);
     expect(screen.getByTestId('home-quest-button')).toHaveTextContent('▶ Replay');
     expect(screen.getByTestId('home-stat-modules')).toHaveTextContent(/4\/4/);
     await fireEvent.press(screen.getByTestId('home-quest-button'));
-    expect(router.navigate).toHaveBeenCalledWith('/module/1/story');
+    expect(router.navigate).toHaveBeenCalledWith('/module/2/story');
   });
 });
 
@@ -154,7 +194,7 @@ describe('HomeScreen · AI energy meter', () => {
     expect(screen.getByTestId('home-energy')).toHaveTextContent(/\?/);
     expect(screen.getByTestId('home-energy')).not.toHaveTextContent(/\d+\/10/);
     await fireEvent.press(screen.getByTestId('home-quest-button'));
-    expect(router.navigate).toHaveBeenCalledWith('/module/1/hero');
+    expect(router.navigate).toHaveBeenCalledWith('/module/2/hero');
   });
 
   it('a server error envelope that still carries energy shows that energy (cap reached → 0/10, recharge time)', async () => {

@@ -4,7 +4,7 @@ import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { ScenarioGame, parseScenario, type GameScenario } from '@/features/variations';
 import type { ContentGameId } from '@/features/variations';
-import { STEP1_WRONG, WIN_SUMMARY as M1G1_WIN } from '@/games/m1g1/data';
+import { ROUND1_WRONG, WIN_SUMMARY as M1G1_WIN } from '@/games/m1g1/data';
 import { TRUE_MISS, WIN_SUMMARY as M1G2_WIN } from '@/games/m1g2/data';
 import { MISS_MESSAGE, WIN_SUMMARY as M3G1_WIN } from '@/games/m3g1/data';
 import { NOT_FOUND_LINE, SUMMARY as M4G1_WIN, WRONG as M4G1_WRONG } from '@/games/m4g1/data';
@@ -30,7 +30,12 @@ async function setup(g: ContentGameId): Promise<TestGameApi> {
 const press = async (id: string): Promise<void> => {
   await fireEvent.press(screen.getByTestId(id));
 };
+async function show(item: string): Promise<void> {
+  const tab = screen.queryByTestId(`deck-tab-${item}`);
+  if (tab) await fireEvent.press(tab);
+}
 async function place(item: string, zone: string): Promise<void> {
+  await show(item);
   await press(`dnd-item-${item}`);
   await press(`dnd-zone-${zone}`);
 }
@@ -41,39 +46,43 @@ async function tick(ms: number): Promise<void> {
 }
 
 describe('m1g1 Train the Model with a variation', () => {
-  const STEP1 = [['e1', 'spam'], ['e2', 'ok'], ['e3', 'spam'], ['e4', 'ok'], ['e5', 'spam'], ['e6', 'ok']] as const;
-  // Variation: t1 model right, t2 wrong, t3 wrong, t4 right (v3 is wrong/right/right/wrong).
-  const STEP2 = [['t1', 'right'], ['t2', 'wrong'], ['t3', 'wrong'], ['t4', 'right']] as const;
+  const ROUND1 = [['e1', 'spam'], ['e2', 'ok'], ['e3', 'spam'], ['e4', 'ok'], ['e5', 'spam'], ['e6', 'ok']] as const;
+  // Variation truths: t1 not spam, t2 spam, t3 not spam, t4 spam.
+  const ROUND2 = [['t1', 'ok'], ['t2', 'spam'], ['t3', 'ok'], ['t4', 'spam']] as const;
 
-  it("shows the variation's emails and wins only with the variation's labels", async () => {
+  it("shows the variation's emails and clears only with the variation's labels", async () => {
     const api = await setup('m1g1');
     expect(screen.getByTestId('dnd-item-e1')).toHaveTextContent(/URGENT: claim your lottery cash today/);
     expect(screen.queryByText(/WIN a FREE prize/)).toBeNull();
-    for (const [i, z] of STEP1) await place(i, z);
-    await tick(1000);
-    expect(screen.getByTestId('dnd-item-t2')).toHaveTextContent(/MODEL SAYS: NOT SPAM/);
-    for (const [i, z] of STEP2) await place(i, z);
-    await tick(1000);
+    for (const [i, z] of ROUND1) await place(i, z);
+    await press('m1g1-verify');
+    await press('m1g1-next');
+    for (const [i, z] of ROUND2) await place(i, z);
+    await press('m1g1-verify');
+    expect(screen.getByTestId('m1g1-model-t2')).toHaveTextContent('MODEL: NOT SPAM ✗');
+    expect(screen.getByTestId('m1g1-model-t1')).toHaveTextContent('MODEL: NOT SPAM ✓');
+    await press('m1g1-next');
     await press('m1g1-finish');
     expect(api.calls.win).toEqual([M1G1_WIN]);
     expect(api.lost).toBe(0);
   });
 
-  it("a v3-correct but variation-wrong placement costs a heart (e2 is NOT spam here)", async () => {
+  it('a call that is wrong for the variation costs a heart at VERIFY (e2 is NOT spam here)', async () => {
     const api = await setup('m1g1');
-    await place('e2', 'spam');
-    expect(api.calls.miss).toEqual([STEP1_WRONG]);
+    for (const [i, z] of [['e1', 'spam'], ['e2', 'spam'], ...ROUND1.slice(2)] as const) await place(i, z);
+    await press('m1g1-verify');
+    expect(api.calls.miss).toEqual([ROUND1_WRONG]);
     expect(api.hearts).toBe(2);
   });
 });
 
-describe('m1g2 Fact or Fib with a variation', () => {
-  it("renders the variation's six lines and wins on its three fibs", async () => {
+describe('m1g2 Fact or Glitch with a variation', () => {
+  it("renders the variation's six lines and wins on its three glitches", async () => {
     const api = await setup('m1g2');
     expect(screen.getByTestId('pick-line-0').props.accessibilityLabel).toBe('1. A spam filter learns from emails that people have labelled.');
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 0/3');
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 0/3');
     await press('pick-line-1');
-    expect(api.lastSay()?.text).toBe('Fib caught! Models match patterns in data; they do not understand like people.');
+    expect(api.lastSay()?.text).toBe('Glitch caught! Models match patterns in data; they do not understand like people.');
     await press('pick-line-3');
     await press('pick-line-5');
     await tick(700);
@@ -85,7 +94,7 @@ describe('m1g2 Fact or Fib with a variation', () => {
     const api = await setup('m1g2');
     await press('pick-line-2');
     expect(api.calls.miss).toEqual([TRUE_MISS]);
-    expect(screen.getByTestId('pick-found')).toHaveTextContent('FIBS FOUND: 0/3');
+    expect(screen.getByTestId('pick-found')).toHaveTextContent('GLITCHES FOUND: 0/3');
   });
 });
 
@@ -107,6 +116,7 @@ describe('m4g1 Source Detective with a variation', () => {
   it("catalogue lookups answer from the variation (c1 is invented here) and the sort wins on its key", async () => {
     const api = await setup('m4g1');
     expect(screen.getByTestId('dnd-item-c1')).toHaveTextContent(/Robots That Dream/);
+    expect(screen.getByTestId('m4g1-excerpt-c1')).toHaveTextContent(/Robots dream every night/);
     await press('m4g1-check-c1');
     expect(screen.getByTestId('m4g1-result-c1')).toHaveTextContent('NOT FOUND');
     expect(api.lastSay()?.text).toBe(NOT_FOUND_LINE);
@@ -121,6 +131,7 @@ describe('m4g1 Source Detective with a variation', () => {
 describe('m4g2 Confidence Court with a variation', () => {
   it("shows the variation's verdict lines and wins on its TRUST/VERIFY key", async () => {
     const api = await setup('m4g2');
+    await show('a6');
     expect(screen.getByTestId('dnd-item-a6')).toHaveTextContent(/CONFIDENCE 71% · EVIDENCE: Matches NASA website/);
     await place('a2', 'trust');
     expect(api.calls.miss).toEqual([M4G2_WRONG]);
@@ -131,15 +142,16 @@ describe('m4g2 Confidence Court with a variation', () => {
 });
 
 describe('variation mistakes use positional ids and the variation content (Phase 3)', () => {
-  it('m1g1: step 1 and step 2 payloads come from the variation emails', async () => {
+  it('m1g1: round 1 and round 2 payloads come from the variation emails', async () => {
     const api = await setup('m1g1');
-    await place('e2', 'spam');
-    for (const [i, z] of [['e1', 'spam'], ['e2', 'ok'], ['e3', 'spam'], ['e4', 'ok'], ['e5', 'spam'], ['e6', 'ok']] as const) await place(i, z);
-    await tick(1000);
-    await place('t1', 'wrong'); // the variation's model is right on t1
+    for (const [i, z] of [['e1', 'spam'], ['e2', 'spam'], ['e3', 'spam'], ['e4', 'ok'], ['e5', 'spam'], ['e6', 'ok']] as const) await place(i, z);
+    await press('m1g1-verify');
+    await press('m1g1-next');
+    for (const [i, z] of [['t1', 'spam'], ['t2', 'spam'], ['t3', 'ok'], ['t4', 'spam']] as const) await place(i, z);
+    await press('m1g1-verify');
     expect(api.recorded.map((r) => r.mistake)).toEqual([
       { itemId: 'e2', answer: 'spam', correct: 'ok', concept: 'Training data', itemText: 'Band practice moved to Thursday', answerLabel: 'SPAM', correctLabel: 'NOT SPAM', explain: true },
-      { itemId: 't1', answer: 'wrong', correct: 'right', concept: 'Generalization', itemText: 'Coach: bring your boots tomorrow', answerLabel: 'WRONG', correctLabel: 'RIGHT', explain: true },
+      { itemId: 't1', answer: 'spam', correct: 'ok', concept: 'Generalization', itemText: 'Coach: bring your boots tomorrow', answerLabel: 'SPAM', correctLabel: 'NOT SPAM', explain: true },
     ]);
   });
 
@@ -147,7 +159,7 @@ describe('variation mistakes use positional ids and the variation content (Phase
     const api = await setup('m1g2');
     await press('pick-line-2');
     expect(api.recorded.map((r) => r.mistake)).toEqual([
-      { itemId: 's2', answer: 'fib', correct: 'true', concept: 'Machine learning', itemText: 'More varied training examples usually help a model generalize.', answerLabel: 'FIB', correctLabel: 'TRUE', explain: true },
+      { itemId: 's2', answer: 'fib', correct: 'true', concept: 'Machine learning', itemText: 'More varied training examples usually help a model generalize.', answerLabel: 'GLITCH', correctLabel: 'TRUE', explain: true },
     ]);
   });
 

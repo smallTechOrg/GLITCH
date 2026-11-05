@@ -2,13 +2,14 @@
 import { MODULE_IDS, type BadgeId } from '../contracts/ids';
 import type { PersistedState } from '../contracts/state';
 import { BADGES, badgeToast } from '../content/badges';
+import { COURSE_ORDER } from '../content/modules';
 import { isModuleDone } from './progression';
 import { levelOf } from './xp';
 
 const count = (o: object): number => Object.keys(o).length;
 
 export const BADGE_RULES: Readonly<Record<BadgeId, (s: PersistedState) => boolean>> = {
-  boot: (s) => isModuleDone(s, 1),
+  boot: (s) => isModuleDone(s, COURSE_ORDER[0]!),
   story: (s) => MODULE_IDS.every((m) => s.steps[`m${m}s`] === true),
   eye: (s) => Object.values(s.stars).some((n) => (n ?? 0) >= 3),
   smith: (s) => (s.stars.m2g2 ?? 0) >= 3,

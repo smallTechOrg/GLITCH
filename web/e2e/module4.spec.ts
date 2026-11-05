@@ -8,7 +8,7 @@ import type { Page } from '@playwright/test';
 import { STATE_STORAGE_KEY } from '../src/contracts/state';
 import type { HeroId } from '../src/contracts/ids';
 import { test, expect, waitForApp } from './helpers/fixtures';
-import { expectWin, quickDragTo, sortByKeyboard, sortByTap } from './helpers/flows';
+import { expectWin, quickDragTo, setSlider, showItem, sortByKeyboard, sortByTap, tapItem } from './helpers/flows';
 
 type Pair = readonly [string, string];
 const M4G1: readonly Pair[] = [['c1', 'keep'], ['c2', 'cut'], ['c3', 'keep'], ['c4', 'cut'], ['c5', 'keep']];
@@ -67,13 +67,9 @@ async function openGame(page: Page, game: Module4Game, hero: HeroId = 'scout'): 
   await expect(page.getByTestId('game-body')).toBeVisible();
 }
 
-/** Hand-balance the companion: PageDown ×5 on both sliders (80 → 30), all safeguards on. */
+/** Hand-balance the companion: both sliders from 0 up to 30, all safeguards on. */
 async function balanceCompanion(page: Page): Promise<void> {
-  for (const id of ['en', 'da']) {
-    await page.getByTestId(`slider-${id}`).focus();
-    for (let k = 0; k < 5; k++) await page.keyboard.press('PageDown');
-    await expect(page.getByTestId(`slider-${id}-value`)).toHaveText('30');
-  }
+  for (const id of ['en', 'da']) await setSlider(page, id, 30);
   for (const id of TOGGLES) await page.getByTestId(`toggle-${id}`).click();
 }
 
@@ -88,14 +84,29 @@ test.describe('m4g1 · Source Detective', () => {
     await expect(page.getByTestId('win-xp-tag')).toBeVisible();
   });
 
+  test('each source shows what it says, one at a time; tapping KEEP or CUT judges the source on show', async ({ page }) => {
+    await openGame(page, 'm4g1');
+    await expect(page.getByTestId('m4g1-excerpt-c1')).toContainText("Adopted by UNESCO's 193 member states");
+    await expect(page.getByTestId('dnd-item-c2')).toHaveCount(0);
+    await showItem(page, 'c2');
+    await expect(page.getByTestId('m4g1-citation-c2')).toContainText('Journal of Imaginary Science');
+    await expect(page.getByTestId('m4g1-excerpt-c2')).toContainText('no data or method can be shared');
+    await page.getByTestId('dnd-zone-cut').click();
+    await expect(page.getByTestId('dnd-zone-cut').getByTestId('dnd-item-c2')).toBeVisible();
+    await expect(page.getByTestId('hearts')).toHaveAttribute('aria-label', /Hearts 3 of 3/);
+  });
+
   test('CHECK reveals FOUND / NOT FOUND; the 4th lookup says "No lookups left" at no heart cost', async ({ page }) => {
     await openGame(page, 'm4g1');
     await page.getByTestId('m4g1-check-c1').click();
     await expect(page.getByTestId('say-bubble')).toContainText('Found in the catalogue.');
+    await showItem(page, 'c2');
     await page.getByTestId('m4g1-check-c2').click();
     await expect(page.getByTestId('say-bubble')).toContainText('Not in any catalogue. Invented!');
+    await showItem(page, 'c3');
     await page.getByTestId('m4g1-check-c3').click();
     await expect(page.getByTestId('m4g1-lookups')).toHaveAttribute('aria-label', 'Catalogue lookups left: 0');
+    await showItem(page, 'c4');
     await page.getByTestId('m4g1-check-c4').click();
     await expect(page.getByTestId('say-bubble')).toContainText('No lookups left. Use the clues instead.');
     await expect(page.getByTestId('hearts')).toHaveAttribute('aria-label', /Hearts 3 of 3/);
@@ -103,8 +114,8 @@ test.describe('m4g1 · Source Detective', () => {
 
   test('a CHECK press released off the button does not block dragging afterwards', async ({ page }) => {
     await openGame(page, 'm4g1');
-    const check = page.getByTestId('m4g1-check-c2');
-    await check.scrollIntoViewIfNeeded();
+    await showItem(page, 'c1');
+    const check = page.getByTestId('m4g1-check-c1');
     const c = (await check.boundingBox())!;
     await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
     await page.mouse.down();
@@ -114,13 +125,13 @@ test.describe('m4g1 · Source Detective', () => {
     await expect(page.getByTestId('dnd-zone-keep').getByTestId('dnd-item-c1')).toBeVisible();
   });
 
-  test('Ask NOVA costs exactly one heart, disables itself, and the win has 2 stars', async ({ page }) => {
+  test('Ask NOVA costs exactly one heart, can only be asked once, and the win has 2 stars', async ({ page }) => {
     await openGame(page, 'm4g1');
     await page.getByTestId('m4g1-ask-nova').click();
     await expect(page.getByText('Yes! All 5 are real and verified. I am 100% confident.')).toBeVisible();
     await expect(page.getByTestId('say-bubble')).toContainText('Asking the same AI is not verification.');
     await expect(page.getByTestId('hearts')).toHaveAttribute('aria-label', /Hearts 2 of 3/);
-    await expect(page.getByTestId('m4g1-ask-nova')).toBeDisabled();
+    await expect(page.getByTestId('m4g1-ask-nova')).toHaveCount(0);
     await sortByTap(page, M4G1);
     await expectWin(page, 2);
   });
@@ -136,10 +147,7 @@ test.describe('m4g1 · Source Detective', () => {
 
   test('three wrong drops run out of hearts', async ({ page }) => {
     await openGame(page, 'm4g1');
-    for (const [item, zone] of [['c2', 'keep'], ['c4', 'keep'], ['c1', 'cut']] as const) {
-      await page.getByTestId(`dnd-item-${item}`).click();
-      await page.getByTestId(`dnd-zone-${zone}`).click();
-    }
+    for (const [item, zone] of [['c2', 'keep'], ['c4', 'keep'], ['c1', 'cut']] as const) await tapItem(page, item, zone);
     await expect(page.getByTestId('fail-screen')).toBeVisible();
     await expect(page.getByTestId('fail-screen')).toContainText('OUT OF HEARTS');
   });
@@ -149,6 +157,7 @@ test.describe('m4g2 · Confidence Court', () => {
   test('keyboard only: TRUST / VERIFY by evidence reaches LEVEL CLEAR with 3 stars', async ({ page }) => {
     await openGame(page, 'm4g2');
     await expect(page.getByTestId('game-title')).toContainText('Confidence Court');
+    await showItem(page, 'a6');
     await expect(page.getByTestId('dnd-item-a6')).toContainText('CONFIDENCE 76%');
     await sortByKeyboard(page, M4G2);
     await expectWin(page, 3);
@@ -157,8 +166,7 @@ test.describe('m4g2 · Confidence Court', () => {
 
   test('trusting the confident medicine answer costs a heart; the win has 2 stars', async ({ page }) => {
     await openGame(page, 'm4g2');
-    await page.getByTestId('dnd-item-a5').click();
-    await page.getByTestId('dnd-zone-trust').click();
+    await tapItem(page, 'a5', 'trust');
     await expect(page.getByTestId('say-bubble')).toContainText('Read the evidence, not the confidence number.');
     await sortByTap(page, M4G2);
     await expectWin(page, 2);
@@ -166,19 +174,18 @@ test.describe('m4g2 · Confidence Court', () => {
 
   test('three wrong verdicts run out of hearts', async ({ page }) => {
     await openGame(page, 'm4g2');
-    for (const [item, zone] of [['a1', 'verify'], ['a2', 'trust'], ['a6', 'verify']] as const) {
-      await page.getByTestId(`dnd-item-${item}`).click();
-      await page.getByTestId(`dnd-zone-${zone}`).click();
-    }
+    for (const [item, zone] of [['a1', 'verify'], ['a2', 'trust'], ['a6', 'verify']] as const) await tapItem(page, item, zone);
     await expect(page.getByTestId('fail-screen')).toBeVisible();
   });
 });
 
 test.describe('m4g3 · Design the Companion', () => {
-  test('keyboard sliders + safeguards → SHIP IT → LEVEL CLEAR with 3 stars', async ({ page }) => {
+  test('everything starts at 0; keyboard sliders + safeguards → SHIP IT → LEVEL CLEAR with 3 stars', async ({ page }) => {
     await openGame(page, 'm4g3');
     await expect(page.getByTestId('game-title')).toContainText('Design the Companion');
-    await expect(page.getByTestId('metric-k2')).toHaveAttribute('aria-label', 'WELLBEING 23%, goal ≥65, not met');
+    for (const id of ['en', 'da']) await expect(page.getByTestId(`slider-${id}-value`)).toHaveText('0');
+    for (const id of TOGGLES) await expect(page.getByTestId(`toggle-${id}`)).toHaveAttribute('aria-checked', 'false');
+    await expect(page.getByTestId('metric-k1')).toHaveAttribute('aria-label', 'TIME ON APP 20%, goal ≥30, not met');
     await balanceCompanion(page);
     await expect(page.getByTestId('metric-k2')).toHaveAttribute('aria-label', 'WELLBEING 86%, goal ≥65, met');
     await expect(page.getByTestId('metric-k4')).toHaveAttribute('aria-label', 'PRIVACY RISK 19%, goal ≤35, met');
@@ -188,10 +195,10 @@ test.describe('m4g3 · Design the Companion', () => {
     await expect(page.getByTestId('win-screen')).toContainText('Optimizing one number, like engagement');
   });
 
-  test('shipping the start design costs a heart: "Not yet: wellbeing is too low."', async ({ page }) => {
+  test('shipping the empty design costs a heart: "Not yet: People barely use it."', async ({ page }) => {
     await openGame(page, 'm4g3');
     await page.getByTestId('m4g3-ship').click();
-    await expect(page.getByTestId('say-bubble')).toContainText('Not yet: wellbeing is too low.');
+    await expect(page.getByTestId('say-bubble')).toContainText('Not yet: People barely use it.');
     await expect(page.getByTestId('hearts')).toHaveAttribute('aria-label', /Hearts 2 of 3/);
   });
 

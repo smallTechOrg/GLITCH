@@ -123,6 +123,17 @@ async def test_tampered_or_missing_objects_are_skipped(repo: ScenarioRepository,
     assert (await repo.next_unseen("m1g2", frozenset())).id == good.id  # type: ignore[union-attr]
 
 
+async def test_source_detective_case_file_without_excerpts_is_skipped(repo: ScenarioRepository, store: BlobStore) -> None:
+    old = (await repo.add("m4g1", case("m4g1", 1), model="m"))[0]
+    good = (await repo.add("m4g1", case("m4g1", 2), model="m"))[0]
+    stored = old.to_json()
+    for citation in stored["data"]["citations"]:
+        del citation["excerpt"]  # as written before excerpts existed
+    await put_json(store, f"scenarios/m4g1/{old.id}.json", stored)
+    assert await repo.get("m4g1", old.id) is None
+    assert (await repo.next_unseen("m4g1", frozenset())).id == good.id  # type: ignore[union-attr]
+
+
 async def test_old_schema_version_not_served(repo: ScenarioRepository, store: BlobStore) -> None:
     v = (await repo.add("m4g1", case("m4g1", 1), model="m"))[0]
     obj = v.to_json()

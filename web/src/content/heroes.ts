@@ -20,6 +20,8 @@ export interface HeroDef extends Look {
   power: PowerKind; // v3 `pw`
   powerName: string; // v3 `pn`
   description: string; // v3 `d`
+  /** What the hero says when they introduce themselves. */
+  intro: string;
   color: string; // v3 `col`
   acc: Accessory;
 }
@@ -32,10 +34,10 @@ export interface NpcDef {
 }
 
 export const HEROES: Readonly<Record<HeroId, HeroDef>> = {
-  scout: { id: 'scout', name: 'SCOUT', power: 'scan', powerName: 'X-RAY', description: 'Reveals the hidden truth about one thing.', skin: '#e0a87c', hair: '#2a2a2a', hs: 'short', top: '#4cc9ff', bot: '#2b2f63', acc: 'goggles', color: '#4cc9ff' },
-  chrono: { id: 'chrono', name: 'CHRONO', power: 'rewind', powerName: 'REWIND', description: 'Undo your last mistake and win the heart back.', skin: '#f1c9a5', hair: '#b794ff', hs: 'spiky', top: '#6a44c2', bot: '#2b2f63', acc: 'cape', color: '#b794ff' },
-  guard: { id: 'guard', name: 'GUARDIAN', power: 'shield', powerName: 'SHIELD', description: 'Blocks your next mistake. No heart lost.', skin: '#8d5a3c', hair: '#ffa63d', hs: 'helmet', top: '#ffa63d', bot: '#5a6090', acc: 'shield', color: '#ffa63d' },
-  oracle: { id: 'oracle', name: 'ORACLE', power: 'hint', powerName: 'FOCUS', description: 'Points out one wrong choice so you can skip it.', skin: '#c68a62', hair: '#1c8f55', hs: 'hat', top: '#3ee98a', bot: '#1c8f55', acc: 'orb', color: '#3ee98a' },
+  scout: { id: 'scout', name: 'SCOUT', power: 'scan', powerName: 'X-RAY', description: 'Reveals the hidden truth about one thing.', intro: "I'm SCOUT. I see what others miss. Stuck? My X-RAY gives you one answer.", skin: '#e0a87c', hair: '#2a2a2a', hs: 'short', top: '#4cc9ff', bot: '#2b2f63', acc: 'goggles', color: '#4cc9ff' },
+  chrono: { id: 'chrono', name: 'CHRONO', power: 'rewind', powerName: 'REWIND', description: 'Undo your last mistake and win the heart back.', intro: "I'm CHRONO. Everyone slips up. My REWIND wins back a lost heart.", skin: '#f1c9a5', hair: '#b794ff', hs: 'spiky', top: '#6a44c2', bot: '#2b2f63', acc: 'cape', color: '#b794ff' },
+  guard: { id: 'guard', name: 'GUARDIAN', power: 'shield', powerName: 'SHIELD', description: 'Blocks your next mistake. No heart lost.', intro: "I'm GUARDIAN. Raise my SHIELD before a tricky call and your next mistake costs nothing.", skin: '#8d5a3c', hair: '#ffa63d', hs: 'helmet', top: '#ffa63d', bot: '#5a6090', acc: 'shield', color: '#ffa63d' },
+  oracle: { id: 'oracle', name: 'ORACLE', power: 'hint', powerName: 'FOCUS', description: 'Points out one wrong choice so you can skip it.', intro: "I'm ORACLE. I give clues, not answers. My FOCUS shows you where to look.", skin: '#c68a62', hair: '#1c8f55', hs: 'hat', top: '#3ee98a', bot: '#1c8f55', acc: 'orb', color: '#3ee98a' },
 };
 
 export const NPCS: Readonly<Record<NpcId, NpcDef>> = {

@@ -32,12 +32,12 @@ The full spec is in `spec/`: start with `spec/roadmap.md`, then `spec/architectu
   - AI energy: 10 calls per device per day; the whole server allows 500 calls per day.
   - If the AI takes more than 8 s, or the API is out of energy or unreachable, the round
     switches to an in-world offline checklist so the game never stalls.
-- **Known v3 parity quirk:** in Tune the Sorter (module 2) the sliders' starting values
-  already pass both rounds. v3 behaves the same way, so the rebuild keeps it.
+- **Starts at zero:** sliders and switches begin at 0 or OFF, so the player does all the setting.
+- **One screen:** nothing scrolls at the sizes in `web/e2e/fit.spec.ts`.
 
 **Phase 2 — fresh case files**
 
-- On replay, the 5 content games (Train the Model, Fact or Fib, Proxy Hunt, Source
+- On replay, the 5 content games (Train the Model, Fact or Glitch, Proxy Hunt, Source
   Detective, Confidence Court) serve a fresh, never-seen case file from the shared cache, or generate one
   with a single AI call (validated, filtered, de-duplicated) and cache it for everyone.
   Offline or out of energy, the game plays a built-in v3 case file
@@ -154,7 +154,7 @@ cd api && uv run pytest -q -m live
 # fails with PENDING-CREDS otherwise; writes only under a unique glitch-test-* prefix)
 cd api && uv run pytest -q -m gcs
 
-# a fresh case file for Fact or Fib (any UUID v4 works as the device id)
+# a fresh case file for Fact or Glitch (any UUID v4 works as the device id)
 curl -s -H "X-Glitch-Device: 3f2b8c1e-9a4d-4e7b-8c2a-1d5e6f7a8b9c" "http://127.0.0.1:8787/v1/scenarios/m1g2/next?seen="
 
 # [live] check the key and that each configured model slug answers
@@ -210,7 +210,7 @@ the shortfall is generated, so running it again with the same N generates nothin
 # from api/ — see what would be generated (no AI calls, nothing written)
 uv run python -m glitch_api.tools.build_bank --game all --count 3 --dry-run
 
-# fill Fact or Fib up to 3 case files in the local cache (GLITCH_CACHE_DIR, default api/.cache)
+# fill Fact or Glitch up to 3 case files in the local cache (GLITCH_CACHE_DIR, default api/.cache)
 uv run python -m glitch_api.tools.build_bank --game m1g2 --count 3
 # → m1g2: 3 generated, 0 already present, 0 rejected
 #   calls: 3, tokens: … prompt + … completion, est. cost: $…

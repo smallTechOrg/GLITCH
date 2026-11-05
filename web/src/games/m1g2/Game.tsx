@@ -1,4 +1,4 @@
-// m1g2 · Fact or Fib — render + wiring only (v3 `GM.m1g2.run`, lines 512–519).
+// m1g2 · Fact or Glitch — render + wiring only (v3 `GM.m1g2.run`, lines 512–519).
 import React, { useCallback, useMemo } from 'react';
 import type { GameApi } from '../../contracts/game';
 import { PickList } from '../../dnd/PickList';

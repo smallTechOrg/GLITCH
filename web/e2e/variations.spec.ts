@@ -1,12 +1,12 @@
 // Phase 2 · Fresh case files on replay (scenario-variations.md, spec/roadmap.md → P2-W1).
 // Real backend (fake provider by default): GET /v1/scenarios/{gameId}/next generates once and
-// caches. Fact or Fib is the journey the user tests: clear it, replay → NEW CASE FILE with six
-// different lines (three fibs); replay again → a different one; backend down → the classic v3
+// caches. Fact or Glitch is the journey the user tests: clear it, replay → NEW CASE FILE with six
+// different lines (three glitches); replay again → a different one; backend down → the classic v3
 // case file with the in-world note; a fresh device's first play is always v3 (no request);
 // a SECOND device replaying it gets the same variation from the cache with no energy spent.
 import type { Browser, Page, Response } from '@playwright/test';
 import { WEB_URL } from './helpers/config';
-import { test, expect, waitForApp, API_URL } from './helpers/fixtures';
+import { test, expect, waitForApp, autoDismissBrief, API_URL } from './helpers/fixtures';
 import { expectWin, pickLines } from './helpers/flows';
 
 const V3_LINE0 = '1. Machine learning finds patterns in training data.';
@@ -24,7 +24,7 @@ interface ServedScenario {
   data?: { variationId: string; gameId: string; cached: boolean; data: { sentences: ServedSentence[] } };
 }
 
-/** Seed (once, before boot) a device with Module 1 open up to Fact or Fib. v1 = a Phase-1 save. */
+/** Seed (once, before boot) a device with Module 1 open up to Fact or Glitch. v1 = a Phase-1 save. */
 async function seed(page: Page, opts: { m1g2Done?: boolean; version?: 1 | 2; seen?: string[] } = {}): Promise<void> {
   const now = new Date().toISOString();
   const steps: Record<string, true> = { m1h: true, m1s: true, m1g1: true };
@@ -68,7 +68,7 @@ const isNext = (r: Response): boolean => r.url().includes('/v1/scenarios/m1g2/ne
 async function openFactOrFib(page: Page): Promise<void> {
   await page.goto('./module/1/game/m1g2');
   await waitForApp(page);
-  await expect(page.getByTestId('game-title')).toContainText('Fact or Fib');
+  await expect(page.getByTestId('game-title')).toContainText('Fact or Glitch');
 }
 
 async function lineLabels(page: Page): Promise<string[]> {
@@ -106,7 +106,7 @@ async function energyOf(device: string): Promise<number> {
 
 /**
  * Device B: a brand-new browser context (fresh storage → new device id) that has already
- * cleared Fact or Fib, so opening it is a replay with an empty seen list. The server's cache
+ * cleared Fact or Glitch, so opening it is a replay with an empty seen list. The server's cache
  * serves the oldest unseen variation — the same one device A got for its own empty seen list
  * — as a hit: `cached: true`, no generation, no energy spent.
  */
@@ -149,7 +149,7 @@ async function replayOnSecondDevice(browser: Browser, expected: NonNullable<Serv
 }
 
 
-test.describe('Fresh case files · Fact or Fib', () => {
+test.describe('Fresh case files · Fact or Glitch', () => {
   test('a fresh device: first play draws once (v3 here: E2E sets GLITCH_FIRST_PLAY_RANDOM=false) and never asks for a fresh case file', async ({ page }) => {
     const requests = trackScenarioRequests(page);
     const draws = trackScenarioRequests(page, 'first');
@@ -184,7 +184,7 @@ test.describe('Fresh case files · Fact or Fib', () => {
     expect(requests).toHaveLength(1);
     expect(new URL(requests[0]!).searchParams.get('seen')).toBe('');
 
-    // It is scored against its own answer key: the served fibs win with 3 stars.
+    // It is scored against its own answer key: the served glitches win with 3 stars.
     await pickLines(page, fibsOf(first));
     await expectWin(page, 3);
     await expect(page.getByTestId('win-xp-tag')).toHaveCount(0); // game-clear XP is once per game
@@ -204,7 +204,7 @@ test.describe('Fresh case files · Fact or Fib', () => {
     // The seen list is on the device: after a reload, opening the cleared game is a replay
     // that sends both ids and gets a third, unseen case file.
     const saved = await page.evaluate(() => JSON.parse(window.localStorage.getItem('glitch.v1.state') ?? '{}') as { version: number; seenScenarios: Record<string, string[]> });
-    expect(saved.version).toBe(3); // stored as v3 (Phase 3), seen list kept by the v2 → v3 migration
+    expect(saved.version).toBe(4); // stored as the current version, seen list kept by the migrations
     expect(saved.seenScenarios.m1g2).toEqual([first.variationId, second.variationId]);
     served = page.waitForResponse(isNext);
     await page.reload();

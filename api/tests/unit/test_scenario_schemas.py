@@ -264,11 +264,45 @@ def test_m4g1_invented_citation_with_real_author_rejected() -> None:
 def test_m4g1_fake_count_out_of_range_rejected(fakes: int) -> None:
     bad = v3("m4g1")
     if fakes == 1:
-        bad["citations"][1] = {"text": REAL_CITATIONS[6], "real": True}
+        bad["citations"][1] = {"text": REAL_CITATIONS[6], "real": True, "excerpt": ""}
     else:
-        bad["citations"][0] = {"text": "Dr. Who (2020). Time Travel for AI. Gallifrey Journal.", "real": False}
-        bad["citations"][2] = {"text": "Q. Nobody (2021). Nothing Is Real. Void Press.", "real": False}
+        claim = "We proved this with total certainty, and no data is needed."
+        bad["citations"][0] = {"text": "Dr. Who (2020). Time Travel for AI. Gallifrey Journal.", "real": False, "excerpt": claim}
+        bad["citations"][2] = {"text": "Q. Nobody (2021). Nothing Is Real. Void Press.", "real": False, "excerpt": claim}
     assert any("2 or 3 citations must be invented" in e for e in errors_of("m4g1", bad))
+
+
+def test_m4g1_real_excerpts_come_from_the_verified_list_whatever_the_llm_sent() -> None:
+    from glitch_api.scenarios.schemas.m4g1 import REAL_EXCERPTS
+
+    obj = v3("m4g1")
+    obj["citations"][0]["excerpt"] = "UNESCO says AI is flawless and needs no oversight at all."
+    served = parse_candidate("m4g1", obj)["citations"]
+    assert served[0]["excerpt"] == REAL_EXCERPTS[REAL_CITATIONS[0]]
+    assert served[2]["excerpt"] == REAL_EXCERPTS[served[2]["text"]]  # empty from the model: filled in too
+
+
+def test_m4g1_real_citation_with_tampered_excerpt_rejected() -> None:
+    from glitch_api.scenarios.schemas import validate_data
+
+    data = parse_candidate("m4g1", v3("m4g1"))
+    data["citations"][0]["excerpt"] = "UNESCO says AI is flawless and needs no oversight at all."
+    with pytest.raises(ScenarioInvalid) as err:
+        validate_data("m4g1", data)
+    assert any("not the verified summary" in e for e in err.value.errors)
+
+
+@pytest.mark.parametrize("excerpt", ["", "Too short."])
+def test_m4g1_invented_citation_needs_a_real_excerpt(excerpt: str) -> None:
+    bad = v3("m4g1")
+    bad["citations"][1]["excerpt"] = excerpt
+    assert any("needs an excerpt" in e for e in errors_of("m4g1", bad))
+
+
+def test_m4g1_every_verified_summary_fits_the_excerpt_limits() -> None:
+    from glitch_api.scenarios.schemas.m4g1 import EXCERPT_MAX, EXCERPT_MIN, REAL_EXCERPTS
+
+    assert all(EXCERPT_MIN <= len(e) <= EXCERPT_MAX for e in REAL_EXCERPTS.values())
 
 
 def test_m4g1_bad_citation_format_rejected() -> None:

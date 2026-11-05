@@ -8,6 +8,7 @@ import { announce } from '../a11y/announce';
 import { border, colors, fontSize, shadows } from '../theme/tokens';
 import { PixelText } from '../ui/PixelText';
 import { useFocusRing } from '../ui/focus';
+import { shuffledOrder } from '../engine/shuffle';
 import { PICK_DONE_DELAY_MS, createPick, focus, isComplete, tap, targetCount, xray, type PickLine, type PickMark, type PickState } from './pickEngine';
 
 export interface PickListProps {
@@ -42,6 +43,13 @@ export function PickList({
   showSafeNote = false, onDone, doneDelayMs = PICK_DONE_DELAY_MS, onChange, mistakeFor,
 }: PickListProps): React.JSX.Element {
   const [state, setState] = useState<PickState>(() => createPick(lines));
+  // Shown in a fresh order each play; removed (redacted) lines stay on top like a real form.
+  const [order] = useState<number[]>(() => {
+    const idx = lines.map((_, i) => i);
+    const hidden = idx.filter((i) => lines[i]!.isTarget === null);
+    const rest = idx.filter((i) => lines[i]!.isTarget !== null);
+    return [...hidden, ...shuffledOrder(rest.length).map((k) => rest[k]!)];
+  });
   const sref = useRef(state);
   const apiRef = useRef(api);
   apiRef.current = api;
@@ -110,16 +118,17 @@ export function PickList({
     <View>
       <View style={styles.paper}>
         <PixelText size={fontSize.tiny} color={colors.paperTag} style={styles.ptag}>{paperTag}</PixelText>
-        {state.lines.map((l, i) =>
-          l.isTarget === null ? (
-            <View key={i} testID={`pick-line-${i}`} accessible accessibilityLabel={`${i + 1}. ${l.label ?? l.text}: removed`} style={[styles.line, styles.hid]}>
-              <PixelText size={fontSize.small} color={colors.redactedText}>{String(i + 1)}</PixelText>
+        {order.map((i, pos) => {
+          const l = state.lines[i]!;
+          return l.isTarget === null ? (
+            <View key={i} testID={`pick-line-${i}`} accessible accessibilityLabel={`${pos + 1}. ${l.label ?? l.text}: removed`} style={[styles.line, styles.hid]}>
+              <PixelText size={fontSize.small} color={colors.redactedText}>{String(pos + 1)}</PixelText>
               <PixelText long size={fontSize.small} color={colors.redactedText} style={styles.text}>{`${l.label ?? l.text}: ${REDACTED}`}</PixelText>
             </View>
           ) : (
-            <Line key={i} index={i} line={l} mark={state.marks[i]} targetTag={targetTag} safeTag={safeTag} showSafeNote={showSafeNote} disabled={api.over} onPress={onTap} />
-          ),
-        )}
+            <Line key={i} index={i} num={pos + 1} line={l} mark={state.marks[i]} targetTag={targetTag} safeTag={safeTag} showSafeNote={showSafeNote} disabled={api.over} onPress={onTap} />
+          );
+        })}
       </View>
       <PixelText testID="pick-found" size={fontSize.ui} color={colors.ac} style={styles.found} accessibilityLiveRegion="polite">
         {`${counterLabel}: ${state.found}/${total}`}
@@ -130,6 +139,8 @@ export function PickList({
 
 interface LineProps {
   index: number;
+  /** The number shown: the line's place on the paper this play. */
+  num: number;
   line: PickLine;
   mark: PickMark | undefined;
   targetTag: string;
@@ -139,10 +150,11 @@ interface LineProps {
   onPress(i: number): void;
 }
 
-function Line({ index, line, mark, targetTag, safeTag, showSafeNote, disabled, onPress }: LineProps): React.JSX.Element {
+function Line({ index, num, line, mark, targetTag, safeTag, showSafeNote, disabled, onPress }: LineProps): React.JSX.Element {
   const f = useFocusRing();
   const marked = mark !== undefined;
   const tag = mark === 'target' ? targetTag : mark === 'safe' ? safeTag : '';
+  // The note is spoken and shown in the speech bubble, so marked lines keep their one-line height.
   const note = mark === 'target' || (mark === 'safe' && showSafeNote) ? line.note : undefined;
   useEffect(() => {
     if (mark) announce(`${tag}${note ? `. ${note}` : ''}`);
@@ -155,19 +167,16 @@ function Line({ index, line, mark, targetTag, safeTag, showSafeNote, disabled, o
       onFocus={f.onFocus}
       onBlur={f.onBlur}
       accessibilityRole="button"
-      accessibilityLabel={`${index + 1}. ${line.text}${marked ? `, ${tag}` : ''}`}
+      accessibilityLabel={`${num}. ${line.text}${marked ? `, ${tag}` : ''}${note ? `. ${note}` : ''}`}
       accessibilityState={{ disabled: disabled || marked }}
       aria-disabled={disabled || marked}
       style={[styles.line, mark === 'target' ? styles.target : mark === 'safe' ? styles.safe : null, f.ring]}
     >
-      <PixelText size={fontSize.small} color={colors.paperNum}>{String(index + 1)}</PixelText>
+      <PixelText size={fontSize.small} color={colors.paperNum}>{String(num)}</PixelText>
       <PixelText long size={fontSize.small} color={colors.ink} style={styles.text}>{line.text}</PixelText>
       {marked ? (
-        <View style={styles.result}>
-          <View style={[styles.tg, { backgroundColor: mark === 'target' ? colors.no : colors.okDark }]}>
-            <PixelText size={fontSize.tiny} color={mark === 'target' ? colors.ink : colors.white}>{tag}</PixelText>
-          </View>
-          {note ? <PixelText long size={fontSize.tiny} color={colors.paperNote} style={styles.note}>{note}</PixelText> : null}
+        <View style={[styles.tg, { backgroundColor: mark === 'target' ? colors.no : colors.okDark }]}>
+          <PixelText size={fontSize.tiny} color={mark === 'target' ? colors.ink : colors.white}>{tag}</PixelText>
         </View>
       ) : null}
     </Pressable>
@@ -175,15 +184,13 @@ function Line({ index, line, mark, targetTag, safeTag, showSafeNote, disabled, o
 }
 
 const styles = StyleSheet.create({
-  paper: { backgroundColor: colors.paper, borderWidth: border.width, borderColor: colors.ink, padding: 14, gap: 6, boxShadow: shadows.paper },
-  ptag: { marginBottom: 6 },
-  line: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 10, paddingVertical: 8, paddingHorizontal: 10, minHeight: 44, backgroundColor: colors.paperLine, borderWidth: border.thin, borderColor: colors.paperBorder },
+  paper: { backgroundColor: colors.paper, borderWidth: border.width, borderColor: colors.ink, paddingVertical: 2, paddingHorizontal: 4, gap: 2, boxShadow: shadows.paper },
+  ptag: { marginBottom: 0 },
+  line: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 0, paddingHorizontal: 8, minHeight: 32, backgroundColor: colors.paperLine, borderWidth: border.thin, borderColor: colors.paperBorder },
   hid: { backgroundColor: colors.redacted, borderColor: colors.redactedBorder },
-  text: { flex: 1, minWidth: 150 },
+  text: { flex: 1, minWidth: 0 },
   target: { backgroundColor: colors.sayBad, borderColor: colors.no },
-  safe: { backgroundColor: colors.sayGood, borderColor: colors.ok },
-  result: { flexBasis: '100%', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  tg: { paddingVertical: 2, paddingHorizontal: 6 },
-  note: { flex: 1 },
-  found: { marginTop: 12 },
+  safe: { backgroundColor: colors.sayGood },
+  tg: { paddingVertical: 1, paddingHorizontal: 6 },
+  found: { marginTop: 4 },
 });

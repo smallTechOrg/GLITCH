@@ -34,7 +34,7 @@
       "keep": "KEEP",
       "cut": "CUT"
     },
-    "wrong": "Check the clues: made-up journal, blog with no author, or the catalogue says NOT FOUND.",
+    "wrong": "Read what it says: wild claims, no evidence, no real author, or the catalogue says NOT FOUND.",
     "askMiss": "Asking the same AI is not verification. It will sound sure either way."
   },
   "conceptRules": [

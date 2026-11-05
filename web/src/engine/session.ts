@@ -30,8 +30,8 @@ export interface Line {
   mood: Mood;
 }
 
-export function createSession(gameId: GameId, hero: HeroId): GameSession {
-  return { gameId, hero, hearts: START_HEARTS, lost: 0, shield: false, powerUses: START_POWER_USES, status: 'playing' };
+export function createSession(gameId: GameId, hero: HeroId, powerUses: number = START_POWER_USES): GameSession {
+  return { gameId, hero, hearts: START_HEARTS, lost: 0, shield: false, powerUses, status: 'playing' };
 }
 
 export const isOver = (s: GameSession): boolean => s.status !== 'playing';

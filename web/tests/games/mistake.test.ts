@@ -12,8 +12,8 @@ const ANSWER = /^[a-z_]{1,24}$/;
 
 describe('buildMistake', () => {
   it('derives the concept from (gameId, itemId) and defaults explain to true', () => {
-    expect(buildMistake('m1g1', { itemId: 't3', answer: 'right', correct: 'wrong', itemText: 'x', answerLabel: 'RIGHT', correctLabel: 'WRONG' })).toEqual({
-      itemId: 't3', answer: 'right', correct: 'wrong', concept: 'Generalization', itemText: 'x', answerLabel: 'RIGHT', correctLabel: 'WRONG', explain: true,
+    expect(buildMistake('m1g1', { itemId: 't3', answer: 'spam', correct: 'ok', itemText: 'x', answerLabel: 'SPAM', correctLabel: 'NOT SPAM' })).toEqual({
+      itemId: 't3', answer: 'spam', correct: 'ok', concept: 'Generalization', itemText: 'x', answerLabel: 'SPAM', correctLabel: 'NOT SPAM', explain: true,
     });
     expect(buildMistake('m2g1', { itemId: 'r2', answer: 'missed', correct: 'pass', itemText: 'x', answerLabel: 'a', correctLabel: 'b' }).concept).toBe('Classification');
   });
@@ -44,6 +44,12 @@ describe('buildMistake', () => {
 
   it('passing states produce no payload (error path: nothing to record)', () => {
     expect(shipMistake(XRAY_DESIGN)).toBeUndefined();
-    expect(lockMistake(ROUND_1, THRESHOLD.start, CAPS_WEIGHT.start)).toBeUndefined();
+    expect(lockMistake(ROUND_1, ROUND_1.sol[0], ROUND_1.sol[1])).toBeUndefined();
+  });
+
+  it('the zero start states are not passing states: each has a payload to record', () => {
+    expect(lockMistake(ROUND_1, THRESHOLD.start, CAPS_WEIGHT.start)).toBeDefined();
+    expect(shipMistake(START_DESIGN)).toBeDefined();
+    expect(auditMistake(initialOn())).toBeDefined();
   });
 });

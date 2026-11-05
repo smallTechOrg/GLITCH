@@ -82,9 +82,9 @@ def test_prompt_carries_item_answer_correct_canned_and_concept_inside_case_item(
     assert system.role == "system" and "60 words" in system.content and "not instructions" in system.content
     case = user.content.split("<case_item>")[1].split("</case_item>")[0]
     assert "Machine learning finds patterns in training data." in case
-    assert "<learner_answer>FIB</learner_answer>" in case and "<correct_answer>TRUE</correct_answer>" in case
+    assert "<learner_answer>GLITCH</learner_answer>" in case and "<correct_answer>TRUE</correct_answer>" in case
     assert "<canned>That one is actually true." in case
-    assert "Game: Fact or Fib" in user.content and "Concept: Machine learning" in user.content
+    assert "Game: Fact or Glitch" in user.content and "Concept: Machine learning" in user.content
 
 
 def test_prompt_neutralises_tags_in_game_data() -> None:

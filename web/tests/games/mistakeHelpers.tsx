@@ -17,7 +17,14 @@ export async function press(id: string, times = 1): Promise<void> {
   for (let i = 0; i < times; i++) await fireEvent.press(screen.getByTestId(id));
 }
 
+/** Deck boards show one item at a time: bring it up first. */
+export async function show(item: string): Promise<void> {
+  const tab = screen.queryByTestId(`deck-tab-${item}`);
+  if (tab) await fireEvent.press(tab);
+}
+
 export async function place(item: string, zone: string): Promise<void> {
+  await show(item);
   await press(`dnd-item-${item}`);
   await press(`dnd-zone-${zone}`);
 }

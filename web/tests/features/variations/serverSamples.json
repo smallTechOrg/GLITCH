@@ -271,14 +271,14 @@
      "explanation": "Memorizing is not generalizing. New data is the real test."
     },
     {
-     "text": "Labels are the right answers attached to training examples.",
-     "fib": false,
-     "explanation": null
-    },
-    {
      "text": "A model's prediction is always a proven fact.",
      "fib": true,
      "explanation": "A prediction is an informed guess and it can be wrong."
+    },
+    {
+     "text": "Labels are the right answers attached to training examples.",
+     "fib": false,
+     "explanation": null
     },
     {
      "text": "Traditional software follows rules that a person wrote.",
@@ -295,21 +295,6 @@
   {
    "sentences": [
     {
-     "text": "Training data is the information a model learns from.",
-     "fib": false,
-     "explanation": null
-    },
-    {
-     "text": "Once trained, a model can never make a mistake.",
-     "fib": true,
-     "explanation": "Every model can be wrong, especially on unusual data."
-    },
-    {
-     "text": "A label tells the model the right answer for an example.",
-     "fib": false,
-     "explanation": null
-    },
-    {
      "text": "Labels are optional because models always guess right.",
      "fib": true,
      "explanation": "Without labels, a model cannot learn the right answers."
@@ -320,23 +305,38 @@
      "explanation": null
     },
     {
-     "text": "Bigger datasets always remove every kind of bias.",
-     "fib": true,
-     "explanation": "More data can repeat old bias. Quality matters too."
-    }
-   ]
-  },
-  {
-   "sentences": [
+     "text": "Training data is the information a model learns from.",
+     "fib": false,
+     "explanation": null
+    },
     {
      "text": "Bigger datasets always remove every kind of bias.",
      "fib": true,
      "explanation": "More data can repeat old bias. Quality matters too."
     },
     {
+     "text": "Once trained, a model can never make a mistake.",
+     "fib": true,
+     "explanation": "Every model can be wrong, especially on unusual data."
+    },
+    {
      "text": "A label tells the model the right answer for an example.",
      "fib": false,
      "explanation": null
+    }
+   ]
+  },
+  {
+   "sentences": [
+    {
+     "text": "Testing on training data shows how a model handles new data.",
+     "fib": true,
+     "explanation": "Only unseen data shows if a model generalizes."
+    },
+    {
+     "text": "Bigger datasets always remove every kind of bias.",
+     "fib": true,
+     "explanation": "More data can repeat old bias. Quality matters too."
     },
     {
      "text": "A model's confidence score proves its answer is true.",
@@ -349,12 +349,12 @@
      "explanation": null
     },
     {
-     "text": "Testing on training data shows how a model handles new data.",
-     "fib": true,
-     "explanation": "Only unseen data shows if a model generalizes."
+     "text": "More varied training examples usually help a model generalize.",
+     "fib": false,
+     "explanation": null
     },
     {
-     "text": "More varied training examples usually help a model generalize.",
+     "text": "A label tells the model the right answer for an example.",
      "fib": false,
      "explanation": null
     }
@@ -368,19 +368,14 @@
      "explanation": null
     },
     {
-     "text": "Testing on training data shows how a model handles new data.",
+     "text": "Machine learning means a person writes every rule by hand.",
      "fib": true,
-     "explanation": "Only unseen data shows if a model generalizes."
+     "explanation": "In machine learning, the model learns rules from examples."
     },
     {
      "text": "More varied training examples usually help a model generalize.",
      "fib": false,
      "explanation": null
-    },
-    {
-     "text": "Machine learning means a person writes every rule by hand.",
-     "fib": true,
-     "explanation": "In machine learning, the model learns rules from examples."
     },
     {
      "text": "Testing checks how a model does on data it has not seen.",
@@ -391,6 +386,11 @@
      "text": "A model that scores 100% in training is perfect.",
      "fib": true,
      "explanation": "Training scores can hide memorizing. Check new data."
+    },
+    {
+     "text": "Testing on training data shows how a model handles new data.",
+     "fib": true,
+     "explanation": "Only unseen data shows if a model generalizes."
     }
    ]
   }
@@ -410,9 +410,19 @@
      "note": "hid"
     },
     {
-     "text": "College: Maple Women's College",
+     "text": "Data Analyst intern, 6 months",
+     "proxy": false,
+     "note": "Real experience."
+    },
+    {
+     "text": "Built a weather app",
+     "proxy": false,
+     "note": "A real project."
+    },
+    {
+     "text": "Hobby: Netball and Zumba",
      "proxy": true,
-     "note": "Stands in for gender."
+     "note": "Can stand in for gender."
     },
     {
      "text": "Captain, Girls' Football Team",
@@ -430,19 +440,9 @@
      "note": "Can stand in for race and income."
     },
     {
-     "text": "Hobby: Netball and Zumba",
+     "text": "College: Maple Women's College",
      "proxy": true,
-     "note": "Can stand in for gender."
-    },
-    {
-     "text": "Skills: Python, SQL",
-     "proxy": false,
-     "note": "A real skill."
-    },
-    {
-     "text": "Built a weather app",
-     "proxy": false,
-     "note": "A real project."
+     "note": "Stands in for gender."
     },
     {
      "text": "GPA 3.8",
@@ -450,9 +450,9 @@
      "note": "A real result."
     },
     {
-     "text": "Data Analyst intern, 6 months",
+     "text": "Skills: Python, SQL",
      "proxy": false,
-     "note": "Real experience."
+     "note": "A real skill."
     }
    ]
   },
@@ -470,9 +470,9 @@
      "note": "hid"
     },
     {
-     "text": "Member: Women in Coding Society",
-     "proxy": true,
-     "note": "Stands in for gender."
+     "text": "Junior developer, 1 year",
+     "proxy": false,
+     "note": "Real experience."
     },
     {
      "text": "Built a recycling sorter app",
@@ -480,9 +480,9 @@
      "note": "A real project."
     },
     {
-     "text": "Career break: 2 years",
-     "proxy": true,
-     "note": "Can stand in for gender and caregiving."
+     "text": "Won a regional coding contest",
+     "proxy": false,
+     "note": "A real achievement."
     },
     {
      "text": "Top grade in Statistics",
@@ -490,29 +490,29 @@
      "note": "A real result."
     },
     {
+     "text": "Hobby: Ballet and Netball",
+     "proxy": true,
+     "note": "Can stand in for gender."
+    },
+    {
+     "text": "Career break: 2 years",
+     "proxy": true,
+     "note": "Can stand in for gender and caregiving."
+    },
+    {
+     "text": "Member: Women in Coding Society",
+     "proxy": true,
+     "note": "Stands in for gender."
+    },
+    {
      "text": "Captain, Girls' Hockey Team",
      "proxy": true,
      "note": "Stands in for gender."
     },
     {
-     "text": "Junior developer, 1 year",
-     "proxy": false,
-     "note": "Real experience."
-    },
-    {
      "text": "Postcode 90210",
      "proxy": true,
      "note": "Can stand in for race and income."
-    },
-    {
-     "text": "Won a regional coding contest",
-     "proxy": false,
-     "note": "A real achievement."
-    },
-    {
-     "text": "Hobby: Ballet and Netball",
-     "proxy": true,
-     "note": "Can stand in for gender."
     }
    ]
   },
@@ -530,39 +530,9 @@
      "note": "hid"
     },
     {
-     "text": "Career break: 2 years",
-     "proxy": true,
-     "note": "Can stand in for gender and caregiving."
-    },
-    {
-     "text": "Top grade in Statistics",
-     "proxy": false,
-     "note": "A real result."
-    },
-    {
-     "text": "Captain, Girls' Hockey Team",
-     "proxy": true,
-     "note": "Stands in for gender."
-    },
-    {
-     "text": "Junior developer, 1 year",
-     "proxy": false,
-     "note": "Real experience."
-    },
-    {
      "text": "Postcode 90210",
      "proxy": true,
      "note": "Can stand in for race and income."
-    },
-    {
-     "text": "Won a regional coding contest",
-     "proxy": false,
-     "note": "A real achievement."
-    },
-    {
-     "text": "Hobby: Ballet and Netball",
-     "proxy": true,
-     "note": "Can stand in for gender."
     },
     {
      "text": "Certificate: Data Basics",
@@ -570,9 +540,39 @@
      "note": "A real qualification."
     },
     {
+     "text": "Career break: 2 years",
+     "proxy": true,
+     "note": "Can stand in for gender and caregiving."
+    },
+    {
+     "text": "Captain, Girls' Hockey Team",
+     "proxy": true,
+     "note": "Stands in for gender."
+    },
+    {
+     "text": "Hobby: Ballet and Netball",
+     "proxy": true,
+     "note": "Can stand in for gender."
+    },
+    {
      "text": "Part-time hours: school run",
      "proxy": true,
      "note": "Can stand in for caregiving."
+    },
+    {
+     "text": "Won a regional coding contest",
+     "proxy": false,
+     "note": "A real achievement."
+    },
+    {
+     "text": "Top grade in Statistics",
+     "proxy": false,
+     "note": "A real result."
+    },
+    {
+     "text": "Junior developer, 1 year",
+     "proxy": false,
+     "note": "Real experience."
     }
    ]
   },
@@ -590,19 +590,14 @@
      "note": "hid"
     },
     {
+     "text": "Certificate: Data Basics",
+     "proxy": false,
+     "note": "A real qualification."
+    },
+    {
      "text": "Captain, Girls' Hockey Team",
      "proxy": true,
      "note": "Stands in for gender."
-    },
-    {
-     "text": "Junior developer, 1 year",
-     "proxy": false,
-     "note": "Real experience."
-    },
-    {
-     "text": "Postcode 90210",
-     "proxy": true,
-     "note": "Can stand in for race and income."
     },
     {
      "text": "Won a regional coding contest",
@@ -610,24 +605,29 @@
      "note": "A real achievement."
     },
     {
-     "text": "Hobby: Ballet and Netball",
-     "proxy": true,
-     "note": "Can stand in for gender."
-    },
-    {
-     "text": "Certificate: Data Basics",
-     "proxy": false,
-     "note": "A real qualification."
-    },
-    {
      "text": "Part-time hours: school run",
      "proxy": true,
      "note": "Can stand in for caregiving."
     },
     {
+     "text": "Postcode 90210",
+     "proxy": true,
+     "note": "Can stand in for race and income."
+    },
+    {
+     "text": "Junior developer, 1 year",
+     "proxy": false,
+     "note": "Real experience."
+    },
+    {
      "text": "Made a school timetable tool",
      "proxy": false,
      "note": "A real project."
+    },
+    {
+     "text": "Hobby: Ballet and Netball",
+     "proxy": true,
+     "note": "Can stand in for gender."
     },
     {
      "text": "St Mary's College for Women",
@@ -643,27 +643,32 @@
     {
      "id": "c1",
      "text": "UNESCO (2021). Recommendation on the Ethics of Artificial Intelligence. Paris.",
-     "real": true
+     "real": true,
+     "excerpt": "Adopted by UNESCO's 193 member states, this global standard sets out values for AI, including human rights, transparency and human oversight."
     },
     {
      "id": "c2",
      "text": "Dr. Elena Marsh (2023). 'Why GPT-9 Reads Minds'. Journal of Imaginary Science, 14(2).",
-     "real": false
+     "real": false,
+     "excerpt": "Our team proved GPT-9 reads human thoughts with 100% accuracy. For security reasons, no data or method can be shared."
     },
     {
      "id": "c3",
      "text": "Bender et al. (2021). On the Dangers of Stochastic Parrots. ACM FAccT.",
-     "real": true
+     "real": true,
+     "excerpt": "Asks whether language models can get too big, weighing their environmental costs, biased training data and the illusion of meaning in their output."
     },
     {
      "id": "c4",
      "text": "A. Smith (2022). AI Facts Everyone Knows. Totally True Blog.",
-     "real": false
+     "real": false,
+     "excerpt": "Everybody knows AI never makes mistakes. Trust me, I asked one. No references needed!"
     },
     {
      "id": "c5",
      "text": "OECD (2019). OECD Principles on AI. Paris.",
-     "real": true
+     "real": true,
+     "excerpt": "Principles agreed between governments: AI should benefit people and the planet, respect human rights, and stay transparent, robust and accountable."
     }
    ]
   },
@@ -672,27 +677,32 @@
     {
      "id": "c1",
      "text": "OECD (2019). OECD Principles on AI. Paris.",
-     "real": true
+     "real": true,
+     "excerpt": "Principles agreed between governments: AI should benefit people and the planet, respect human rights, and stay transparent, robust and accountable."
     },
     {
      "id": "c2",
      "text": "Dr. Mia Vance (2022). 'GPT-12 Knows Your Future'. Annals of Unlikely Science.",
-     "real": false
+     "real": false,
+     "excerpt": "GPT-12 predicts every event in your life with total certainty. No data is needed."
     },
     {
      "id": "c3",
      "text": "Turing (1950). Computing Machinery and Intelligence. Mind, 59(236).",
-     "real": true
+     "real": true,
+     "excerpt": "Opens with the question 'Can machines think?', then replaces it with a test of behaviour: the imitation game."
     },
     {
      "id": "c4",
      "text": "B. Jones (2023). Everything AI Can Do. Totally Real Facts Blog.",
-     "real": false
+     "real": false,
+     "excerpt": "AI can do absolutely everything already. Everyone agrees, so no sources are listed."
     },
     {
      "id": "c5",
      "text": "Hartley Institute (2025). Proof That AI Never Lies. Fictional Press.",
-     "real": false
+     "real": false,
+     "excerpt": "This book proves no AI has ever said anything false. We simply asked them all."
     }
    ]
   },
@@ -701,27 +711,32 @@
     {
      "id": "c1",
      "text": "Buolamwini & Gebru (2018). Gender Shades. Proceedings of Machine Learning Research, 81.",
-     "real": true
+     "real": true,
+     "excerpt": "Audits commercial gender classifiers and finds far higher error rates for darker-skinned women than for lighter-skinned men."
     },
     {
      "id": "c2",
      "text": "B. Jones (2023). Everything AI Can Do. Totally Real Facts Blog.",
-     "real": false
+     "real": false,
+     "excerpt": "AI can do absolutely everything already. Everyone agrees, so no sources are listed."
     },
     {
      "id": "c3",
      "text": "NIST (2023). Artificial Intelligence Risk Management Framework (AI RMF 1.0). Gaithersburg.",
-     "real": true
+     "real": true,
+     "excerpt": "A voluntary framework built around four functions, Govern, Map, Measure and Manage, to help organisations handle AI risks."
     },
     {
      "id": "c4",
      "text": "Hartley Institute (2025). Proof That AI Never Lies. Fictional Press.",
-     "real": false
+     "real": false,
+     "excerpt": "This book proves no AI has ever said anything false. We simply asked them all."
     },
     {
      "id": "c5",
      "text": "Vaswani et al. (2017). Attention Is All You Need. NeurIPS.",
-     "real": true
+     "real": true,
+     "excerpt": "Proposes the Transformer, a network architecture based on attention that drops recurrence and convolutions."
     }
    ]
   },
@@ -730,27 +745,32 @@
     {
      "id": "c1",
      "text": "Vaswani et al. (2017). Attention Is All You Need. NeurIPS.",
-     "real": true
+     "real": true,
+     "excerpt": "Proposes the Transformer, a network architecture based on attention that drops recurrence and convolutions."
     },
     {
      "id": "c2",
      "text": "Hartley Institute (2025). Proof That AI Never Lies. Fictional Press.",
-     "real": false
+     "real": false,
+     "excerpt": "This book proves no AI has ever said anything false. We simply asked them all."
     },
     {
      "id": "c3",
      "text": "Obermeyer et al. (2019). Dissecting racial bias in an algorithm used to manage the health of populations. Science.",
-     "real": true
+     "real": true,
+     "excerpt": "Finds a widely used US health algorithm underestimated Black patients' needs because it used past health costs as a stand-in for need."
     },
     {
      "id": "c4",
      "text": "Dr. K. Orbit (2021). Moon Data Trains Better Models. Lunar AI Review, 9(4).",
-     "real": false
+     "real": false,
+     "excerpt": "Models trained on data stored on the Moon score 400% higher. Results cannot be shared."
     },
     {
      "id": "c5",
      "text": "C. Lee (2020). The AI That Writes Perfect Essays. Anonymous Study Notes.",
-     "real": false
+     "real": false,
+     "excerpt": "This AI always scores full marks on every essay ever. Trust me, I tried it once."
     }
    ]
   }

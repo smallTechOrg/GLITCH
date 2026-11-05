@@ -6,8 +6,8 @@ import { GAME_IDS } from '@/contracts/ids';
 import { mistakeKey } from '@/contracts/game';
 
 describe('concepts', () => {
-  it('CONCEPTS equals the union of the module tags, in module order', () => {
-    expect(CONCEPTS).toEqual(MODULES.flatMap((m) => m.tags));
+  it('CONCEPTS equals the union of the module tags', () => {
+    expect([...CONCEPTS].sort()).toEqual(MODULES.flatMap((m) => m.tags).sort());
     expect(CONCEPTS).toHaveLength(12);
   });
 

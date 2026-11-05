@@ -28,12 +28,12 @@ const advance = async (ms: number) => {
 };
 
 describe('m3g1 definition', () => {
-  it('registers as module 3 with the v3 title, goal and intro', () => {
+  it('registers as module 3 with the title, goal and intro', () => {
     expect(game).toMatchObject({
       id: 'm3g1',
       module: 3,
       title: 'Proxy Hunt',
-      goal: 'SPOT THE ERROR · FIND 5 PROXIES',
+      goal: 'MISSION: Find the 5 lines that still give gender away',
       intro: 'Name and gender are hidden. Tap the 5 lines that still give gender away.',
     });
   });
@@ -69,22 +69,22 @@ describe('<Proxy Hunt>', () => {
     expect(screen.getByTestId('pick-line-2').props.accessibilityLabel).toBe("3. College: Maple Women's College");
   });
 
-  it('a proxy tap shows PROXY + note, counts it and says "Proxy found! <note>"', async () => {
+  it('a proxy tap shows PROXY, speaks its note, counts it and says "Proxy found! <note>"', async () => {
     const api = await setup();
     await press(4);
     expect(screen.getByTestId('pick-line-4')).toHaveTextContent(/PROXY/);
-    expect(screen.getByTestId('pick-line-4')).toHaveTextContent(/Can stand in for gender and caregiving\./);
-    expect(screen.getByTestId('pick-line-4').props.accessibilityLabel).toBe('5. Career break: 18 months, PROXY');
+    expect(screen.getByTestId('pick-line-4')).not.toHaveTextContent(/Can stand in/);
+    expect(screen.getByTestId('pick-line-4').props.accessibilityLabel).toBe('5. Career break: 18 months, PROXY. Can stand in for gender and caregiving.');
     expect(screen.getByTestId('pick-found')).toHaveTextContent('PROXIES FOUND: 1/5');
     expect(api.lastSay()).toEqual({ text: 'Proxy found! Can stand in for gender and caregiving.', mood: 'good' });
     expect(api.calls.miss).toHaveLength(0);
   });
 
-  it('a real-signal tap shows OK + note, costs a heart with the v3 message and disables the line', async () => {
+  it('a real-signal tap shows OK, speaks its note, costs a heart with the v3 message and disables the line', async () => {
     const api = await setup();
     await press(7);
     expect(screen.getByTestId('pick-line-7')).toHaveTextContent(/OK/);
-    expect(screen.getByTestId('pick-line-7')).toHaveTextContent(/A real skill\./);
+    expect(screen.getByTestId('pick-line-7').props.accessibilityLabel).toMatch(/A real skill\./);
     expect(api.calls.miss).toEqual([MISS_MESSAGE]);
     expect(api.hearts).toBe(2);
     expect(screen.getByTestId('pick-line-7').props.accessibilityState).toMatchObject({ disabled: true });

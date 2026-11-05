@@ -2,7 +2,7 @@
 // `stepLabel`, `heroOf`, lines 308–318) + the Home quest box (v3 `menu`, line 349).
 import { MODULE_IDS, type GameId, type HeroId, type ModuleId, type StepId } from '../contracts/ids';
 import type { PersistedState } from '../contracts/state';
-import { MODULES, getModule, stepsOf } from '../content/modules';
+import { COURSE_ORDER, MODULES, getModule, moduleNumber, previousModule, stepsOf } from '../content/modules';
 
 type Progress = Pick<PersistedState, 'steps'>;
 
@@ -17,9 +17,13 @@ export function isModuleDone(s: Progress, mod: ModuleId): boolean {
   return stepsOf(mod).every((st) => isStepDone(s, st.id));
 }
 
-/** Module 1 is always open; module n+1 opens when module n is done. */
+/**
+ * The first module of the course is always open; each later one opens when the one before it is
+ * done. A module with progress stays open, so saves from before a course reorder never re-lock.
+ */
 export function isModuleOpen(s: Progress, mod: ModuleId): boolean {
-  return mod === 1 || isModuleDone(s, (mod - 1) as ModuleId);
+  const prev = previousModule(mod);
+  return prev === null || isModuleDone(s, prev) || stepsDoneIn(s, mod) > 0;
 }
 
 /** v3 `stepOpen`: every earlier step of the module is done (done steps stay replayable). */
@@ -42,7 +46,7 @@ export function nextStepOf(s: Progress, mod: ModuleId): StepId | null {
 
 /** First module that is not done, or null when the whole course is complete. */
 export function currentModule(s: Progress): ModuleId | null {
-  return MODULE_IDS.find((m) => !isModuleDone(s, m)) ?? null;
+  return COURSE_ORDER.find((m) => !isModuleDone(s, m)) ?? null;
 }
 
 export function modulesDone(s: Progress): number {
@@ -87,12 +91,12 @@ export const COURSE_COMPLETE_TEXT = 'You finished all four modules. Replay any g
 /** v3 menu() quest box. */
 export function questBox(s: Progress): QuestBox {
   const ci = currentModule(s);
-  if (ci === null) return { eyebrow: 'COURSE COMPLETE', text: COURSE_COMPLETE_TEXT, step: 'm1s', button: '▶ Replay' };
+  if (ci === null) return { eyebrow: 'COURSE COMPLETE', text: COURSE_COMPLETE_TEXT, step: `m${COURSE_ORDER[0]!}s`, button: '▶ Replay' };
   const fresh = Object.keys(s.steps).length === 0;
   const ns = nextStepOf(s, ci) ?? stepsOf(ci)[0]!.id;
   return {
     eyebrow: fresh ? 'START HERE' : 'CONTINUE',
-    text: `Module ${ci}: ${getModule(ci).title} · ${stepLabel(ns)}`,
+    text: `Module ${moduleNumber(ci)}: ${getModule(ci).title} · ${stepLabel(ns)}`,
     step: ns,
     button: fresh ? '▶ Start' : '▶ Continue',
   };

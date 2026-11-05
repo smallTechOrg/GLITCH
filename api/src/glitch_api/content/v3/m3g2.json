@@ -50,7 +50,7 @@
   },
   "copy": {
     "gapFail": "The gap is still {n} points. Some proxies are still switched on.",
-    "accuracyFail": "Accuracy fell to {n}%. Keep the skill features on."
+    "accuracyFail": "Accuracy is only {n}%. Switch on more inputs that really measure this."
   },
   "conceptRules": [
     [

@@ -49,6 +49,7 @@ export async function fetchCaseFile(gameId: GameId, seen: readonly string[], opt
     return fallback('unavailable');
   }
   if (!r.ok) return fallback('unavailable');
+  if ('classic' in r.data) return r.data.gameId === gameId ? fallback('first-play') : fallback('invalid');
   const d = r.data;
   // Defensive: the server must never return another game's, a malformed, or an already-seen id.
   if (d.gameId !== gameId || !isVariationId(d.variationId) || seen.includes(d.variationId)) {

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { spaceActivates } from '../a11y/spaceActivates';
-import { NICKNAME_MAX } from '../contracts/state';
+import { HELP_LEVELS, NICKNAME_MAX } from '../contracts/state';
 import { resetProgress } from '../state/actions';
 import { useGlitchStore } from '../state/store';
 import { pixelText } from '../theme/fonts';
@@ -18,6 +18,7 @@ import { SETTINGS } from './copy';
 export function SettingsScreen(): React.JSX.Element {
   const nickname = useGlitchStore((s) => s.profile.nickname);
   const readable = useGlitchStore((s) => s.settings.readableFont);
+  const help = useGlitchStore((s) => s.settings.help);
   const [name, setName] = useState(nickname ?? '');
   const [focused, setFocused] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -48,30 +49,30 @@ export function SettingsScreen(): React.JSX.Element {
 
       <Card style={styles.card}>
         <PixelText size={fontSize.small} color={colors.ac} nativeID="settings-nick-label">{SETTINGS.nickname}</PixelText>
-        <PixelText long size={fontSize.small} color={colors.mu}>{SETTINGS.nicknameHelp}</PixelText>
-        <TextInput
-          testID="settings-nickname-input"
-          value={name}
-          onChangeText={(t) => {
-            setName(t);
-            setSaved(false);
-          }}
-          maxLength={NICKNAME_MAX}
-          accessibilityLabel={SETTINGS.nickname}
-          aria-labelledby="settings-nick-label"
-          autoComplete="off"
-          autoCorrect={false}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onSubmitEditing={save}
-          style={[pixelText(fontSize.ui), styles.input, focused ? styles.inputFocus : null]}
-        />
-        <View style={styles.row}>
+        <PixelText long size={fontSize.tiny} color={colors.mu}>{SETTINGS.nicknameHelp}</PixelText>
+        <View style={styles.nickRow}>
+          <TextInput
+            testID="settings-nickname-input"
+            value={name}
+            onChangeText={(t) => {
+              setName(t);
+              setSaved(false);
+            }}
+            maxLength={NICKNAME_MAX}
+            accessibilityLabel={SETTINGS.nickname}
+            aria-labelledby="settings-nick-label"
+            autoComplete="off"
+            autoCorrect={false}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onSubmitEditing={save}
+            style={[pixelText(fontSize.ui), styles.input, focused ? styles.inputFocus : null]}
+          />
           <PixelButton testID="settings-save" variant="primary" label={SETTINGS.save} onPress={save} />
-          {saved ? (
-            <PixelText testID="settings-saved" size={fontSize.tiny} color={colors.ok} accessibilityLiveRegion="polite">{SETTINGS.nicknameSaved}</PixelText>
-          ) : null}
         </View>
+        {saved ? (
+          <PixelText testID="settings-saved" size={fontSize.tiny} color={colors.ok} accessibilityLiveRegion="polite">{SETTINGS.nicknameSaved}</PixelText>
+        ) : null}
       </Card>
 
       <Card style={styles.card}>
@@ -93,12 +94,31 @@ export function SettingsScreen(): React.JSX.Element {
             <PixelText size={fontSize.tiny} color={readable ? colors.white : colors.ink}>{readable ? SETTINGS.on : SETTINGS.off}</PixelText>
           </View>
         </Pressable>
-        <PixelText long size={fontSize.small} color={colors.mu}>{SETTINGS.readableHelp}</PixelText>
+        <PixelText long size={fontSize.tiny} color={colors.mu}>{SETTINGS.readableHelp}</PixelText>
+      </Card>
+
+      <Card style={styles.card}>
+        <PixelText size={fontSize.small} color={colors.ac}>{SETTINGS.help}</PixelText>
+        <View style={styles.row} accessibilityRole="radiogroup">
+          {HELP_LEVELS.map((level) => (
+            <PixelButton
+              key={level}
+              testID={`settings-help-${level}`}
+              variant="small"
+              label={SETTINGS.helpLabels[level]}
+              accessibilityRole="radio"
+              color={help === level ? colors.ac : undefined}
+              onPress={() => useGlitchStore.getState().setHelp(level)}
+              style={help === level ? styles.helpOn : null}
+            />
+          ))}
+        </View>
+        <PixelText long size={fontSize.tiny} color={colors.mu}>{SETTINGS.helpHelp}</PixelText>
       </Card>
 
       <Card style={styles.card}>
         <PixelText size={fontSize.small} color={colors.ac}>{SETTINGS.privacyTitle}</PixelText>
-        <PixelText testID="settings-privacy" long size={fontSize.small} color={colors.tx}>{SETTINGS.privacy}</PixelText>
+        <PixelText testID="settings-privacy" long size={fontSize.tiny} color={colors.tx}>{SETTINGS.privacy}</PixelText>
       </Card>
 
       <Card style={styles.card}>
@@ -109,7 +129,7 @@ export function SettingsScreen(): React.JSX.Element {
           onPress={reset}
           accessibilityHint={SETTINGS.resetHelp}
         />
-        <PixelText long size={fontSize.small} color={colors.mu}>{SETTINGS.resetHelp}</PixelText>
+        <PixelText long size={fontSize.tiny} color={colors.mu}>{SETTINGS.resetHelp}</PixelText>
         {wasReset ? (
           <PixelText testID="settings-reset-done" size={fontSize.tiny} color={colors.ok} accessibilityLiveRegion="polite">{SETTINGS.resetDone}</PixelText>
         ) : null}
@@ -119,12 +139,14 @@ export function SettingsScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  title: { marginVertical: 12 },
-  card: { marginVertical: 8, gap: 8 },
-  input: { color: colors.tx, backgroundColor: colors.deep, borderWidth: border.width, borderColor: colors.ln, padding: 12, minHeight: layout.minTouch },
+  title: { marginBottom: 4 },
+  card: { marginVertical: 3, gap: 3, padding: 8 },
+  nickRow: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  input: { flex: 1, minWidth: 0, color: colors.tx, backgroundColor: colors.deep, borderWidth: border.width, borderColor: colors.ln, paddingVertical: 4, paddingHorizontal: 8, minHeight: layout.minTouch },
   inputFocus: { borderColor: colors.ac },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
-  toggle: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, minHeight: layout.minTouch, backgroundColor: colors.cd, borderWidth: border.width, borderColor: colors.ln },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  helpOn: { backgroundColor: colors.ln },
+  toggle: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 2, paddingHorizontal: 8, minHeight: layout.minTouch, backgroundColor: colors.cd, borderWidth: border.width, borderColor: colors.ln },
   toggleOn: { borderColor: colors.ok },
   flex: { flex: 1 },
   tag: { paddingVertical: 2, paddingHorizontal: 6 },

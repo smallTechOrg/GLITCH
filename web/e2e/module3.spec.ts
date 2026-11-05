@@ -1,4 +1,4 @@
-// Module 3 · Neon City E2E (slice C1): Proxy Hunt + Fairness Lab walked to LEVEL CLEAR with
+// Neon City E2E (slice C1): Proxy Hunt + Fairness Lab walked to LEVEL CLEAR with
 // the expected star count, one Out-of-hearts run per game, a keyboard-only game and a power.
 // Runs at the Phase 1 gate. Each test is a fresh browser context (= fresh device), seeded
 // with Modules 1–2 finished and the Module 3 hero chosen so the games are reachable.
@@ -11,6 +11,7 @@ import { expectWin, pickLines } from './helpers/flows';
 const PROXIES = [2, 3, 4, 5, 6] as const; // v3 lines 3–7
 const REAL = [7, 8, 9, 10] as const; // v3 lines 8–11
 const PROXY_TOGGLES = ['col', 'cap', 'brk', 'pc'] as const;
+const SKILL_TOGGLES = ['code', 'gpa', 'int'] as const;
 
 type Module3Game = 'm3g1' | 'm3g2';
 
@@ -101,41 +102,85 @@ test.describe('m3g1 · Proxy Hunt', () => {
 });
 
 test.describe('m3g2 · Fairness Lab', () => {
-  test('keyboard only: switch every proxy off, run the audit, LEVEL CLEAR with 3 stars', async ({ page }) => {
+  test('keyboard only: every input starts OFF; switch on the skills, audit, answer the ethics question → 3 stars', async ({ page }) => {
     await openGame(page, 'm3g2');
     await expect(page.getByTestId('game-title')).toContainText('Fairness Lab');
-    await expect(page.getByTestId('metric-gap')).toHaveAttribute('aria-label', 'GAP 31%, goal ≤6, not met');
-    await expect(page.getByTestId('metric-accuracy')).toHaveAttribute('aria-label', 'ACCURACY 94%, goal ≥80, met');
-    for (const [i, id] of PROXY_TOGGLES.entries()) {
+    await expect(page.getByTestId('m3g2-heading')).toHaveText('THE SCREENER · INPUTS');
+    for (const id of [...SKILL_TOGGLES, ...PROXY_TOGGLES]) await expect(page.getByTestId(`toggle-${id}`)).toHaveAttribute('aria-checked', 'false');
+    await expect(page.getByTestId('metric-gap')).toHaveAttribute('aria-label', 'GAP 2%, goal ≤6, met');
+    await expect(page.getByTestId('metric-accuracy')).toHaveAttribute('aria-label', 'ACCURACY 50%, goal ≥80, not met');
+    for (const [i, id] of SKILL_TOGGLES.entries()) {
       await page.getByTestId(`toggle-${id}`).focus();
       // spec/ui.md: toggles work with Enter and Space — exercise both.
       await page.keyboard.press(i % 2 === 0 ? 'Enter' : 'Space');
-      await expect(page.getByTestId(`toggle-${id}`)).toHaveAttribute('aria-checked', 'false');
+      await expect(page.getByTestId(`toggle-${id}`)).toHaveAttribute('aria-checked', 'true');
     }
     await expect(page.getByTestId('metric-gap')).toHaveAttribute('aria-label', 'GAP 2%, goal ≤6, met');
     await expect(page.getByTestId('metric-accuracy')).toHaveAttribute('aria-label', 'ACCURACY 86%, goal ≥80, met');
-    await expect(page.getByTestId('m3g2-women')).toContainText('46%');
+    await expect(page.getByTestId('m3g2-group-b')).toContainText('46%');
     await page.getByTestId('m3g2-audit').focus();
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('say-bubble')).toContainText('Audit passed. Fair and accurate.');
+    await expect(page.getByTestId('m3g2-decide')).toContainText('NOW YOU DECIDE · TRANSPARENCY');
+    await page.getByTestId('m3g2-option-b').focus();
+    await page.keyboard.press('Enter');
     await expectWin(page, 3);
     await expect(page.getByTestId('win-screen')).toContainText('Removing the sensitive column is not enough.');
   });
 
-  test('a failed audit costs a heart with the gap message; fixing it wins with 2 stars', async ({ page }) => {
+  test('all inputs on: a failed audit costs a heart with the gap message; fixing it wins with 2 stars', async ({ page }) => {
     await openGame(page, 'm3g2');
+    for (const id of [...SKILL_TOGGLES, ...PROXY_TOGGLES]) await page.getByTestId(`toggle-${id}`).click();
     await page.getByTestId('m3g2-audit').click();
     await expect(page.getByTestId('say-bubble')).toContainText('The gap is still 31 points. Some proxies are still switched on.');
     for (const id of PROXY_TOGGLES) await page.getByTestId(`toggle-${id}`).click();
     await page.getByTestId('m3g2-audit').click();
+    await page.getByTestId('m3g2-option-b').click();
     await expectWin(page, 2);
   });
 
-  test('switching a skill off fails on accuracy', async ({ page }) => {
+  test('too few skills fails on accuracy', async ({ page }) => {
     await openGame(page, 'm3g2');
-    for (const id of [...PROXY_TOGGLES, 'gpa']) await page.getByTestId(`toggle-${id}`).click();
+    for (const id of ['code', 'int']) await page.getByTestId(`toggle-${id}`).click();
     await page.getByTestId('m3g2-audit').click();
-    await expect(page.getByTestId('say-bubble')).toContainText('Accuracy fell to 76%. Keep the skill features on.');
+    await expect(page.getByTestId('say-bubble')).toContainText('Accuracy is only 76%. Switch on more inputs that really measure this.');
+  });
+
+  test('a wrong answer to the ethics question breaks a heart and rules that answer out', async ({ page }) => {
+    await openGame(page, 'm3g2');
+    for (const id of SKILL_TOGGLES) await page.getByTestId(`toggle-${id}`).click();
+    await page.getByTestId('m3g2-audit').click();
+    await page.getByTestId('m3g2-option-a').click();
+    await expect(page.getByTestId('hearts')).toHaveAttribute('aria-label', /Hearts 2 of 3/);
+    await expect(page.getByTestId('say-bubble')).toContainText('Who can check or challenge it?');
+    await expect(page.getByTestId('m3g2-option-a')).toHaveAttribute('aria-disabled', 'true');
+    await page.getByTestId('m3g2-option-b').click();
+    await expectWin(page, 2);
+    await expect(page.getByTestId('recap-why-0')).toContainText('Who can check or challenge it?');
+  });
+
+  test('clearing a case moves on to a different system and a different ethics question; a retry stays on the same case', async ({ page }) => {
+    await openGame(page, 'm3g2');
+    for (let k = 0; k < 3; k++) await page.getByTestId('m3g2-audit').click();
+    await expect(page.getByTestId('fail-screen')).toBeVisible();
+    await page.getByTestId('fail-retry').click();
+    await expect(page.getByTestId('m3g2-case-hiring')).toBeVisible();
+
+    for (const id of SKILL_TOGGLES) await page.getByTestId(`toggle-${id}`).click();
+    await page.getByTestId('m3g2-audit').click();
+    await page.getByTestId('m3g2-option-b').click();
+    await expectWin(page, 3);
+
+    await page.getByTestId('win-replay').click();
+    await expect(page.getByTestId('m3g2-case-loans')).toBeVisible();
+    await expect(page.getByTestId('m3g2-heading')).toHaveText('THE LOAN BOT · INPUTS');
+    await expect(page.getByTestId('toggle-repay')).toHaveAttribute('aria-checked', 'false');
+    for (const id of ['repay', 'debt', 'save']) await page.getByTestId(`toggle-${id}`).click();
+    await page.getByTestId('m3g2-audit').click();
+    await expect(page.getByTestId('m3g2-decide')).toContainText('NOW YOU DECIDE · PRIVACY');
+    await page.getByTestId('m3g2-option-a').click();
+    await expectWin(page);
+    await expect(page.getByTestId('win-screen')).toContainText('people have a right to privacy');
   });
 
   test('three failed audits run out of hearts', async ({ page }) => {
@@ -145,10 +190,13 @@ test.describe('m3g2 · Fairness Lab', () => {
     await expect(page.getByTestId('fail-home')).toBeVisible();
   });
 
-  test('FOCUS (ORACLE) names the first proxy still on, at no heart cost', async ({ page }) => {
+  test('FOCUS (ORACLE) names a proxy that is on, else a skill that is off, at no heart cost', async ({ page }) => {
     await openGame(page, 'm3g2', 'oracle');
     await page.getByTestId('power-button').click();
-    await expect(page.getByTestId('say-bubble')).toContainText("FOCUS: Women's college is still on, and it can stand in for gender.");
+    await expect(page.getByTestId('say-bubble')).toContainText('FOCUS: Coding test score really measures this. It should be on.');
+    await page.getByTestId('toggle-col').click();
+    await page.getByTestId('power-button').click();
+    await expect(page.getByTestId('say-bubble')).toContainText("FOCUS: Women's college is on, and it can stand in for gender.");
     await expect(page.getByTestId('hearts')).toHaveAttribute('aria-label', /Hearts 3 of 3/);
     await expect(page.getByTestId('toggle-col')).toHaveAttribute('aria-checked', 'true');
   });

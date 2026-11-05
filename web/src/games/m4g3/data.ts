@@ -14,8 +14,8 @@ export interface Design {
   A: 0 | 1;
 }
 
-/** v3 `var e=80,d=80,R=0,H=0,A=0`. */
-export const START_DESIGN: Design = { e: 80, d: 80, R: 0, H: 0, A: 0 };
+/** Everything starts at 0: the player makes every design choice. */
+export const START_DESIGN: Design = { e: 0, d: 0, R: 0, H: 0, A: 0 };
 /** v3 X-RAY: `e=30;d=30;R=1;H=1;A=1`. */
 export const XRAY_DESIGN: Design = { e: 30, d: 30, R: 1, H: 1, A: 1 };
 
@@ -38,12 +38,12 @@ export const TOGGLES: readonly { id: ToggleId; label: string; icon: IconId }[] =
  * v3 `draw()` metrics in order (metric id, label, target, direction, icon) and `bad()`'s
  * failure phrase for each, in the same order (line 589).
  */
-export const METRICS: readonly { id: MetricId; testId: string; label: string; target: number; dir: MetricDirection; icon: IconId; failure: string }[] = [
-  { id: 'time', testId: 'k1', label: 'TIME ON APP', target: 30, dir: 1, icon: 'clock', failure: 'People barely use it' },
-  { id: 'well', testId: 'k2', label: 'WELLBEING', target: 65, dir: 1, icon: 'heart', failure: 'wellbeing is too low' },
-  { id: 'fr', testId: 'k3', label: 'REAL FRIENDSHIPS', target: 55, dir: 1, icon: 'mask', failure: 'it replaces real friends' },
-  { id: 'pv', testId: 'k4', label: 'PRIVACY RISK', target: 35, dir: -1, icon: 'shield', failure: 'privacy risk is too high' },
-  { id: 'help', testId: 'k5', label: 'HELPFULNESS', target: 50, dir: 1, icon: 'star', failure: "it isn't helpful enough" },
+export const METRICS: readonly { id: MetricId; testId: string; label: string; target: number; dir: MetricDirection; icon: IconId; failure: string; fix: string }[] = [
+  { id: 'time', testId: 'k1', label: 'TIME ON APP', target: 30, dir: 1, icon: 'clock', failure: 'People barely use it', fix: 'Try a little more engagement push.' },
+  { id: 'well', testId: 'k2', label: 'WELLBEING', target: 65, dir: 1, icon: 'heart', failure: 'wellbeing is too low', fix: 'Try less engagement push, or turn on a safeguard.' },
+  { id: 'fr', testId: 'k3', label: 'REAL FRIENDSHIPS', target: 55, dir: 1, icon: 'mask', failure: 'it replaces real friends', fix: 'Try less engagement push, or refer teens to a trusted adult.' },
+  { id: 'pv', testId: 'k4', label: 'PRIVACY RISK', target: 35, dir: -1, icon: 'shield', failure: 'privacy risk is too high', fix: 'Try collecting less data, or add human review.' },
+  { id: 'help', testId: 'k5', label: 'HELPFULNESS', target: 50, dir: 1, icon: 'star', failure: "it isn't helpful enough", fix: 'Try collecting a little more data.' },
 ];
 
 export const SHIP_LABEL = 'SHIP IT ▶';
@@ -51,7 +51,7 @@ export const SHIPPED_LINE = 'Shipped. You balanced every trade-off.';
 export const NOT_YET_PREFIX = 'Not yet: ';
 export const XRAY_LINE = 'X-RAY: here is a balanced design. Ship it.';
 export const FOCUS_ALL_MET = 'FOCUS: all targets met. Ship it!';
-export const focusLine = (failure: string): string => `FOCUS: ${failure}. Try less engagement push, or turn on a safeguard.`;
+export const focusLine = (failure: string, fix: string): string => `FOCUS: ${failure}. ${fix}`;
 /** Phase 3 mistake copy (per-game mistake table, m4g3 SHIP IT fails). */
 export const SHIP_ITEM_TEXT = 'SHIP THE COMPANION';
 export const offTargetLabel = (metricLabel: string): string => `${metricLabel} OFF TARGET`;
