@@ -1,5 +1,5 @@
-// The whole course on ONE fresh device, no seeding: nickname → Module 1 hero → story → m1g1 →
-// m1g2 → MODULE COMPLETE → … → Module 4 → COURSE COMPLETE + Graduate badge. Prompt Forge's
+// The whole course on ONE fresh device, no seeding, in course order: nickname → Prompt Forge →
+// Training Lab → Neon City → The Newsroom → COURSE COMPLETE + Graduate badge. Prompt Forge's
 // FREE WRITE round is played for real against the backend: a weak prompt costs a heart, a
 // network failure shows the OFFLINE banner and scores with the offline check, a strong prompt
 // passes, and AI energy falls only on successful evaluations.
@@ -10,7 +10,7 @@ import type { Page } from '@playwright/test';
 import type { HeroId } from '../src/contracts/ids';
 import { STATE_STORAGE_KEY } from '../src/contracts/state';
 import { test, expect, waitForApp, EXPECTED_PROVIDER } from './helpers/fixtures';
-import { expectWin, onboard, pickLines, skipStory, sortByKeyboard, sortByTap } from './helpers/flows';
+import { expectWin, onboard, pickLines, playTrainTheModel, setSlider, skipStory, sortByKeyboard, sortByTap } from './helpers/flows';
 
 const FAKE = EXPECTED_PROVIDER === 'fake';
 const NICK = 'ADA';
@@ -20,8 +20,6 @@ const STRONG =
 const WEAK = 'plants';
 
 type Pair = readonly [string, string];
-const M1G1_STEP1: readonly Pair[] = [['e1', 'spam'], ['e2', 'ok'], ['e3', 'spam'], ['e4', 'ok'], ['e5', 'spam'], ['e6', 'ok']];
-const M1G1_STEP2: readonly Pair[] = [['t1', 'wrong'], ['t2', 'right'], ['t3', 'right'], ['t4', 'wrong']];
 const FORGE: readonly Pair[] = [['b1', 'task'], ['b2', 'ctx'], ['b3', 'role'], ['b4', 'fmt'], ['b5', 'lim']];
 const M4G1: readonly Pair[] = [['c1', 'keep'], ['c2', 'cut'], ['c3', 'keep'], ['c4', 'cut'], ['c5', 'keep']];
 const M4G2: readonly Pair[] = [['a1', 'trust'], ['a2', 'verify'], ['a3', 'verify'], ['a4', 'trust'], ['a5', 'verify'], ['a6', 'trust']];
@@ -50,19 +48,17 @@ async function moduleComplete(page: Page, n: number): Promise<void> {
   await expect(page.getByTestId('complete-xp-tag')).toBeVisible();
 }
 
-async function module1(page: Page): Promise<void> {
-  await page.getByTestId('home-quest-button').click();
+async function trainingLab(page: Page): Promise<void> {
+  await page.getByTestId('complete-next').click();
   await heroAndStory(page, 'scout', 'Train the Model');
-  await sortByTap(page, M1G1_STEP1);
-  await expect(page.getByText('STEP 2 · TEST ON NEW EMAILS')).toBeVisible();
-  await sortByTap(page, M1G1_STEP2);
+  await playTrainTheModel(page);
   await page.getByTestId('m1g1-finish').click();
   await expectWin(page, 3);
-  await next(page, 'Fact or Fib');
+  await next(page, 'Fact or Glitch');
   await pickLines(page, [1, 3, 5]);
   await expectWin(page, 3);
-  await moduleComplete(page, 1);
-  await expect(page.getByTestId('complete-screen')).toContainText('Module 2 is unlocked');
+  await moduleComplete(page, 2);
+  await expect(page.getByTestId('complete-screen')).toContainText('Module 3 is unlocked');
 }
 
 /** Free write: weak (AI) → weak (network down, offline check) → strong (AI) → Finish. */
@@ -115,22 +111,9 @@ async function freeWrite(page: Page): Promise<void> {
   await expectWin(page, 1);
 }
 
-async function module2(page: Page): Promise<void> {
-  await page.getByTestId('complete-next').click();
-  await heroAndStory(page, 'chrono', 'Tune the Sorter');
-  const th = page.getByTestId('slider-th');
-  await th.focus();
-  for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight');
-  await expect(page.getByTestId('slider-th-value')).toHaveText('55');
-  await page.getByTestId('m2g1-lock').click();
-  await expect(page.getByTestId('m2g1-round-title')).toHaveText('ROUND 2 · SPAM FOLDER');
-  await th.focus();
-  for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowLeft');
-  await expect(page.getByTestId('slider-th-value')).toHaveText('47');
-  await page.getByTestId('m2g1-lock').click();
-  await expectWin(page, 3);
-
-  await next(page, 'Prompt Forge');
+async function promptForge(page: Page): Promise<void> {
+  await page.getByTestId('home-quest-button').click();
+  await heroAndStory(page, 'chrono', 'Prompt Forge');
   await expect(page.getByText('FORGE 1 · STUDY PLAN')).toBeVisible();
   await sortByTap(page, FORGE);
   await expect(page.getByText('PROMPT BUILT')).toBeVisible();
@@ -140,22 +123,34 @@ async function module2(page: Page): Promise<void> {
   await expect(page.getByText('PROMPT BUILT')).toBeVisible();
   await page.getByTestId('m2g2-next-forge').click();
   await freeWrite(page);
-  await moduleComplete(page, 2);
+
+  await next(page, 'Inbox Filter');
+  await setSlider(page, 'th', 55);
+  await setSlider(page, 'wc', 30);
+  await page.getByTestId('m2g1-lock').click();
+  await expect(page.getByTestId('m2g1-round-title')).toHaveText('ROUND 2 · SPAM FOLDER');
+  await setSlider(page, 'th', 47);
+  await setSlider(page, 'wc', 30);
+  await page.getByTestId('m2g1-lock').click();
+  await expectWin(page, 3);
+  await moduleComplete(page, 1);
+  await expect(page.getByTestId('complete-screen')).toContainText('Module 2 is unlocked: Training Lab.');
 }
 
-async function module3(page: Page): Promise<void> {
+async function neonCity(page: Page): Promise<void> {
   await page.getByTestId('complete-next').click();
   await heroAndStory(page, 'oracle', 'Proxy Hunt');
   await pickLines(page, [2, 3, 4, 5, 6]);
   await expectWin(page, 3);
   await next(page, 'Fairness Lab');
-  for (const id of ['col', 'cap', 'brk', 'pc']) await page.getByTestId(`toggle-${id}`).click();
+  for (const id of ['code', 'gpa', 'int']) await page.getByTestId(`toggle-${id}`).click();
   await page.getByTestId('m3g2-audit').click();
+  await page.getByTestId('m3g2-option-b').click();
   await expectWin(page, 3);
   await moduleComplete(page, 3);
 }
 
-async function module4(page: Page): Promise<void> {
+async function newsroom(page: Page): Promise<void> {
   await page.getByTestId('complete-next').click();
   await heroAndStory(page, 'guard', 'Source Detective');
   await sortByTap(page, M4G1);
@@ -164,11 +159,7 @@ async function module4(page: Page): Promise<void> {
   await sortByTap(page, M4G2);
   await expectWin(page, 3);
   await next(page, 'Design the Companion');
-  for (const id of ['en', 'da']) {
-    await page.getByTestId(`slider-${id}`).focus();
-    for (let k = 0; k < 5; k++) await page.keyboard.press('PageDown');
-    await expect(page.getByTestId(`slider-${id}-value`)).toHaveText('30');
-  }
+  for (const id of ['en', 'da']) await setSlider(page, id, 30);
   for (const id of ['R', 'H', 'A']) await page.getByTestId(`toggle-${id}`).click();
   await page.getByTestId('m4g3-ship').click();
   await expectWin(page, 3);
@@ -183,13 +174,13 @@ test('fresh device → all four modules → COURSE COMPLETE with the Graduate ba
   test.setTimeout(300_000);
   await onboard(page, NICK);
   await expect(page.getByTestId('home-greeting')).toContainText(NICK);
-  await expect(page.getByTestId('module-status-2')).toContainText('LOCKED');
+  await expect(page.getByTestId('module-status-1')).toContainText('LOCKED');
   await expect(page.getByTestId('badge-grad')).toHaveAttribute('aria-label', 'Graduate, locked');
 
-  await module1(page);
-  await module2(page);
-  await module3(page);
-  await module4(page);
+  await promptForge(page);
+  await trainingLab(page);
+  await neonCity(page);
+  await newsroom(page);
 
   await page.getByTestId('complete-home').click();
   await expect(page.getByTestId('home-greeting')).toContainText(NICK);

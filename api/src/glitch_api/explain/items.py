@@ -61,25 +61,23 @@ def _every(answers: dict[str, str], correct: str, message: str) -> dict[str, str
 # ---- per game -------------------------------------------------------------------------
 def _m1g1(data: dict[str, Any], copy: dict[str, Any], rules: Rules) -> list[ExplainItem]:
     zones: dict[str, str] = copy["zones"]
-    train = {"spam": zones["spam"], "ok": zones["ok"]}
-    test = {"right": zones["right"], "wrong": zones["wrong"]}
+    calls = {"spam": zones["spam"], "ok": zones["ok"]}
     out: list[ExplainItem] = []
     for e in data["trainEmails"]:
         correct = "spam" if e["label"] == "spam" else "ok"
-        context = "Step 1: label each training email SPAM or NOT SPAM so the model can learn the pattern."
-        out.append(_item(rules, e["id"], e["text"], context, correct, train, _every(train, correct, copy["trainWrong"])))
+        context = "Round 1: call each training email SPAM or NOT SPAM so the model can learn the pattern."
+        out.append(_item(rules, e["id"], e["text"], context, correct, calls, _every(calls, correct, copy["trainWrong"])))
     for t in data["testEmails"]:
-        correct = "right" if t["modelRight"] else "wrong"
-        really = zones["spam"] if t["label"] == "spam" else zones["ok"]
-        context = (f"Step 2: a new email the model never saw. The model says {t['modelSays']}; "
-                   f"the email really is {really}. Was the model RIGHT or WRONG?")
-        out.append(_item(rules, t["id"], t["text"], context, correct, test, _every(test, correct, copy["testWrong"])))
+        correct = "spam" if t["label"] == "spam" else "ok"
+        context = (f"Round 2: a new email the model never saw. Call it SPAM or NOT SPAM. "
+                   f"The trained model said {t['modelSays']}, which was {'right' if t['modelRight'] else 'wrong'}.")
+        out.append(_item(rules, t["id"], t["text"], context, correct, calls, _every(calls, correct, copy["testWrong"])))
     return out
 
 
 def _m1g2(data: dict[str, Any], copy: dict[str, Any], rules: Rules) -> list[ExplainItem]:
-    answers = {"fib": "FIB", "true": "TRUE"}
-    context = "NOVA's draft essay about machine learning: tap only the fibs (false sentences)."
+    answers = {"fib": "GLITCH", "true": "TRUE"}
+    context = "NOVA's draft essay about machine learning: tap only the glitches (false sentences)."
     return [
         _item(rules, f"s{i}", s["text"], context, "true", answers, {"fib": copy["trueMiss"]})
         for i, s in enumerate(data["sentences"])
@@ -92,7 +90,7 @@ def _m2g1(data: dict[str, Any], copy: dict[str, Any], rules: Rules) -> list[Expl
     for r in data["rounds"]:
         answers = {"missed": f"{r['ma']} OVER GOAL", "false_alarms": f"{r['mbl']} OVER GOAL", "pass": "BOTH GOALS MET"}
         context = (f"{r['rule']} Goals: {r['ma']} at most {r['ga']}, {r['mbl']} at most {r['gb']}. "
-                   "The learner sets a threshold and an all-caps weight, then locks it in.")
+                   "The learner sets the score that flags a message and the points for all caps, then locks it in.")
         out.append(_item(rules, r["id"], r["title"], context, "pass", answers,
                          {"missed": r["fa"], "false_alarms": r["fb"]}))
     return out

@@ -23,15 +23,16 @@ describe('scaffold smoke', () => {
   it('has the four v3 modules with 2/2/2/3 games and 17 steps in total', () => {
     expect(MODULES.map((m) => m.games.length)).toEqual([2, 2, 2, 3]);
     expect(MODULES.map((m) => m.title)).toEqual(['Training Lab', 'Prompt Forge', 'Neon City', 'The Newsroom']);
-    expect(MODULE_IDS.flatMap((m) => stepsOf(m).map((s) => s.id))).toEqual(STEP_IDS);
+    expect(MODULE_IDS.flatMap((m) => stepsOf(m).map((s) => s.id)).sort()).toEqual([...STEP_IDS].sort());
+    expect(stepsOf(2).map((s) => s.id)).toEqual(['m2h', 'm2s', 'm2g2', 'm2g1']);
     expect(stepsOf(1).map((s) => [s.kind, s.label])).toEqual([
-      ['HERO', 'Choose your hero'], ['STORY', 'Storytime'], ['GAME', 'Train the Model'], ['GAME', 'Fact or Fib'],
+      ['HERO', 'Choose your hero'], ['STORY', 'Storytime'], ['GAME', 'Train the Model'], ['GAME', 'Fact or Glitch'],
     ]);
   });
 
   it('pre-renders every module route and only each module’s own games', () => {
     expect(moduleParams()).toHaveLength(4);
-    expect(gameParams()).toEqual(GAME_IDS.map((g) => ({ mod: g.charAt(1), game: g })));
+    expect([...gameParams()].sort((a, b) => a.game.localeCompare(b.game))).toEqual(GAME_IDS.map((g) => ({ mod: g.charAt(1), game: g })));
     expect(isGameOfModule(1, 'm2g1')).toBe(false);
   });
 

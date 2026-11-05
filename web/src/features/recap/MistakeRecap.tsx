@@ -1,11 +1,11 @@
-// Mistake recap — on the win screen (below the tags, above the buttons) and the fail screen
-// (above the buttons) (spec/ui.md → Tutor NOVA → Recap; mistake-recap.md). Built on the device
-// from this run's mistakes; never calls the network. The exported name and the props
-// interface below are FROZEN (the Game Frame mounts it).
-import React, { useMemo } from 'react';
+// Mistake recap, on the win and fail screens (mistake-recap.md). Built on the device from this
+// run's mistakes; never calls the network. Shows one mistake at a time with ◀ ▶ so it always fits
+// the screen. The exported name and the props interface below are FROZEN (the Game Frame mounts it).
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { SessionMistake } from '../../contracts/game';
 import { border, colors, fontSize } from '../../theme/tokens';
+import { PixelButton } from '../../ui/PixelButton';
 import { PixelText } from '../../ui/PixelText';
 import { Tag } from '../../ui/Tag';
 import type { Explanation } from '../tutor/AskNovaWhy';
@@ -21,13 +21,22 @@ export interface MistakeRecapProps {
 
 export function MistakeRecap({ mistakes, explanations }: MistakeRecapProps): React.JSX.Element {
   const recap = useMemo(() => buildRecap(mistakes, explanations), [mistakes, explanations]);
+  const [page, setPage] = useState(0);
+  const i = Math.min(page, Math.max(0, recap.rows.length - 1));
+  const r = recap.rows[i];
   return (
     <View testID="recap" style={styles.box}>
-      <PixelText size={fontSize.tiny} color={colors.ac} bold accessibilityRole="header">{RECAP.heading}</PixelText>
-      {recap.rows.length === 0 ? (
-        <PixelText testID="recap-clean" long size={fontSize.small} color={colors.ok}>{RECAP.clean}</PixelText>
-      ) : null}
-      {recap.rows.map((r, i) => (
+      <View style={styles.head}>
+        <PixelText size={fontSize.tiny} color={colors.ac} bold accessibilityRole="header" style={styles.flex}>{RECAP.heading}</PixelText>
+        {recap.rows.length > 1 ? (
+          <>
+            <PixelButton testID="recap-prev" variant="small" label="◀" accessibilityLabel="Previous mistake" disabled={i === 0} onPress={() => setPage(i - 1)} style={styles.nav} />
+            <PixelText testID="recap-page" size={fontSize.tiny} color={colors.mu}>{`${i + 1}/${recap.rows.length}`}</PixelText>
+            <PixelButton testID="recap-next" variant="small" label="▶" accessibilityLabel="Next mistake" disabled={i === recap.rows.length - 1} onPress={() => setPage(i + 1)} style={styles.nav} />
+          </>
+        ) : null}
+      </View>
+      {r ? (
         <View
           key={r.key}
           testID={`recap-row-${i}`}
@@ -36,7 +45,7 @@ export function MistakeRecap({ mistakes, explanations }: MistakeRecapProps): Rea
           style={styles.row}
         >
           <View style={styles.top}>
-            <PixelText testID={`recap-item-${i}`} long size={fontSize.small} style={styles.item}>{r.itemText}</PixelText>
+            <PixelText testID={`recap-item-${i}`} long size={fontSize.small} style={styles.flex}>{r.itemText}</PixelText>
             {r.count > 1 ? <Tag testID={`recap-count-${i}`} label={RECAP.count(r.count)} /> : null}
             {r.shielded ? <Tag testID={`recap-shielded-${i}`} label={RECAP.shielded} variant="soon" /> : null}
           </View>
@@ -44,7 +53,9 @@ export function MistakeRecap({ mistakes, explanations }: MistakeRecapProps): Rea
           <PixelText testID={`recap-was-${i}`} size={fontSize.tiny} color={colors.ok}>{RECAP.was(r.correctLabel)}</PixelText>
           <PixelText testID={`recap-why-${i}`} long size={fontSize.small} color={colors.mu}>{r.why}</PixelText>
         </View>
-      ))}
+      ) : (
+        <PixelText testID="recap-clean" long size={fontSize.small} color={colors.ok}>{RECAP.clean}</PixelText>
+      )}
       {recap.more > 0 ? (
         <PixelText testID="recap-more" size={fontSize.tiny} color={colors.mu}>{RECAP.more(recap.more)}</PixelText>
       ) : null}
@@ -53,8 +64,10 @@ export function MistakeRecap({ mistakes, explanations }: MistakeRecapProps): Rea
 }
 
 const styles = StyleSheet.create({
-  box: { alignSelf: 'stretch', maxWidth: 560, width: '100%', gap: 10, borderWidth: border.thin, borderColor: colors.ln, paddingVertical: 10, paddingHorizontal: 14, marginVertical: 12 },
-  row: { gap: 4, borderTopWidth: border.thin, borderTopColor: colors.ln, paddingTop: 8 },
+  box: { alignSelf: 'stretch', maxWidth: 640, width: '100%', gap: 4, borderWidth: border.thin, borderColor: colors.ln, paddingVertical: 6, paddingHorizontal: 10 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  nav: { minHeight: 32, minWidth: 40, paddingVertical: 0 },
+  row: { gap: 2 },
   top: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  item: { flex: 1, minWidth: 160 },
+  flex: { flex: 1, minWidth: 120 },
 });

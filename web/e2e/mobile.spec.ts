@@ -8,7 +8,7 @@
 import type { Page } from '@playwright/test';
 import { STATE_STORAGE_KEY } from '../src/contracts/state';
 import { test, expect, waitForApp } from './helpers/fixtures';
-import { sortByTap } from './helpers/flows';
+import { M1G1_ROUND1, callByTap, sortByTap } from './helpers/flows';
 
 const isoNow = (): string => new Date().toISOString();
 
@@ -98,27 +98,56 @@ test.describe('no horizontal overflow on a phone', () => {
 
   test('Hero select', async ({ page }) => {
     await seed(page, []);
-    await open(page, './module/1/hero', 'hero-screen');
+    await open(page, './module/2/hero', 'hero-screen');
     await expectNoHorizontalOverflow(page, 'Hero select');
   });
 
   test('Story', async ({ page }) => {
-    await seed(page, ['m1h']);
-    await open(page, './module/1/story', 'story-root');
+    await seed(page, ['m2h']);
+    await open(page, './module/2/story', 'story-root');
     await expectNoHorizontalOverflow(page, 'Story slide 1');
     await page.getByTestId('story-root').click();
     await page.getByTestId('story-root').click();
     await expectNoHorizontalOverflow(page, 'Story slide 2');
   });
 
-  test('sort game (m1g1), before and after placing items', async ({ page }) => {
+  test('Train the Model (m1g1), before and after verifying', async ({ page }) => {
     await seed(page, ['m1h', 'm1s']);
     await open(page, './module/1/game/m1g1', 'game-body');
     await expectNoHorizontalOverflow(page, 'm1g1');
-    const first = page.locator('[data-testid^="dnd-item-"]').first();
-    await first.click();
-    await page.locator('[data-testid^="dnd-zone-"]').first().click();
-    await expectNoHorizontalOverflow(page, 'm1g1 after a placement');
+    await callByTap(page, M1G1_ROUND1);
+    await expectNoHorizontalOverflow(page, 'm1g1 with every call made');
+    await page.getByTestId('m1g1-verify').click();
+    await expectNoHorizontalOverflow(page, 'm1g1 verified');
+  });
+
+  test('one row of top bar, with the game title in full', async ({ page }) => {
+    await seed(page, ['m1h', 'm1s']);
+    await open(page, './module/1/game/m1g1', 'game-body');
+    const bar = (await page.getByTestId('topbar').boundingBox())!;
+    expect(bar.height).toBeLessThan(60);
+    for (const id of ['topbar-home', 'streak-chip', 'xp-level', 'topbar-settings']) await expect(page.getByTestId(id)).toBeVisible();
+    await expect(page.getByTestId('game-title')).toHaveText('Train the Model');
+    const title = page.getByTestId('game-title');
+    expect(await title.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  });
+
+  test('free-write result replaces the editor; Edit my prompt brings it back', async ({ page }) => {
+    await seed(page, ['m2h', 'm2s'], [2]);
+    await open(page, './module/2/game/m2g2', 'game-body');
+    const pairs = [['b1', 'task'], ['b2', 'ctx'], ['b3', 'role'], ['b4', 'fmt'], ['b5', 'lim']] as const;
+    for (let forge = 0; forge < 2; forge++) {
+      await sortByTap(page, pairs);
+      await page.getByTestId('m2g2-next-forge').click();
+    }
+    await page.getByTestId('fw-input').fill('plants');
+    await page.getByTestId('fw-send').click();
+    await expect(page.getByTestId('fw-result')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('fw-input')).toBeHidden();
+    await page.getByTestId('fw-edit').click();
+    await expect(page.getByTestId('fw-input')).toBeVisible();
+    await expect(page.getByTestId('fw-input')).toHaveValue('plants');
+    await expect(page.getByTestId('fw-result')).toHaveCount(0);
   });
 
   test('pick game (m1g2)', async ({ page }) => {
@@ -128,13 +157,13 @@ test.describe('no horizontal overflow on a phone', () => {
   });
 
   test('sliders (m2g1)', async ({ page }) => {
-    await seed(page, [...M1, 'm2h', 'm2s'], [1, 2]);
+    await seed(page, [...M1, 'm2h', 'm2s', 'm2g2'], [1, 2]);
     await open(page, './module/2/game/m2g1', 'm2g1-list');
     await expectNoHorizontalOverflow(page, 'm2g1');
   });
 
   test('Prompt Forge free-write (m2g2) incl. NOVA reply', async ({ page }) => {
-    await seed(page, [...M1, 'm2h', 'm2s', 'm2g1'], [1, 2]);
+    await seed(page, ['m2h', 'm2s'], [1, 2]);
     await open(page, './module/2/game/m2g2', 'game-body');
     await expectNoHorizontalOverflow(page, 'm2g2 forge 1');
     const pairs = [['b1', 'task'], ['b2', 'ctx'], ['b3', 'role'], ['b4', 'fmt'], ['b5', 'lim']] as const;

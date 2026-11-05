@@ -1,9 +1,9 @@
 // migrate.ts: pure validation + versioned migration from stored fixtures.
 import {
   MIGRATIONS, addSeen, cleanHistoryEntry, cleanMistakeRecord, cleanMistakes, cleanSeenScenarios, createInitialState, migrateState,
-  migrateV1toV2, migrateV2toV3, parseStored, sanitizeState, sanitizeV1,
+  migrateV1toV2, migrateV2toV3, migrateV3toV4, parseStored, sanitizeState, sanitizeV1,
 } from '@/state/migrate';
-import { MISTAKES_MAX, STATE_VERSION, type MistakeRecord, type PersistedStateV1, type PersistedStateV2, type PersistedStateV3 } from '@/contracts/state';
+import { MISTAKES_MAX, STATE_VERSION, type MistakeRecord, type PersistedStateV1, type PersistedStateV2, type PersistedStateV3, type PersistedStateV4 } from '@/contracts/state';
 
 const NOW = new Date('2026-10-19T10:00:00.000Z');
 
@@ -33,6 +33,8 @@ const fixtureV1: PersistedStateV1 = {
 const fixtureV2: PersistedStateV2 = { ...fixtureV1, version: 2, seenScenarios: {} };
 /** The v2 fixture after v2 → v3: every field kept, version 3, no mistakes. */
 const fixtureV3: PersistedStateV3 = { ...fixtureV2, version: 3, mistakes: [] };
+/** The v3 fixture after v3 → v4: its readable-font choice kept, automatic help, no Fairness Lab cases cleared. */
+const fixtureV4: PersistedStateV4 = { ...fixtureV3, version: 4, settings: { readableFont: true, help: 'auto' }, fairnessCases: 0 };
 /** A stored v2 save from a device that has played case files. */
 const storedV2: PersistedStateV2 = { ...fixtureV2, seenScenarios: { m1g2: ['m1g2-0123456789ab'], m4g1: ['m4g1-aaaaaaaaaaaa'] } };
 const rec = (i: number, over: Partial<MistakeRecord> = {}): MistakeRecord => ({
@@ -41,19 +43,29 @@ const rec = (i: number, over: Partial<MistakeRecord> = {}): MistakeRecord => ({
 });
 
 describe('migrateState', () => {
-  it('migrates a stored v1 save to v3: every v1 field kept, seenScenarios and mistakes start empty', () => {
+  it('migrates a stored v1 save to v4: every v1 field kept, seenScenarios and mistakes start empty', () => {
     const r = migrateState(JSON.parse(JSON.stringify(fixtureV1)), NOW);
-    expect(r).toEqual({ ok: true, state: fixtureV3, from: 1 });
+    expect(r).toEqual({ ok: true, state: fixtureV4, from: 1 });
   });
 
-  it('migrates a stored v2 save to v3: every v2 field (incl. seenScenarios) kept, mistakes empty', () => {
+  it('migrates a stored v2 save to v4: every v2 field (incl. seenScenarios) kept, mistakes empty', () => {
     const r = migrateState(JSON.parse(JSON.stringify(storedV2)), NOW);
-    expect(r).toEqual({ ok: true, state: { ...storedV2, version: 3, mistakes: [] }, from: 2 });
+    expect(r).toEqual({ ok: true, state: { ...storedV2, version: 4, mistakes: [], settings: { readableFont: true, help: 'auto' }, fairnessCases: 0 }, from: 2 });
   });
 
-  it('keeps a valid v3 save unchanged', () => {
+  it('migrates a v3 save to v4, keeping its progress', () => {
     const v3: PersistedStateV3 = { ...fixtureV3, seenScenarios: { m1g2: ['a1b2', 'c3d4'], m4g1: ['z9'] }, mistakes: [rec(1), rec(0, { gameId: 'm3g1', itemId: 'l4', answer: 'proxy', concept: 'Proxy variables', shielded: true })] };
-    expect(migrateState(JSON.parse(JSON.stringify(v3)), NOW)).toEqual({ ok: true, state: v3, from: 3 });
+    expect(migrateState(JSON.parse(JSON.stringify(v3)), NOW)).toEqual({ ok: true, state: { ...v3, version: 4, settings: { readableFont: true, help: 'auto' }, fairnessCases: 0 }, from: 3 });
+  });
+
+  it('keeps a valid v4 save unchanged, including a player who turned the readable font off', () => {
+    const v4: PersistedStateV4 = { ...fixtureV4, settings: { readableFont: false, help: 'more' }, fairnessCases: 2 };
+    expect(migrateState(JSON.parse(JSON.stringify(v4)), NOW)).toEqual({ ok: true, state: v4, from: 4 });
+  });
+
+  it('an unknown help level falls back to auto', () => {
+    const s = sanitizeState({ ...fixtureV4, settings: { readableFont: true, help: 'lots' } }, NOW);
+    expect(s.settings.help).toBe('auto');
   });
 
   it('fills defaults for missing fields and drops invalid entries', () => {
@@ -94,13 +106,13 @@ describe('migrateState', () => {
     expect(migrateState(null)).toMatchObject({ ok: false });
     expect(migrateState([1, 2])).toMatchObject({ ok: false });
     expect(migrateState({ xp: 10 })).toMatchObject({ ok: false, error: expect.stringMatching(/version/) });
-    expect(migrateState({ version: 4 })).toMatchObject({ ok: false, error: expect.stringMatching(/newer/) });
+    expect(migrateState({ version: 5 })).toMatchObject({ ok: false, error: expect.stringMatching(/newer/) });
   });
 
   it('parseStored handles nothing stored, corrupt JSON and good JSON', () => {
     expect(parseStored(null)).toBeNull();
     expect(parseStored('{not json')).toMatchObject({ ok: false, error: expect.stringMatching(/JSON/) });
-    expect(parseStored(JSON.stringify(fixtureV1), NOW)).toMatchObject({ ok: true, state: fixtureV3 });
+    expect(parseStored(JSON.stringify(fixtureV1), NOW)).toMatchObject({ ok: true, state: fixtureV4 });
   });
 
   it('clamps nicknames to 20 characters and caps history at 50, newest first kept', () => {
@@ -121,7 +133,8 @@ describe('migrateState', () => {
     const s = createInitialState(NOW);
     expect(s.seenScenarios).toEqual({});
     expect(s.mistakes).toEqual([]);
-    expect(s).toMatchObject({ version: 3, xp: 0, lastHero: 'scout', profile: { nickname: null, onboarded: false }, streak: { current: 0, best: 0, lastPlayDay: null } });
+    expect(s.fairnessCases).toBe(0);
+    expect(s).toMatchObject({ version: 4, settings: { readableFont: false, help: 'auto' }, xp: 0, lastHero: 'scout', profile: { nickname: null, onboarded: false }, streak: { current: 0, best: 0, lastPlayDay: null } });
   });
 });
 
@@ -171,14 +184,13 @@ describe('v1 → v2 (seenScenarios)', () => {
 });
 
 describe('v2 → v3 (mistakes)', () => {
-  it('is a pure, additive step registered as MIGRATIONS[2]; STATE_VERSION is 3', () => {
+  it('is a pure, additive step registered as MIGRATIONS[2]', () => {
     const v2 = JSON.parse(JSON.stringify(storedV2)) as Record<string, unknown>;
     const out = migrateV2toV3(v2);
     expect(out).toEqual({ ...storedV2, version: 3, mistakes: [] });
     expect(v2.version).toBe(2); // input untouched
     expect('mistakes' in v2).toBe(false);
     expect(MIGRATIONS[2]).toBe(migrateV2toV3);
-    expect(STATE_VERSION).toBe(3);
   });
 
   it('a v2 save carrying a stray mistakes key is reset to empty (v2 had none)', () => {
@@ -209,5 +221,16 @@ describe('v2 → v3 (mistakes)', () => {
     expect(s.mistakes[0]).toEqual(many[0]);
     expect(s.mistakes[199]).toEqual(many[199]);
     expect(cleanMistakes('not a list')).toEqual([]);
+  });
+});
+
+describe('v3 → v4 (help, fairness cases)', () => {
+  it('is a pure step registered as MIGRATIONS[3] that keeps the readable-font choice; STATE_VERSION is 4', () => {
+    const v3 = { ...fixtureV3, settings: { readableFont: false } };
+    const input = JSON.parse(JSON.stringify(v3)) as Record<string, unknown>;
+    expect(migrateV3toV4(input)).toEqual({ ...v3, version: 4, settings: { readableFont: false, help: 'auto' }, fairnessCases: 0 });
+    expect(input.version).toBe(3); // input untouched
+    expect(MIGRATIONS[3]).toBe(migrateV3toV4);
+    expect(STATE_VERSION).toBe(4);
   });
 });

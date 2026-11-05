@@ -4,9 +4,9 @@ import React from 'react';
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 
 const GLOBAL_CSS = `
-html,body{background-color:#0d0a24;color:#f4f4ff;}
-body{min-height:100vh;-webkit-font-smoothing:none;background-image:linear-gradient(#15113a 1px,transparent 1px),linear-gradient(90deg,#15113a 1px,transparent 1px);background-size:32px 32px;image-rendering:pixelated;}
-#root{background:transparent;}
+html,body{background-color:#0d0a24;color:#f4f4ff;overflow:hidden;}
+body{height:100dvh;-webkit-font-smoothing:none;background-image:linear-gradient(#15113a 1px,transparent 1px),linear-gradient(90deg,#15113a 1px,transparent 1px);background-size:32px 32px;image-rendering:pixelated;}
+#root{background:transparent;height:100dvh;}
 [role=button]:focus-visible,[role=link]:focus-visible,[role=switch]:focus-visible,[role=slider]:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #ffffff !important;outline-offset:2px;}
 @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
 `;

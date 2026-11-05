@@ -42,5 +42,5 @@ export default function RootLayout(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, minHeight: '100%', backgroundColor: 'transparent' },
+  root: { flex: 1, height: '100%', overflow: 'hidden', backgroundColor: 'transparent' },
 });

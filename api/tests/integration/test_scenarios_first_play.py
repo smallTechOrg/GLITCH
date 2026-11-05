@@ -1,8 +1,8 @@
 """``GET /v1/scenarios/{gameId}/next?first=1`` — first play draws among v3 + cached case files.
 
-Never generates and never charges energy: with nothing cached it is always ``NO_CASE_FILE``
-(play v3); with cached variations both outcomes occur; seen ids are excluded; the setting
-``first_play_random=false`` forces v3.
+Never generates and never charges energy: with nothing cached it is always the classic answer
+``200 {gameId, classic: true}`` (play v3, and no 404 for the browser to log); with cached
+variations both outcomes occur; seen ids are excluded; ``first_play_random=false`` forces v3.
 """
 
 from __future__ import annotations
@@ -24,6 +24,10 @@ def first(seen: list[str] | None = None) -> str:
     return f"/v1/scenarios/{GAME}/next?first=1" + ("&seen=" + ",".join(seen) if seen else "")
 
 
+def is_classic(r) -> bool:
+    return r.status_code == 200 and r.json()["ok"] is True and r.json()["data"] == {"gameId": GAME, "classic": True}
+
+
 @pytest.fixture
 def app(fake_app, tmp_path: Path) -> FastAPI:
     return fake_app(cache_dir=str(tmp_path / "cache"))
@@ -36,14 +40,12 @@ async def _cache_one(c) -> str:
     return r.json()["data"]["variationId"]
 
 
-async def test_nothing_cached_answers_no_case_file_without_generating(app, client_for) -> None:
+async def test_nothing_cached_answers_classic_without_generating(app, client_for) -> None:
     async with client_for(app) as c:
         r = await c.get(first(), headers=HDR)
         metrics = (await c.get("/v1/metrics")).json()["data"]
-    assert r.status_code == 404
-    body = r.json()
-    assert body["ok"] is False and body["error"]["code"] == "NO_CASE_FILE" and body["error"]["retryable"] is False
-    assert body["energy"]["remaining"] == 10
+    assert is_classic(r)
+    assert r.json()["energy"]["remaining"] == 10
     assert metrics["llm_calls_total"] == 0
 
 
@@ -54,7 +56,8 @@ async def test_cached_variation_is_drawn_sometimes_and_never_costs_energy(app, c
         for _ in range(40):
             r = await c.get(first(), headers=HDR)
             assert r.json()["energy"]["remaining"] == 9
-            outcomes.append(r.json()["data"]["variationId"] if r.status_code == 200 else "classic")
+            assert r.status_code == 200
+            outcomes.append("classic" if is_classic(r) else r.json()["data"]["variationId"])
         calls = (await c.get("/v1/metrics")).json()["data"]["llm_calls_total"]
     assert set(outcomes) == {vid, "classic"}  # P(one-sided over 40 fair draws) ≈ 2e-12
     assert calls == 1  # only the replay generated
@@ -64,7 +67,7 @@ async def test_seen_variation_is_excluded(app, client_for) -> None:
     async with client_for(app) as c:
         vid = await _cache_one(c)
         rs = [await c.get(first([vid]), headers=HDR) for _ in range(10)]
-    assert all(r.status_code == 404 and r.json()["error"]["code"] == "NO_CASE_FILE" for r in rs)
+    assert all(is_classic(r) for r in rs)
 
 
 async def test_setting_off_always_plays_classic(fake_app, tmp_path: Path, client_for) -> None:
@@ -72,7 +75,7 @@ async def test_setting_off_always_plays_classic(fake_app, tmp_path: Path, client
     async with client_for(app) as c:
         await _cache_one(c)
         rs = [await c.get(first(), headers=HDR) for _ in range(10)]
-    assert all(r.status_code == 404 for r in rs)
+    assert all(is_classic(r) for r in rs)
 
 
 class _Repo:

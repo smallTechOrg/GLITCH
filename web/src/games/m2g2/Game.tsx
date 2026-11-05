@@ -1,12 +1,12 @@
 // m2g2 · Prompt Forge — render + wiring only (v3 GM.m2g2, lines 541–548).
 // FORGE 1 → PROMPT BUILT → FORGE 2 → PROMPT BUILT → FORGE 3 · FREE WRITE (slice E's round).
-// Hearts and the 2 power uses live in the frame, so they carry across all three forges.
+// Hearts and the power uses live in the frame, so they carry across all three forges.
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { GameApi } from '../../contracts/game';
 import { SortBoard } from '../../dnd/SortBoard';
 import { FreeWriteRound } from '../../features/freewrite/FreeWriteRound';
-import { colors, fontSize } from '../../theme/tokens';
+import { colors, fontSize, layout } from '../../theme/tokens';
 import { PixelButton } from '../../ui/PixelButton';
 import { PixelText } from '../../ui/PixelText';
 import { Terminal } from '../../ui/Terminal';
@@ -20,6 +20,8 @@ export function PromptForgeGame({ api }: { api: GameApi }): React.JSX.Element {
   const [stage, setStage] = useState<Stage>(FIRST_STAGE);
   const apiRef = useRef(api);
   apiRef.current = api;
+  // Phones show one block at a time: eight wrapped blocks and five slots cannot share the screen.
+  const narrow = useWindowDimensions().width <= layout.mobileBreakpoint;
 
   // On the PROMPT BUILT screen there is nothing for X-RAY / FOCUS to act on (not consumed).
   // Forge boards and the free-write round register their own handlers on mount (child
@@ -68,6 +70,8 @@ export function PromptForgeGame({ api }: { api: GameApi }): React.JSX.Element {
         key={`forge-${stage.k}`}
         cfg={forgeConfig(forge, stage.k + 1)}
         api={api}
+        layout="side"
+        deck={narrow}
         onDone={(s) => setStage({ kind: 'built', k: stage.k, prompt: builtPrompt(s) })}
         header={
           <View style={styles.head}>
@@ -81,6 +85,6 @@ export function PromptForgeGame({ api }: { api: GameApi }): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
-  head: { gap: 6 },
+  wrap: { flexGrow: 1, gap: 6 },
+  head: { gap: 2 },
 });

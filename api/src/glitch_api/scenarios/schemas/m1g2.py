@@ -1,4 +1,4 @@
-"""m1g2 · Fact or Fib — exactly 6 sentences, exactly 3 fibs, each fib explained in ≤ 20 words.
+"""m1g2 · Fact or Glitch (a false sentence is a ``fib`` on the wire) — exactly 6 sentences, exactly 3 fibs, each fib explained in ≤ 20 words.
 
 Served ``data``::
 
@@ -133,7 +133,7 @@ V3_LLM: dict[str, Any] = {
 
 SPEC = GameSpec(
     game_id="m1g2",
-    title="Fact or Fib",
+    title="Fact or Glitch",
     llm_model=LLMOutput,
     llm_json_schema=LLM_JSON_SCHEMA,
     data_model=Data,

@@ -129,21 +129,21 @@ def _m3g1(n: int) -> dict[str, Any]:
 
 # ---- m4g1 -------------------------------------------------------------------------------
 _FAKE_CITES = [
-    "Prof. Ivan Quill (2024). Robots That Dream in Colour. Journal of Imaginary Robotics, 3(1).",
-    "Dr. Mia Vance (2022). 'GPT-12 Knows Your Future'. Annals of Unlikely Science.",
-    "B. Jones (2023). Everything AI Can Do. Totally Real Facts Blog.",
-    "Hartley Institute (2025). Proof That AI Never Lies. Fictional Press.",
-    "Dr. K. Orbit (2021). Moon Data Trains Better Models. Lunar AI Review, 9(4).",
-    "C. Lee (2020). The AI That Writes Perfect Essays. Anonymous Study Notes.",
-    "Prof. R. Nimbus (2023). Clouds That Compute. Sky Computing Letters, 1(1).",
-    "Dr. Ada Phantom (2019). Ghosts in the Neural Net. Spooky Data Journal, 6(6).",
+    ("Prof. Ivan Quill (2024). Robots That Dream in Colour. Journal of Imaginary Robotics, 3(1).", "We watched robots sleep and proved they all dream in colour. Our method is secret."),
+    ("Dr. Mia Vance (2022). 'GPT-12 Knows Your Future'. Annals of Unlikely Science.", "GPT-12 predicts every event in your life with total certainty. No data is needed."),
+    ("B. Jones (2023). Everything AI Can Do. Totally Real Facts Blog.", "AI can do absolutely everything already. Everyone agrees, so no sources are listed."),
+    ("Hartley Institute (2025). Proof That AI Never Lies. Fictional Press.", "This book proves no AI has ever said anything false. We simply asked them all."),
+    ("Dr. K. Orbit (2021). Moon Data Trains Better Models. Lunar AI Review, 9(4).", "Models trained on data stored on the Moon score 400% higher. Results cannot be shared."),
+    ("C. Lee (2020). The AI That Writes Perfect Essays. Anonymous Study Notes.", "This AI always scores full marks on every essay ever. Trust me, I tried it once."),
+    ("Prof. R. Nimbus (2023). Clouds That Compute. Sky Computing Letters, 1(1).", "Real clouds in the sky can run neural networks when it rains. No experiment was needed."),
+    ("Dr. Ada Phantom (2019). Ghosts in the Neural Net. Spooky Data Journal, 6(6).", "Ghosts are the true cause of every model error. We measured them with a very good feeling."),
 ]
 
 
 def _m4g1(n: int) -> dict[str, Any]:
     fake_count = 2 if n % 2 == 0 else 3
-    real = [{"text": t, "real": True} for t in _pick(list(REAL_CITATIONS), n * 2, 5 - fake_count)]
-    fake = [{"text": t, "real": False} for t in _pick(_FAKE_CITES, n, fake_count)]
+    real = [{"text": t, "real": True, "excerpt": ""} for t in _pick(list(REAL_CITATIONS), n * 2, 5 - fake_count)]
+    fake = [{"text": t, "real": False, "excerpt": e} for t, e in _pick(_FAKE_CITES, n, fake_count)]
     return {"citations": _interleave(real, fake)}
 
 

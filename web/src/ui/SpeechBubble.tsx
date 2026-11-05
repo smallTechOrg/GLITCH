@@ -31,5 +31,5 @@ export function SpeechBubble({ text, mood = 'neutral', version = 0, testID = 'sa
 }
 
 const styles = StyleSheet.create({
-  say: { padding: 10, borderWidth: border.width, borderColor: colors.ink, minHeight: 40 },
+  say: { paddingVertical: 6, paddingHorizontal: 8, borderWidth: border.width, borderColor: colors.ink, minHeight: 40, justifyContent: 'center' },
 });

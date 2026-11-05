@@ -16,4 +16,4 @@ export function ScreenWipe({ routeKey, children }: ScreenWipeProps): React.JSX.E
   return <Animated.View style={[styles.fill, { opacity: v }]}>{children}</Animated.View>;
 }
 
-const styles = StyleSheet.create({ fill: { flex: 1 } });
+const styles = StyleSheet.create({ fill: { flex: 1, minHeight: 0 } });

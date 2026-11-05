@@ -45,6 +45,6 @@ export function LeverChips({ levers, preview = false }: LeverChipsProps): React.
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 8 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 3 },
   preview: { borderStyle: 'dashed' },
 });

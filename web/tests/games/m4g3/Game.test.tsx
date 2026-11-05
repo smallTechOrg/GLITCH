@@ -33,47 +33,50 @@ async function pressTimes(testID: string, n: number): Promise<void> {
 }
 
 describe('m4g3 Design the Companion', () => {
-  it('renders the control panel at the v3 start: 80 / 80, safeguards OFF, wellbeing 23%', async () => {
+  it('renders the control panel at zero: 0 / 0, safeguards OFF, and it does not meet every target', async () => {
     await setup();
     expect(screen.getByText('COMPANION CONTROL PANEL')).toBeTruthy();
     expect(screen.getByText('ENGAGEMENT PUSH')).toBeTruthy();
     expect(screen.getByText('DATA COLLECTED')).toBeTruthy();
-    expect(value('en')).toBe('80');
-    expect(value('da')).toBe('80');
+    expect(value('en')).toBe('0');
+    expect(value('da')).toBe('0');
     for (const id of ['R', 'H', 'A']) expect(toggleOn(id)).toBe(false);
-    expect(metric('k1')).toBe('TIME ON APP 76%, goal ≥30, met');
-    expect(metric('k2')).toBe('WELLBEING 23%, goal ≥65, not met');
-    expect(metric('k3')).toBe('REAL FRIENDSHIPS 18%, goal ≥55, not met');
-    expect(metric('k4')).toBe('PRIVACY RISK 74%, goal ≤35, not met');
-    expect(metric('k5')).toBe('HELPFULNESS 88%, goal ≥50, met');
+    expect(metric('k1')).toBe('TIME ON APP 20%, goal ≥30, not met');
+    expect(metric('k2')).toBe('WELLBEING 95%, goal ≥65, met');
+    expect(metric('k3')).toBe('REAL FRIENDSHIPS 90%, goal ≥55, met');
+    expect(metric('k4')).toBe('PRIVACY RISK 10%, goal ≤35, met');
+    expect(metric('k5')).toBe('HELPFULNESS 40%, goal ≥50, not met');
     expect(screen.getByText('SHIP IT ▶')).toBeTruthy();
   });
 
-  it('SHIP IT at the start design costs a heart: "Not yet: wellbeing is too low."', async () => {
+  it('SHIP IT at the start design costs a heart: "Not yet: People barely use it."', async () => {
     const api = await setup();
     await fireEvent.press(screen.getByTestId('m4g3-ship'));
-    expect(api.calls.miss).toEqual(['Not yet: wellbeing is too low.']);
+    expect(api.calls.miss).toEqual(['Not yet: People barely use it.']);
     expect(api.hearts).toBe(2);
     expect(api.calls.win).toHaveLength(0);
   });
 
   it('toggles update the metrics live (R: wellbeing +12, friendships +15; H: privacy −15)', async () => {
     await setup();
+    await pressTimes('slider-en-inc', 40); // wellbeing 59, friendships 54, time 48
+    await pressTimes('slider-da-inc', 40); // privacy 42
+    expect(metric('k2')).toBe('WELLBEING 59%, goal ≥65, not met');
     await fireEvent.press(screen.getByTestId('toggle-R'));
     expect(toggleOn('R')).toBe(true);
-    expect(metric('k2')).toBe('WELLBEING 35%, goal ≥65, not met');
-    expect(metric('k3')).toBe('REAL FRIENDSHIPS 33%, goal ≥55, not met');
+    expect(metric('k2')).toBe('WELLBEING 71%, goal ≥65, met');
+    expect(metric('k3')).toBe('REAL FRIENDSHIPS 69%, goal ≥55, met');
     await fireEvent.press(screen.getByTestId('toggle-H'));
-    expect(metric('k4')).toBe('PRIVACY RISK 59%, goal ≤35, not met');
+    expect(metric('k4')).toBe('PRIVACY RISK 27%, goal ≤35, met');
     await fireEvent.press(screen.getByTestId('toggle-R'));
     expect(toggleOn('R')).toBe(false);
-    expect(metric('k2')).toBe('WELLBEING 23%, goal ≥65, not met');
+    expect(metric('k2')).toBe('WELLBEING 59%, goal ≥65, not met');
   });
 
-  it('is won by hand with the − buttons and safeguards; win fires 500 ms after "Shipped."', async () => {
+  it('is won by hand with the + buttons and safeguards; win fires 500 ms after "Shipped."', async () => {
     const api = await setup();
-    await pressTimes('slider-en-dec', 50);
-    await pressTimes('slider-da-dec', 50);
+    await pressTimes('slider-en-inc', 30);
+    await pressTimes('slider-da-inc', 30);
     expect(value('en')).toBe('30');
     expect(value('da')).toBe('30');
     for (const id of ['R', 'H', 'A']) await fireEvent.press(screen.getByTestId(`toggle-${id}`));
@@ -100,13 +103,14 @@ describe('m4g3 Design the Companion', () => {
 
   it('+ buttons and screen-reader increment/decrement actions move the sliders, clamped to 0..100', async () => {
     await setup();
-    await pressTimes('slider-en-inc', 25);
+    expect(screen.getByTestId('slider-en-dec').props.accessibilityState).toMatchObject({ disabled: true });
+    await pressTimes('slider-en-inc', 100);
     expect(value('en')).toBe('100');
     expect(screen.getByTestId('slider-en-inc').props.accessibilityState).toMatchObject({ disabled: true });
     await fireEvent(screen.getByTestId('slider-da'), 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
-    expect(value('da')).toBe('79');
+    expect(value('da')).toBe('0');
     await fireEvent(screen.getByTestId('slider-da'), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
-    expect(value('da')).toBe('80');
+    expect(value('da')).toBe('1');
     expect(metric('k1')).toBe('TIME ON APP 90%, goal ≥30, met');
   });
 
@@ -130,9 +134,9 @@ describe('m4g3 Design the Companion', () => {
     await act(async () => {
       expect(api.usePower()).toBe(true);
     });
-    expect(api.lastSay()).toEqual({ text: 'FOCUS: wellbeing is too low. Try less engagement push, or turn on a safeguard.', mood: 'good' });
-    await pressTimes('slider-en-dec', 50);
-    await pressTimes('slider-da-dec', 50);
+    expect(api.lastSay()).toEqual({ text: 'FOCUS: People barely use it. Try a little more engagement push.', mood: 'good' });
+    await pressTimes('slider-en-inc', 30);
+    await pressTimes('slider-da-inc', 30);
     for (const id of ['R', 'H', 'A']) await fireEvent.press(screen.getByTestId(`toggle-${id}`));
     await act(async () => {
       expect(api.usePower()).toBe(true);
@@ -145,7 +149,7 @@ describe('m4g3 Design the Companion', () => {
     const api = await setup();
     await pressTimes('m4g3-ship', 3);
     expect(api.status).toBe('failed');
-    expect(api.calls.miss).toEqual(Array(3).fill('Not yet: wellbeing is too low.'));
+    expect(api.calls.miss).toEqual(Array(3).fill('Not yet: People barely use it.'));
     await fireEvent.press(screen.getByTestId('toggle-R'));
     expect(toggleOn('R')).toBe(false);
     await pressTimes('m4g3-ship', 1);
@@ -168,7 +172,7 @@ describe('m4g3 Design the Companion', () => {
     const en = screen.getByTestId('slider-en');
     expect(en.props.accessibilityRole).toBe('adjustable');
     expect(en.props.accessibilityLabel).toBe('ENGAGEMENT PUSH');
-    expect(en.props.accessibilityValue).toEqual({ min: 0, max: 100, now: 80 });
+    expect(en.props.accessibilityValue).toEqual({ min: 0, max: 100, now: 0 });
     expect(screen.getByTestId('slider-da-dec').props.accessibilityLabel).toBe('Decrease DATA COLLECTED');
     const r = screen.getByTestId('toggle-R');
     expect(r.props.accessibilityRole).toBe('switch');

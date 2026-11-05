@@ -1,16 +1,17 @@
-// m4g1 · Source Detective — render + wiring only (v3 lines 570–577). Rules live in logic.ts.
+// m4g1 · Source Detective — render + wiring only (v3 lines 570–577). One source at a time: its
+// citation and what it says, a catalogue CHECK, then KEEP or CUT. Rules live in logic.ts.
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import type { GameApi } from '../../contracts/game';
 import { Icon } from '../../art/Icon';
 import { NoDrag, SortBoard, type SortItemRenderContext } from '../../dnd/SortBoard';
-import { colors, fontSize } from '../../theme/tokens';
+import { border, colors, fontSize } from '../../theme/tokens';
 import { PixelButton } from '../../ui/PixelButton';
 import { PixelText } from '../../ui/PixelText';
 import { Tag } from '../../ui/Tag';
 import { Terminal } from '../../ui/Terminal';
 import {
-  ASK_ICON, ASK_LABEL, CHECK_LABEL, FOUND_TAG, HEADING, ITEM_ICON, LOOKUPS_LABEL, LOOKUP_ICON, NOT_FOUND_TAG, NOVA_LABEL, NOVA_REPLY, SUMMARY,
+  ASK_ICON, ASK_LABEL, CHECK_LABEL, EXCERPT_LABEL, FOUND_TAG, HEADING, ITEM_ICON, LOOKUPS_LABEL, LOOKUP_ICON, NOT_FOUND_TAG, NOVA_LABEL, NOVA_REPLY, SUMMARY,
   V3_SCENARIO, checkA11y, itemsOf, lookupsA11y, type CitationItem, type DetectiveScenario,
 } from './data';
 import { ASK_MISTAKE, askNova, check, createDetective, sortConfig, type DetectiveState } from './logic';
@@ -64,10 +65,16 @@ export function SourceDetectiveGame({ api, scenario = V3_SCENARIO }: { api: Game
     const res = st.checked[it.id];
     return (
       <View style={styles.cit}>
-        <Icon name={ITEM_ICON} scale={3} />
-        <PixelText long size={fontSize.small} style={[styles.citText, ctx.dimmed ? styles.strike : null]}>
-          {it.text}
-        </PixelText>
+        <View style={styles.citHead}>
+          <Icon name={ITEM_ICON} scale={2} />
+          <PixelText testID={`m4g1-citation-${it.id}`} long size={fontSize.small} bold style={[styles.citText, ctx.dimmed ? styles.strike : null]}>
+            {it.text}
+          </PixelText>
+        </View>
+        <View style={styles.excerpt}>
+          <PixelText size={fontSize.tiny} color={colors.ac}>{EXCERPT_LABEL}</PixelText>
+          <PixelText testID={`m4g1-excerpt-${it.id}`} long size={fontSize.small}>{it.excerpt}</PixelText>
+        </View>
         <NoDrag>
           <View style={styles.checkRow} {...stopKeys}>
             <PixelButton
@@ -88,15 +95,20 @@ export function SourceDetectiveGame({ api, scenario = V3_SCENARIO }: { api: Game
 
   const header = (
     <View style={styles.head}>
-      <PixelText size={fontSize.h3} color={colors.ac} bold accessibilityRole="header">
-        {HEADING}
-      </PixelText>
-      <View testID="m4g1-lookups" accessible accessibilityLabel={lookupsA11y(st.lookupsLeft)} style={styles.look}>
-        <Icon name={LOOKUP_ICON} scale={3} />
-        <PixelText size={fontSize.small} bold>{`${LOOKUPS_LABEL}${st.lookupsLeft}`}</PixelText>
+      <View style={styles.headRow}>
+        <PixelText size={fontSize.h3} color={colors.ac} bold accessibilityRole="header" style={styles.flex}>
+          {HEADING}
+        </PixelText>
+        <View testID="m4g1-lookups" accessible accessibilityLabel={lookupsA11y(st.lookupsLeft)} style={styles.look}>
+          <Icon name={LOOKUP_ICON} scale={2} />
+          <PixelText size={fontSize.small} bold>{`${LOOKUPS_LABEL}${st.lookupsLeft}`}</PixelText>
+        </View>
       </View>
-      <PixelButton label={ASK_LABEL} icon={ASK_ICON} testID="m4g1-ask-nova" disabled={st.asked || api.over} onPress={onAsk} style={styles.ask} />
-      {st.asked ? <Terminal testID="m4g1-nova-reply" variant="out" label={NOVA_LABEL} text={NOVA_REPLY} /> : null}
+      {st.asked ? (
+        <Terminal testID="m4g1-nova-reply" variant="out" label={NOVA_LABEL} text={NOVA_REPLY} />
+      ) : (
+        <PixelButton label={ASK_LABEL} variant="small" icon={ASK_ICON} testID="m4g1-ask-nova" disabled={api.over} onPress={onAsk} style={styles.ask} />
+      )}
     </View>
   );
 
@@ -104,7 +116,8 @@ export function SourceDetectiveGame({ api, scenario = V3_SCENARIO }: { api: Game
     <SortBoard<CitationItem>
       cfg={cfg}
       api={api}
-      layout="zones-top"
+      layout="side"
+      deck
       header={header}
       renderItem={renderItem}
       onDone={() => apiRef.current.win(SUMMARY)}
@@ -114,11 +127,15 @@ export function SourceDetectiveGame({ api, scenario = V3_SCENARIO }: { api: Game
 }
 
 const styles = StyleSheet.create({
-  head: { gap: 10 },
-  look: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  head: { gap: 4 },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  flex: { flex: 1, minWidth: 0 },
+  look: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ask: { alignSelf: 'flex-start' },
-  cit: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', flexShrink: 1 },
-  citText: { flexShrink: 1, flexBasis: 180, flexGrow: 1 },
+  cit: { gap: 6, flexShrink: 1, flexGrow: 1, paddingVertical: 2 },
+  citHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  citText: { flexShrink: 1, flexGrow: 1 },
+  excerpt: { gap: 2, paddingVertical: 4, paddingHorizontal: 6, backgroundColor: colors.deep, borderLeftWidth: border.width, borderLeftColor: colors.ac },
   strike: { textDecorationLine: 'line-through' },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

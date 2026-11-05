@@ -1,5 +1,5 @@
-// m2g1 · Tune the Sorter — render + wiring only (v3 `tuneRound` / `GM.m2g1`, lines 521–540).
-// Two rounds; sliders reset to (50, 30) each round; LOCK IT IN passes → next round / win.
+// m2g1 · Inbox Filter — render + wiring only (v3 `tuneRound` / `GM.m2g1`, lines 521–540).
+// Two rounds; both sliders start at 0 each round; LOCK IT IN passes → next round / win.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { GameApi } from '../../contracts/game';
@@ -26,6 +26,7 @@ export function TuneTheSorterGame({ api }: { api: GameApi }): React.JSX.Element 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { width } = useWindowDimensions();
   const narrow = width <= layout.mobileBreakpoint;
+  const wide = width >= layout.sideBySide;
 
   const cfg = ROUNDS[round] as TuneRoundConfig;
 
@@ -91,38 +92,40 @@ export function TuneTheSorterGame({ api }: { api: GameApi }): React.JSX.Element 
   return (
     <View testID={`m2g1-round-${cfg.id}`} style={styles.wrap}>
       <PixelText size={fontSize.h3} color={colors.ac} bold accessibilityRole="header" testID="m2g1-round-title">{cfg.title}</PixelText>
-      <PixelText long size={fontSize.small} color={colors.mu} style={styles.rule}>{cfg.rule}</PixelText>
+      <PixelText long size={fontSize.small} color={colors.mu}>{cfg.rule}</PixelText>
 
-      <View testID="m2g1-list" style={styles.list}>
-        {v.rows.map((r, i) => (
-          <View
-            key={r.text}
-            testID={`m2g1-row-${i}`}
-            accessible
-            accessibilityLabel={rowLabel(cfg, r, ROW_MISMATCH_TAG)}
-            style={[styles.row, r.ok ? null : styles.rowBad]}
-          >
-            <PixelText long size={fontSize.small} style={styles.rowText}>{r.text}</PixelText>
-            {narrow ? null : <Bar value={r.score / 100} marker={t / 100} color={r.flagged ? colors.ac : colors.bl} style={styles.rowBar} />}
-            <View style={styles.verdict}>
-              <PixelText size={fontSize.tiny} color={r.flagged ? colors.ac : colors.mu} bold={r.flagged} testID={`m2g1-verdict-${i}`}>
-                {r.flagged ? cfg.yes : cfg.no}
-              </PixelText>
-              {r.ok ? null : <PixelText size={fontSize.tiny} color={colors.no}>{` ✗ ${ROW_MISMATCH_TAG}`}</PixelText>}
+      <View style={[styles.columns, wide ? styles.columnsWide : null]}>
+        <View testID="m2g1-list" style={[styles.list, wide ? styles.column : null]}>
+          {v.rows.map((r, i) => (
+            <View
+              key={r.text}
+              testID={`m2g1-row-${i}`}
+              accessible
+              accessibilityLabel={rowLabel(cfg, r, ROW_MISMATCH_TAG)}
+              style={[styles.row, r.ok ? null : styles.rowBad]}
+            >
+              <PixelText long size={fontSize.tiny} numberOfLines={1} style={styles.rowText}>{r.text}</PixelText>
+              {narrow ? null : <Bar value={r.score / 100} marker={t / 100} height={6} color={r.flagged ? colors.ac : colors.bl} style={styles.rowBar} />}
+              <View style={styles.verdict}>
+                <PixelText size={fontSize.tiny} color={r.flagged ? colors.ac : colors.mu} bold={r.flagged} testID={`m2g1-verdict-${i}`}>
+                  {r.flagged ? cfg.yes : cfg.no}
+                </PixelText>
+                {r.ok ? null : <PixelText size={fontSize.tiny} color={colors.no}>{' ✗'}</PixelText>}
+              </View>
             </View>
+          ))}
+        </View>
+
+        <View style={[styles.controls, wide ? styles.column : null]}>
+          <Slider id={THRESHOLD.id} label={THRESHOLD.label} value={t} min={THRESHOLD.min} max={THRESHOLD.max} disabled={disabled} onChange={(n) => setSliders(n, live.current.wC)} />
+          <Slider id={CAPS_WEIGHT.id} label={CAPS_WEIGHT.label} value={wC} min={CAPS_WEIGHT.min} max={CAPS_WEIGHT.max} disabled={disabled} onChange={(n) => setSliders(live.current.t, n)} />
+          <View style={styles.summary}>
+            <CountMetric id="a" label={cfg.ma} value={v.a} goal={cfg.ga} ok={v.aOk} />
+            <CountMetric id="b" label={cfg.mbl} value={v.b} goal={cfg.gb} ok={v.bOk} />
           </View>
-        ))}
+          <PixelButton label={LOCK_LABEL} variant="primary" testID="m2g1-lock" disabled={disabled} onPress={onLock} fullWidth />
+        </View>
       </View>
-
-      <Slider id={THRESHOLD.id} label={THRESHOLD.label} value={t} min={THRESHOLD.min} max={THRESHOLD.max} disabled={disabled} onChange={(n) => setSliders(n, live.current.wC)} />
-      <Slider id={CAPS_WEIGHT.id} label={CAPS_WEIGHT.label} value={wC} min={CAPS_WEIGHT.min} max={CAPS_WEIGHT.max} disabled={disabled} onChange={(n) => setSliders(live.current.t, n)} />
-
-      <View style={styles.summary}>
-        <CountMetric id="a" label={cfg.ma} value={v.a} goal={cfg.ga} ok={v.aOk} />
-        <CountMetric id="b" label={cfg.mbl} value={v.b} goal={cfg.gb} ok={v.bOk} />
-      </View>
-
-      <PixelButton label={LOCK_LABEL} variant="primary" testID="m2g1-lock" disabled={disabled} onPress={onLock} fullWidth />
     </View>
   );
 }
@@ -131,7 +134,7 @@ export function TuneTheSorterGame({ api }: { api: GameApi }): React.JSX.Element 
 function CountMetric({ id, label, value, goal, ok }: { id: string; label: string; value: number; goal: number; ok: boolean }): React.JSX.Element {
   return (
     <View testID={`metric-${id}`} accessible accessibilityLabel={`${label} ${value}, goal at most ${goal}, ${ok ? 'met' : 'not met'}`} style={[styles.metric, ok ? styles.metricOk : null]}>
-      <PixelText size={fontSize.small} bold>{label}</PixelText>
+      <PixelText size={fontSize.tiny} bold>{label}</PixelText>
       <View style={styles.metricRow}>
         <PixelText size={fontSize.body} testID={`metric-${id}-value`}>{String(value)}</PixelText>
         <PixelText size={fontSize.tiny} color={colors.mu}>{` goal ≤${goal}`}</PixelText>
@@ -142,16 +145,19 @@ function CountMetric({ id, label, value, goal, ok }: { id: string; label: string
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
-  rule: { marginBottom: 6 },
-  list: { gap: 6, marginVertical: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8, backgroundColor: colors.cd, borderWidth: border.thin, borderColor: colors.ln },
+  wrap: { gap: 2 },
+  columns: { gap: 3 },
+  columnsWide: { flexDirection: 'row' },
+  column: { flex: 1, minWidth: 0 },
+  list: { gap: 1 },
+  controls: { gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 0, paddingHorizontal: 6, backgroundColor: colors.cd, borderWidth: border.thin, borderColor: colors.ln },
   rowBad: { borderColor: colors.no },
   rowText: { flex: 2, flexShrink: 1 },
-  rowBar: { flex: 1.4 },
-  verdict: { minWidth: 92, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end' },
-  summary: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
-  metric: { flexGrow: 1, flexBasis: 200, padding: 10, backgroundColor: colors.cd, borderWidth: border.thin, borderColor: colors.ln, gap: 4 },
-  metricOk: { borderColor: colors.ok },
+  rowBar: { flex: 1 },
+  verdict: { minWidth: 70, flexDirection: 'row', justifyContent: 'flex-end' },
+  summary: { flexDirection: 'row', gap: 6 },
+  metric: { flex: 1, minWidth: 0, paddingVertical: 2, paddingHorizontal: 6, backgroundColor: colors.cd, borderWidth: border.thin, borderColor: colors.ln },
+  metricOk: {},
   metricRow: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap' },
 });

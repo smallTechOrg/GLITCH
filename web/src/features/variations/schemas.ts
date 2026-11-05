@@ -35,7 +35,7 @@ export type GameScenario = { [G in ContentGameId]: { gameId: G; scenario: Scenar
 
 /** Longest learner-facing line accepted (v3's longest is ~90 chars). */
 export const MAX_TEXT = 240;
-/** Fact or Fib: each fib's explanation is at most 20 words. */
+/** Fact or Glitch: each glitch's explanation is at most 20 words. */
 export const MAX_EXPLANATION_WORDS = 20;
 
 type Obj = Record<string, unknown>;
@@ -94,7 +94,7 @@ export function parseTrain(d: unknown): TrainScenario | null {
 }
 
 /**
- * m1g2 Fact or Fib: `{ sentences: [{ text, fib: bool, explanation: string | null }]×6 }` —
+ * m1g2 Fact or Glitch: `{ sentences: [{ text, fib: bool, explanation: string | null }]×6 }` —
  * exactly 3 fibs, each with an explanation of at most 20 words (ignored on true sentences).
  */
 export function parseFib(d: unknown): FibScenario | null {
@@ -134,13 +134,17 @@ export function parseProxy(d: unknown): ProxyScenario | null {
   return { resume, candidate: d.candidate };
 }
 
-/** m4g1 Source Detective: `{ citations: [{ id: "c1", text, real: bool }]×5 }` — 2–3 invented. */
+/**
+ * m4g1 Source Detective: `{ citations: [{ id: "c1", text, real: bool, excerpt }]×5 }` — 2–3 invented.
+ * A case file cached before excerpts existed is refused: the game needs them, so it plays the classic.
+ */
 export function parseDetective(d: unknown): DetectiveScenario | null {
   if (!isObj(d)) return null;
   const citations = list<Citation>(d.citations, 5, (o, i) => {
     const t = text(o.text);
-    if (!t || !idOk(o, `c${i + 1}`) || typeof o.real !== 'boolean') return null;
-    return [`c${i + 1}` as CitationId, t, o.real ? 1 : 0] as const;
+    const excerpt = text(o.excerpt);
+    if (!t || !excerpt || !idOk(o, `c${i + 1}`) || typeof o.real !== 'boolean') return null;
+    return [`c${i + 1}` as CitationId, t, o.real ? 1 : 0, excerpt] as const;
   });
   if (!citations) return null;
   const fake = count(citations, (c) => c[2] === 0);

@@ -8,7 +8,7 @@ import { FIRST_STAGE, builtPrompt, forgeConfig, nextStage } from '@/games/m2g2/l
 
 describe('m2g2 data (v3 verbatim)', () => {
   it('has v3 title, goal and intro', () => {
-    expect(game).toMatchObject({ id: 'm2g2', module: 2, title: 'Prompt Forge', goal: 'BUILD · ASSEMBLE THE PROMPT', intro: 'Build a strong prompt by dragging blocks into the right slots.' });
+    expect(game).toMatchObject({ id: 'm2g2', module: 2, title: 'Prompt Forge', goal: 'MISSION: Build 2 strong prompts, then write your own', intro: 'Drag each block into its slot. Vague blocks fit nowhere.' });
   });
 
   it('has five capacity-1 slots with v3 ids, labels, icons and colours, in order', () => {

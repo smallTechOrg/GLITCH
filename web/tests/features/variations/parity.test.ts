@@ -12,6 +12,8 @@ import { ANSWERS } from '@/games/m4g2/data';
 import samples from './serverSamples.json';
 
 const S = samples as Record<string, unknown[]>;
+// The server re-orders items by content hash, so exemplars are compared by content.
+const byText = <T>(xs: readonly T[]): T[] => [...xs].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 
 describe('client parsers accept what the server serves', () => {
   it.each(CONTENT_GAME_IDS)('%s: every server sample parses', (g) => {
@@ -24,14 +26,15 @@ describe('client parsers accept what the server serves', () => {
     const m1g1 = parseScenario('m1g1', S.m1g1?.[0]);
     expect(m1g1?.gameId === 'm1g1' && m1g1.scenario).toEqual({ train: TRAIN_EMAILS, test: TEST_EMAILS });
     const m1g2 = parseScenario('m1g2', S.m1g2?.[0]);
-    expect(m1g2?.gameId === 'm1g2' && m1g2.scenario).toEqual({ sentences: SENTENCES });
+    expect(m1g2?.gameId === 'm1g2' && byText(m1g2.scenario.sentences)).toEqual(byText(SENTENCES));
     const m3g1 = parseScenario('m3g1', S.m3g1?.[0]);
-    expect(m3g1?.gameId === 'm3g1' && m3g1.scenario).toEqual({ resume: RESUME, candidate: 'ANAYA' });
+    expect(m3g1?.gameId === 'm3g1' && m3g1.scenario.candidate).toBe('ANAYA');
+    expect(m3g1?.gameId === 'm3g1' && byText(m3g1.scenario.resume)).toEqual(byText(RESUME));
     // The server's v3 exemplar drops the two web addresses (generated content has no links).
     const m4g1 = parseScenario('m4g1', S.m4g1?.[0]);
-    expect(m4g1?.gameId === 'm4g1' && m4g1.scenario.citations.map((c) => [c[0], c[2]])).toEqual(CITATIONS.map((c) => [c[0], c[2]]));
+    expect(m4g1?.gameId === 'm4g1' && byText(m4g1.scenario.citations.map((c) => [c[2], c[3]]))).toEqual(byText(CITATIONS.map((c) => [c[2], c[3]])));
     const m4g2 = parseScenario('m4g2', S.m4g2?.[0]);
-    expect(m4g2?.gameId === 'm4g2' && m4g2.scenario).toEqual({ answers: ANSWERS });
+    expect(m4g2?.gameId === 'm4g2' && byText(m4g2.scenario.answers.map((a) => a.slice(1)))).toEqual(byText(ANSWERS.map((a) => a.slice(1))));
   });
 
   it('fake-provider case files differ from v3 and from each other (replay shows new lines)', () => {

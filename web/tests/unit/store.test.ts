@@ -57,9 +57,12 @@ describe('useGlitchStore actions', () => {
 
   it('setOnboarded and setReadableFont flip their flags', () => {
     useGlitchStore.getState().setOnboarded();
+    expect(useGlitchStore.getState().settings.readableFont).toBe(false); // the default: the pixel font
     useGlitchStore.getState().setReadableFont(true);
     expect(useGlitchStore.getState().profile.onboarded).toBe(true);
     expect(useGlitchStore.getState().settings.readableFont).toBe(true);
+    useGlitchStore.getState().setHelp('more');
+    expect(useGlitchStore.getState().settings).toEqual({ readableFont: true, help: 'more' });
   });
 
   it('patch mutates a clone: callers cannot corrupt state they captured', () => {
@@ -89,7 +92,7 @@ describe('useGlitchStore actions', () => {
     const s = useGlitchStore.getState();
     s.setNickname('Ana');
     s.setOnboarded();
-    s.setReadableFont(true);
+    s.setReadableFont(false);
     s.addPromptHistory(entry('h1'));
     s.patch((d) => {
       d.xp = 245;
@@ -116,7 +119,7 @@ describe('useGlitchStore actions', () => {
     expect(r.lastHero).toBe('scout');
     expect(r.streak).toEqual({ current: 3, best: 5, lastPlayDay: '2026-10-19' });
     expect(r.profile).toMatchObject({ nickname: 'Ana', onboarded: true });
-    expect(r.settings.readableFont).toBe(true);
+    expect(r.settings.readableFont).toBe(false);
   });
 
   it('patch writes mistakes (newest first) and never keeps more than MISTAKES_MAX', () => {
@@ -132,13 +135,13 @@ describe('useGlitchStore actions', () => {
 });
 
 describe('persistence', () => {
-  it('writes exactly the PersistedStateV3 shape under glitch.v1.state', async () => {
+  it('writes exactly the PersistedStateV4 shape under glitch.v1.state', async () => {
     useGlitchStore.getState().setNickname('Kai');
     await flush();
     const s = await stored();
-    expect(s).toMatchObject({ version: 3, profile: { nickname: 'Kai' }, seenScenarios: {}, mistakes: [] });
+    expect(s).toMatchObject({ version: 4, profile: { nickname: 'Kai' }, seenScenarios: {}, mistakes: [], fairnessCases: 0 });
     expect(Object.keys(s ?? {}).sort()).toEqual(
-      ['badges', 'heroByModule', 'heroesPlayed', 'lastHero', 'mistakes', 'onceBonuses', 'powersUsed', 'profile', 'promptHistory', 'seenScenarios', 'settings', 'stars', 'steps', 'streak', 'version', 'xp'],
+      ['badges', 'fairnessCases', 'heroByModule', 'heroesPlayed', 'lastHero', 'mistakes', 'onceBonuses', 'powersUsed', 'profile', 'promptHistory', 'seenScenarios', 'settings', 'stars', 'steps', 'streak', 'version', 'xp'],
     );
   });
 
@@ -154,7 +157,7 @@ describe('persistence', () => {
     expect(useGlitchStore.getState().mistakes).toEqual([mrec(2), mrec(4)]);
   });
 
-  it('a stored v2 save loads as v3: every v2 field kept (seenScenarios too), mistakes empty, rewritten as v3', async () => {
+  it('a stored v2 save loads as v4: every v2 field kept (seenScenarios too), mistakes empty, rewritten as v4', async () => {
     const v2 = {
       version: 2, profile: { nickname: 'Two', onboarded: true, createdAt: '2026-10-01T08:00:00.000Z' }, settings: { readableFont: true },
       xp: 410, streak: { current: 4, best: 6, lastPlayDay: '2026-10-18' }, steps: { m1h: true, m1s: true, m1g1: true, m1g2: true },
@@ -165,10 +168,10 @@ describe('persistence', () => {
     await coldStart(JSON.stringify(v2));
     const st = useGlitchStore.getState();
     expect(st.loadError).toBeNull();
-    expect(st).toMatchObject({ ...v2, version: 3, mistakes: [] });
+    expect(st).toMatchObject({ ...v2, version: 4, mistakes: [], fairnessCases: 0 });
     st.setReadableFont(false);
     await flush();
-    expect(await stored()).toMatchObject({ version: 3, xp: 410, seenScenarios: { m1g2: ['m1g2-0123456789ab'] }, mistakes: [] });
+    expect(await stored()).toMatchObject({ version: 4, xp: 410, seenScenarios: { m1g2: ['m1g2-0123456789ab'] }, mistakes: [] });
   });
 
   it('markScenarioSeen appends once per game, ignores bad ids/games, and survives a reload', async () => {
@@ -185,7 +188,7 @@ describe('persistence', () => {
     expect(useGlitchStore.getState().seenScenarios).toEqual({ m1g2: ['abc1', 'def2'], m4g1: ['zz9'] });
   });
 
-  it('a stored v1 save loads as v3 with every field and an empty seen map, and is rewritten as v3', async () => {
+  it('a stored v1 save loads as v4 with every field and an empty seen map, and is rewritten as v4', async () => {
     const v1 = {
       version: 1, profile: { nickname: 'Old', onboarded: true, createdAt: '2026-10-01T08:00:00.000Z' }, settings: { readableFont: false },
       xp: 230, streak: { current: 1, best: 2, lastPlayDay: '2026-10-18' }, steps: { m1h: true, m1s: true, m1g1: true, m1g2: true },
@@ -195,10 +198,10 @@ describe('persistence', () => {
     await coldStart(JSON.stringify(v1));
     const st = useGlitchStore.getState();
     expect(st.loadError).toBeNull();
-    expect(st).toMatchObject({ version: 3, xp: 230, stars: { m1g1: 3, m1g2: 2 }, seenScenarios: {}, mistakes: [], profile: { nickname: 'Old' } });
+    expect(st).toMatchObject({ version: 4, settings: { readableFont: false, help: 'auto' }, xp: 230, stars: { m1g1: 3, m1g2: 2 }, seenScenarios: {}, mistakes: [], profile: { nickname: 'Old' } });
     st.markScenarioSeen('m1g2', 'v1x');
     await flush();
-    expect(await stored()).toMatchObject({ version: 3, xp: 230, seenScenarios: { m1g2: ['v1x'] } });
+    expect(await stored()).toMatchObject({ version: 4, xp: 230, seenScenarios: { m1g2: ['v1x'] } });
   });
 
   it('state survives a reload: complete a step, reload, complete the next, reload — both present', async () => {

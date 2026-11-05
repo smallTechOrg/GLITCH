@@ -33,6 +33,8 @@ export interface GameDefinition {
   title: string;
   goal: string;
   intro: string;
+  /** How-to-play steps shown in the mission brief. */
+  steps: readonly string[];
   Component: React.ComponentType<{ api: GameApi }>;
 }
 

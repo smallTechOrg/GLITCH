@@ -12,9 +12,14 @@ describe('m4g1 data (v3 verbatim)', () => {
     expect(game.id).toBe('m4g1');
     expect(game.module).toBe(4);
     expect(game.title).toBe('Source Detective');
-    expect(game.goal).toBe('INVESTIGATE · KEEP OR CUT');
-    expect(game.intro).toBe('NOVA cited 5 sources. Check 3 in the catalogue, then drag each to KEEP or CUT.');
+    expect(game.goal).toBe('MISSION: Keep the real sources, cut the fakes');
+    expect(game.intro).toBe('Read what each source says. Then KEEP it or CUT it.');
     expect(GAME_META.m4g1.title).toBe(game.title);
+  });
+
+  it('every citation carries a distinct excerpt for the player to judge', () => {
+    expect(ITEMS.every((i) => i.excerpt.length >= 30)).toBe(true);
+    expect(new Set(ITEMS.map((i) => i.excerpt)).size).toBe(ITEMS.length);
   });
 
   it('keeps c1 UNESCO, c3 Bender et al., c5 OECD and cuts c2 Marsh and c4 Smith', () => {
@@ -53,7 +58,7 @@ describe('m4g1 data (v3 verbatim)', () => {
     expect(FOUND_LINE).toBe('Found in the catalogue.');
     expect(NOT_FOUND_LINE).toBe('Not in any catalogue. Invented!');
     expect(NO_LOOKUPS_LINE).toBe('No lookups left. Use the clues instead.');
-    expect(WRONG).toBe('Check the clues: made-up journal, blog with no author, or the catalogue says NOT FOUND.');
+    expect(WRONG).toBe('Read what it says: wild claims, no evidence, no real author, or the catalogue says NOT FOUND.');
     expect(SUMMARY).toBe("A source is only real if you verify it outside the AI. Asking the AI 'are you sure?' is not verification.");
   });
 });

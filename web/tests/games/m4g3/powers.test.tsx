@@ -12,7 +12,7 @@ import { NOTHING_TO_USE, type TestGameApi } from '@/testing/testGameApi';
 
 const Game = game.Component;
 const NOW = new Date('2026-10-20T10:00:00Z');
-const NOT_YET = 'Not yet: wellbeing is too low.';
+const NOT_YET = 'Not yet: People barely use it.';
 
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
@@ -35,10 +35,10 @@ async function ship(): Promise<void> {
   await fireEvent.press(screen.getByTestId('m4g3-ship'));
 }
 
-/** Hand-solve: Home-equivalent via 50 − presses each, all safeguards on, ship, wait 500 ms. */
+/** Hand-solve: 30 + presses each, all safeguards on, ship, wait 500 ms. */
 async function solveByHand(): Promise<void> {
-  for (let i = 0; i < 50; i++) await fireEvent.press(screen.getByTestId('slider-en-dec'));
-  for (let i = 0; i < 50; i++) await fireEvent.press(screen.getByTestId('slider-da-dec'));
+  for (let i = 0; i < 30; i++) await fireEvent.press(screen.getByTestId('slider-en-inc'));
+  for (let i = 0; i < 30; i++) await fireEvent.press(screen.getByTestId('slider-da-inc'));
   for (const id of ['R', 'H', 'A']) await fireEvent.press(screen.getByTestId(`toggle-${id}`));
   await ship();
   await act(async () => {

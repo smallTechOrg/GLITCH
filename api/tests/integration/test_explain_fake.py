@@ -135,8 +135,8 @@ async def test_different_answers_are_different_cache_entries(app, client_for, ca
 
 
 @pytest.mark.parametrize("payload, expected", [
-    (body(gameId="m1g1", itemId="t1", answer="right"), "Compare the model's verdict with what the email really is. The right call here: WRONG."),
-    (body(gameId="m2g1", itemId="r2", answer="false_alarms"), "Real mail got blocked. Raise the threshold or lower the caps weight. The right call here: BOTH GOALS MET."),
+    (body(gameId="m1g1", itemId="t1", answer="spam"), "New emails are harder. Ignore the tone and ask what the email wants from you. The right call here: NOT SPAM."),
+    (body(gameId="m2g1", itemId="r2", answer="false_alarms"), "Real mail got blocked. Raise FLAG AT SCORE or lower ALL-CAPS POINTS. The right call here: BOTH GOALS MET."),
     (body(gameId="m3g1", itemId="l7", answer="proxy"), "That line measures ability, not who she is. The right call here: OK."),
     (body(gameId="m3g2", itemId="audit", answer="gap"), "The gap is still some points. Some proxies are still switched on. The right call here: GAP ≤ 6 · ACCURACY ≥ 80."),
     (body(gameId="m4g1", itemId="ask", answer="ask_nova"), "Asking the same AI is not verification. It will sound sure either way. The right call here: CHECK THE CATALOGUE."),

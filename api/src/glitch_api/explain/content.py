@@ -21,8 +21,8 @@ GAME_IDS: Final = ("m1g1", "m1g2", "m2g1", "m2g2", "m3g1", "m3g2", "m4g1", "m4g2
 VARIATION_GAMES: Final = frozenset({"m1g1", "m1g2", "m3g1", "m4g1", "m4g2"})
 GAME_TITLES: Final = {
     "m1g1": "Train the Model",
-    "m1g2": "Fact or Fib",
-    "m2g1": "Tune the Sorter",
+    "m1g2": "Fact or Glitch",
+    "m2g1": "Inbox Filter",
     "m2g2": "Prompt Forge",
     "m3g1": "Proxy Hunt",
     "m3g2": "Fairness Lab",

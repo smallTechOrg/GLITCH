@@ -30,21 +30,21 @@ export function MetricBar({ id, label, value, target, direction, icon = 'target'
     <View testID={`metric-${id}`} accessible accessibilityLabel={`${label} ${shown}${unit}, ${goal}, ${ok ? 'met' : 'not met'}`} style={[styles.box, ok ? styles.ok : null]}>
       <View style={styles.row}>
         <Icon name={icon} scale={2} />
-        <PixelText size={fontSize.small} bold>{label}</PixelText>
+        <PixelText size={fontSize.tiny} bold>{label}</PixelText>
         <View style={styles.spacer} />
-        <PixelText size={fontSize.small}>{`${shown}${unit} `}</PixelText>
+        <PixelText size={fontSize.tiny}>{`${shown}${unit} `}</PixelText>
         <PixelText size={fontSize.tiny} color={colors.mu}>{goal}</PixelText>
         <PixelText size={fontSize.tiny} color={ok ? colors.ok : colors.no}>{ok ? ' OK' : ' NO'}</PixelText>
       </View>
-      <Bar value={value / 100} marker={target / 100} color={ok ? colors.ok : colors.bl} style={styles.bar} />
+      <Bar value={value / 100} marker={target / 100} height={5} color={ok ? colors.ok : colors.bl} style={styles.bar} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  box: { padding: 10, backgroundColor: colors.cd, borderWidth: border.thin, borderColor: colors.ln },
-  ok: { borderColor: colors.ok },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  box: { paddingVertical: 1, paddingHorizontal: 6, backgroundColor: colors.cd, borderWidth: border.thin, borderColor: colors.ln },
+  ok: {},
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   spacer: { flex: 1 },
-  bar: { marginTop: 6 },
+  bar: { marginTop: 2 },
 });

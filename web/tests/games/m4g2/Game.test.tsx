@@ -18,7 +18,13 @@ async function setup(hero: HeroId = 'scout') {
   return api;
 }
 
+async function show(item: string): Promise<void> {
+  const tab = screen.queryByTestId(`deck-tab-${item}`);
+  if (tab) await fireEvent.press(tab);
+}
+
 async function place(item: string, zone: string): Promise<void> {
+  await show(item);
   await fireEvent.press(screen.getByTestId(`dnd-item-${item}`));
   await fireEvent.press(screen.getByTestId(`dnd-zone-${zone}`));
 }
@@ -30,17 +36,32 @@ async function flush(ms: number): Promise<void> {
 }
 
 describe('m4g2 Confidence Court', () => {
-  it('renders the court heading, TRUST/VERIFY zones and every answer with its confidence and evidence', async () => {
+  it('renders the court heading, TRUST/VERIFY zones and only the first answer, with a tab per answer', async () => {
     await setup();
     expect(screen.getByText('THE COURT OF EVIDENCE')).toBeTruthy();
     expect(screen.getByText('TRUST = the evidence checks out. VERIFY = needs a human check first.')).toBeTruthy();
     expect(screen.getByTestId('dnd-zone-trust')).toBeTruthy();
     expect(screen.getByTestId('dnd-zone-verify')).toBeTruthy();
     const pool = screen.getByTestId('dnd-pool');
-    for (const it of ITEMS) {
-      expect(within(pool).getByText(it.statement)).toBeTruthy();
-      expect(within(pool).getByText(`CONFIDENCE ${it.confidence}% · EVIDENCE: ${it.evidence}`)).toBeTruthy();
-    }
+    for (const it of ITEMS) expect(within(pool).getByTestId(`deck-tab-${it.id}`)).toBeTruthy();
+    expect(within(pool).getByTestId('dnd-item-a1')).toBeTruthy();
+    expect(within(pool).queryByTestId('dnd-item-a2')).toBeNull();
+  });
+
+  it.each(ITEMS.map((it) => [it.id, it] as const))('%s shows its statement, confidence and evidence', async (id, it) => {
+    await setup();
+    await show(id);
+    const pool = screen.getByTestId('dnd-pool');
+    expect(within(pool).getByText(it.statement)).toBeTruthy();
+    expect(within(pool).getByText(`CONFIDENCE ${it.confidence}% · EVIDENCE: ${it.evidence}`)).toBeTruthy();
+  });
+
+  it('tapping a zone rules on the answer on show', async () => {
+    const api = await setup();
+    await fireEvent.press(screen.getByTestId('dnd-zone-trust'));
+    expect(within(screen.getByTestId('dnd-zone-trust')).getByTestId('dnd-item-a1')).toBeTruthy();
+    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-a2')).toBeTruthy();
+    expect(api.calls.miss).toHaveLength(0);
   });
 
   it('is won by tap-to-select with no mistakes (3 stars), 350 ms after the last placement', async () => {
@@ -56,6 +77,7 @@ describe('m4g2 Confidence Court', () => {
   it('is playable by keyboard activation (Enter/Space → press)', async () => {
     const api = await setup();
     for (const [item, zone] of ANSWER_KEY) {
+      await show(item);
       await fireEvent(screen.getByTestId(`dnd-item-${item}`), 'press');
       await fireEvent(screen.getByTestId(`dnd-zone-${zone}`), 'press');
     }
@@ -114,6 +136,7 @@ describe('m4g2 Confidence Court', () => {
 
   it('announces selection and placement through accessible labels', async () => {
     await setup();
+    await show('a4');
     const item = screen.getByTestId('dnd-item-a4');
     expect(item.props.accessibilityLabel).toBe('Your essay has 412 words. CONFIDENCE 90% · EVIDENCE: Word counter agrees: 412');
     await fireEvent.press(item);

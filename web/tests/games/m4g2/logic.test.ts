@@ -9,8 +9,8 @@ describe('m4g2 data (v3 verbatim)', () => {
     expect(game.id).toBe('m4g2');
     expect(game.module).toBe(4);
     expect(game.title).toBe('Confidence Court');
-    expect(game.goal).toBe('SORT · TRUST OR VERIFY');
-    expect(game.intro).toBe('Each NOVA answer has a confidence score and evidence. Ignore the score. Judge the evidence.');
+    expect(game.goal).toBe('MISSION: Rule TRUST or VERIFY on all 6 answers');
+    expect(game.intro).toBe('Ignore the confidence score. Judge the evidence.');
   });
 
   it('trusts a1, a4, a6 and verifies a2, a3, a5', () => {

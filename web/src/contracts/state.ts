@@ -4,7 +4,7 @@
 import type { SessionMistake } from './game';
 import type { BadgeId, GameId, HeroId, LeverId, ModuleId, StepId } from './ids';
 
-export const STATE_VERSION = 3 as const;
+export const STATE_VERSION = 4 as const;
 export const STATE_STORAGE_KEY = 'glitch.v1.state';
 export const DEVICE_STORAGE_KEY = 'glitch.v1.device';
 export const NICKNAME_MAX = 20;
@@ -65,13 +65,25 @@ export interface PersistedStateV3 extends Omit<PersistedStateV2, 'version'> {
   mistakes: MistakeRecord[];
 }
 
+/** How much hero-power help a player gets: `auto` adapts to how each game has gone so far. */
+export type HelpLevel = 'auto' | 'more' | 'less';
+export const HELP_LEVELS: readonly HelpLevel[] = ['auto', 'more', 'less'];
+
+/** v4: v3 + the help setting + `fairnessCases`, the number of Fairness Lab cases cleared. */
+export interface PersistedStateV4 extends Omit<PersistedStateV3, 'version' | 'settings'> {
+  version: 4;
+  settings: { readableFont: boolean; help: HelpLevel };
+  fairnessCases: number;
+}
+
 /** Current persisted shape (bumped with a migration in state/migrate.ts). */
-export type PersistedState = PersistedStateV3;
+export type PersistedState = PersistedStateV4;
 
 export interface GlitchActions {
   setNickname(n: string | null): void; // trimmed, max 20, '' → null
   setOnboarded(): void;
   setReadableFont(b: boolean): void;
+  setHelp(level: HelpLevel): void;
   /** The only general write path: fn mutates a structured clone of the persisted state. */
   patch(fn: (s: PersistedState) => void): void;
   addPromptHistory(entry: PromptHistoryEntry): void; // newest first, cap 50

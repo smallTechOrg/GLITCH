@@ -93,7 +93,7 @@ export function Slider({ id, label, value, min, max, step = 1, disabled = false,
         <PixelText size={fontSize.small} color={colors.ac} testID={`slider-${id}-value`}>{String(value)}</PixelText>
       </View>
       <View style={styles.row}>
-        <PixelButton label="−" variant="small" testID={`slider-${id}-dec`} accessibilityLabel={`Decrease ${label}`} disabled={disabled || value <= min} onPress={() => set(value - step)} />
+        <PixelButton label="−" variant="small" testID={`slider-${id}-dec`} accessibilityLabel={`Decrease ${label}`} disabled={disabled || value <= min} onPress={() => set(value - step)} style={styles.btn} />
         <View
           testID={`slider-${id}`}
           focusable={!disabled}
@@ -120,17 +120,20 @@ export function Slider({ id, label, value, min, max, step = 1, disabled = false,
           </View>
           <View pointerEvents="none" style={[styles.thumb, { left: `${pct}%` }]} />
         </View>
-        <PixelButton label="+" variant="small" testID={`slider-${id}-inc`} accessibilityLabel={`Increase ${label}`} disabled={disabled || value >= max} onPress={() => set(value + step)} />
+        <PixelButton label="+" variant="small" testID={`slider-${id}-inc`} accessibilityLabel={`Increase ${label}`} disabled={disabled || value >= max} onPress={() => set(value + step)} style={styles.btn} />
       </View>
     </View>
   );
 }
 
+const SLIDER_ROW = 34;
+
 const styles = StyleSheet.create({
-  wrap: { marginVertical: 8, gap: 6 },
+  wrap: { gap: 0 },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  track: { flex: 1, height: layout.minTouch, justifyContent: 'center', cursor: 'pointer' },
+  btn: { minHeight: SLIDER_ROW, minWidth: layout.minTouch, paddingVertical: 0 },
+  track: { flex: 1, height: SLIDER_ROW, justifyContent: 'center', cursor: 'pointer' },
   trough: { height: 10, backgroundColor: colors.deep, borderWidth: border.thin, borderColor: colors.ln },
   fill: { height: '100%', backgroundColor: colors.ac },
   thumb: { position: 'absolute', width: 14, height: 24, marginLeft: -7, backgroundColor: colors.ac, borderWidth: border.thin, borderColor: colors.white },

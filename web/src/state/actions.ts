@@ -69,6 +69,13 @@ export function completeModule(mod: ModuleId, now: Date = new Date()): number {
   return apply((d) => completeModuleRule(d, mod, now)).xp;
 }
 
+/** A Fairness Lab case was cleared, so the next play opens a different one. */
+export function clearFairnessCase(): void {
+  useGlitchStore.getState().patch((d) => {
+    d.fairnessCases += 1;
+  });
+}
+
 /** Settings → Reset progress (store rules: keeps streak, nickname, settings, device id). */
 export function resetProgress(): void {
   useGlitchStore.getState().resetProgress();

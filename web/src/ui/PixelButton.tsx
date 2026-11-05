@@ -19,6 +19,7 @@ export interface PixelButtonProps {
   testID?: string;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  accessibilityRole?: 'button' | 'link' | 'tab' | 'radio';
   color?: string; // border colour override (power button uses the module colour)
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -29,7 +30,7 @@ export interface PixelButtonProps {
 
 export function PixelButton({
   label, onPress, variant = 'secondary', disabled = false, icon, iconScale = 2, testID,
-  accessibilityLabel, accessibilityHint, color, fullWidth, style, children, iconOnly = false,
+  accessibilityLabel, accessibilityHint, accessibilityRole, color, fullWidth, style, children, iconOnly = false,
 }: PixelButtonProps): React.JSX.Element {
   const f = useFocusRing();
   const v = VARIANTS[variant];
@@ -40,7 +41,7 @@ export function PixelButton({
       disabled={disabled}
       onFocus={f.onFocus}
       onBlur={f.onBlur}
-      accessibilityRole={variant === 'link' ? 'link' : 'button'}
+      accessibilityRole={accessibilityRole ?? (variant === 'link' ? 'link' : 'button')}
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
@@ -70,8 +71,8 @@ export function PixelButton({
 }
 
 const VARIANTS: Record<ButtonVariant, { box: ViewStyle; text: string; size: number }> = {
-  primary: { box: { backgroundColor: colors.ac, borderColor: colors.white, boxShadow: shadows.button, paddingVertical: 12, paddingHorizontal: 14 }, text: colors.ink, size: fontSize.ui },
-  secondary: { box: { backgroundColor: colors.cd, borderColor: colors.ln, boxShadow: shadows.button, paddingVertical: 12, paddingHorizontal: 14 }, text: colors.tx, size: fontSize.ui },
+  primary: { box: { backgroundColor: colors.ac, borderColor: colors.white, boxShadow: shadows.button, paddingVertical: 8, paddingHorizontal: 14 }, text: colors.ink, size: fontSize.ui },
+  secondary: { box: { backgroundColor: colors.cd, borderColor: colors.ln, boxShadow: shadows.button, paddingVertical: 8, paddingHorizontal: 14 }, text: colors.tx, size: fontSize.ui },
   small: { box: { backgroundColor: colors.cd, borderColor: colors.ln, borderWidth: border.thin, paddingVertical: 6, paddingHorizontal: 8 }, text: colors.bl, size: fontSize.tiny },
   link: { box: { backgroundColor: 'transparent', borderWidth: 0, paddingVertical: 6, paddingHorizontal: 4 }, text: colors.bl, size: fontSize.tiny },
 };
@@ -79,7 +80,7 @@ const VARIANTS: Record<ButtonVariant, { box: ViewStyle; text: string; size: numb
 const styles = StyleSheet.create({
   base: { borderWidth: border.width, minHeight: layout.minTouch, minWidth: layout.minTouch, justifyContent: 'center', alignItems: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
-  full: { alignSelf: 'stretch', marginTop: 12 },
+  full: { alignSelf: 'stretch' },
   pressed: { boxShadow: 'none', transform: [{ translateX: 1 }, { translateY: 1 }] },
   disabled: { opacity: 0.5 },
   underline: { textDecorationLine: 'underline' },

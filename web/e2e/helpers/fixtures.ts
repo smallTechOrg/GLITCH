@@ -13,7 +13,26 @@ export interface GlitchFixtures {
   expectedProvider: string;
 }
 
+/** Click the mission brief away whenever it opens, before the next action or assertion. */
+export async function autoDismissBrief(page: Page): Promise<void> {
+  await page.addLocatorHandler(page.getByTestId('brief-start'), async (btn) => {
+    await btn.click();
+  });
+}
+
 export const test = base.extend<GlitchFixtures>({
+  // Most specs play games, so the brief that opens a first play is dismissed for them. Specs about
+  // the brief itself are tagged @keepBrief; fit.spec.ts measures it, so it opens it by hand.
+  page: async ({ page }, use, testInfo) => {
+    // Specs rely on the authored order of answer choices unless tagged @shuffle.
+    if (!testInfo.tags.includes('@shuffle')) {
+      await page.addInitScript(() => {
+        (globalThis as { __GLITCH_NO_SHUFFLE__?: boolean }).__GLITCH_NO_SHUFFLE__ = true;
+      });
+    }
+    if (!testInfo.tags.includes('@keepBrief') && !testInfo.file.includes('fit.spec')) await autoDismissBrief(page);
+    await use(page);
+  },
   pageErrors: [
     async ({ page }, use) => {
       const errors: string[] = [];

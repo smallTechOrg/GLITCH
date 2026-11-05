@@ -15,7 +15,7 @@ jest.mock('expo-router', () => ({
 const NOW = new Date(2026, 9, 20, 10);
 const PLAYED: Partial<PersistedState> = {
   profile: { nickname: 'Ada', onboarded: true, createdAt: NOW.toISOString() },
-  settings: { readableFont: true },
+  settings: { readableFont: true, help: 'auto' },
   xp: 245,
   streak: { current: 4, best: 6, lastPlayDay: '2026-10-20' },
   steps: { m1h: true, m1s: true, m1g1: true },
@@ -55,7 +55,7 @@ describe('SettingsScreen', () => {
   });
 
   it('READABLE FONT is a switch that toggles the setting', async () => {
-    await renderWithProviders(<SettingsScreen />, { state: { ...PLAYED, settings: { readableFont: false } }, now: NOW });
+    await renderWithProviders(<SettingsScreen />, { state: { ...PLAYED, settings: { readableFont: false, help: 'auto' } }, now: NOW });
     const sw = () => screen.getByTestId('settings-readable-font');
     expect(sw().props.accessibilityRole).toBe('switch');
     expect(sw().props.accessibilityState).toEqual({ checked: false });
@@ -63,6 +63,17 @@ describe('SettingsScreen', () => {
     expect(useGlitchStore.getState().settings.readableFont).toBe(true);
     expect(sw().props.accessibilityState).toEqual({ checked: true });
     expect(sw()).toHaveTextContent(/ON/);
+  });
+
+  it('HOW MUCH HELP sets the help level', async () => {
+    await renderWithProviders(<SettingsScreen />, { state: PLAYED, now: NOW });
+    expect(screen.getByTestId('settings-help-auto')).toHaveTextContent('ADAPT TO ME');
+    await fireEvent.press(screen.getByTestId('settings-help-more'));
+    expect(useGlitchStore.getState().settings.help).toBe('more');
+    await fireEvent.press(screen.getByTestId('settings-help-less'));
+    expect(useGlitchStore.getState().settings.help).toBe('less');
+    await fireEvent.press(screen.getByTestId('settings-help-auto'));
+    expect(useGlitchStore.getState().settings.help).toBe('auto');
   });
 
   it('Reset needs a second tap; the first only asks for confirmation', async () => {

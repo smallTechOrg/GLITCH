@@ -27,10 +27,10 @@ export function ConfidenceCourtGame({ api, scenario = V3_SCENARIO }: { api: Game
       <View style={styles.row}>
         <Icon name={ITEM_ICON} scale={3} />
         <View style={styles.body}>
-          <PixelText long size={fontSize.small} style={ctx.dimmed ? styles.strike : null}>
+          <PixelText long size={fontSize.body} bold style={ctx.dimmed ? styles.strike : null}>
             {it.statement}
           </PixelText>
-          <PixelText long size={fontSize.tiny} color={colors.mu}>
+          <PixelText long size={fontSize.small} color={colors.mu}>
             {verdictLine(it.confidence, it.evidence)}
           </PixelText>
         </View>
@@ -53,7 +53,8 @@ export function ConfidenceCourtGame({ api, scenario = V3_SCENARIO }: { api: Game
     <SortBoard<AnswerItem>
       cfg={cfg}
       api={api}
-      layout="zones-top"
+      layout="side"
+      deck
       header={header}
       renderItem={renderItem}
       onDone={() => apiRef.current.win(SUMMARY)}
@@ -63,7 +64,7 @@ export function ConfidenceCourtGame({ api, scenario = V3_SCENARIO }: { api: Game
 }
 
 const styles = StyleSheet.create({
-  head: { gap: 8 },
+  head: { gap: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
   body: { flexShrink: 1, gap: 4 },
   strike: { textDecorationLine: 'line-through' },

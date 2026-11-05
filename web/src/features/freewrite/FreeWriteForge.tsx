@@ -4,7 +4,7 @@
 // check. ≥ 4/5 levers → "Finish ▶" → onPassed; fewer → api.miss (frame owns hearts/shield).
 // The API client is injectable for tests; FreeWriteRound wires the real one.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
 import { CLIENT_TIMEOUT_MS, FREEWRITE_PROMPT_MAX } from '../../contracts/api';
 import type { ApiClient } from '../../api/client';
 import type { GameApi } from '../../contracts/game';
@@ -54,6 +54,11 @@ export function FreeWriteForge({ api, onPassed, client, now = defaultNow, makeId
   const [lastSent, setLastSent] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
   const inputFocus = useFocusRing();
+  const { width } = useWindowDimensions();
+  const wide = width >= layout.sideBySide;
+  const narrow = width <= layout.mobileBreakpoint;
+  // Phones can't fit the editor and NOVA's reply together, so they take turns.
+  const [editing, setEditing] = useState(false);
 
   const alive = useRef(true);
   const pending = useRef<AbortController | null>(null);
@@ -123,6 +128,7 @@ export function FreeWriteForge({ api, onPassed, client, now = defaultNow, makeId
       else if (o.fallback === 'flat') setEnergy((e) => (e.kind === 'ok' ? { ...e, remaining: 0 } : e));
       addPromptHistory(historyEntry(makeId(), goal, prompt, o, now()));
       setOutcome(o);
+      setEditing(false);
       announce(`${o.leversHit} of 5 levers`);
       if (o.passed) api.say(COPY.passed, 'good');
       else api.miss(COPY.weak, freeWriteMistake(goal, o.leversHit));
@@ -164,21 +170,22 @@ export function FreeWriteForge({ api, onPassed, client, now = defaultNow, makeId
       : null;
 
   const sendLabel = flat ? COPY.sendOffline : outcome && !outcome.passed ? COPY.resend : COPY.send;
+  const showEditor = !narrow || !outcome || editing;
 
   return (
-    <View testID="fw-root" style={styles.wrap}>
+    <View testID="fw-root" style={[styles.wrap, wide ? styles.wrapWide : null]}>
+      <View style={[styles.column, wide ? styles.columnWide : null, showEditor ? null : styles.hidden]}>
       <PixelText size={fontSize.h3} color={colors.ac} accessibilityRole="header">{COPY.header}</PixelText>
-      <PixelText long size={fontSize.small} color={colors.mu}>{COPY.sub}</PixelText>
 
       <Card accent={colors.ac} style={styles.goalCard}>
-        <PixelText testID="fw-goal" long color={colors.tx}>{`${COPY.goalLabel} ${goal.goal}`}</PixelText>
+        <PixelText testID="fw-goal" long size={fontSize.small} color={colors.tx}>{`${COPY.goalLabel} ${goal.goal}`}</PixelText>
       </Card>
 
       <EnergyMeter state={energy} now={now()} testID="fw-energy" />
 
       {banner ? (
         <View testID="fw-offline-banner" accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.banner}>
-          <PixelText size={fontSize.small} color={colors.ink}>{banner}</PixelText>
+          <PixelText size={fontSize.tiny} color={colors.ink}>{banner}</PixelText>
         </View>
       ) : null}
 
@@ -211,44 +218,52 @@ export function FreeWriteForge({ api, onPassed, client, now = defaultNow, makeId
           <PixelButton testID="fw-send" label={sendLabel} variant="primary" disabled={!canSend} onPress={() => void send()} />
         )}
       </View>
+      </View>
 
+      <View style={[styles.column, wide ? styles.columnWide : null]}>
       {busy ? <NovaThinking reducedMotion={api.reducedMotion} /> : null}
 
-      {outcome ? (
+      {outcome && (!narrow || !showEditor) ? (
         <View testID="fw-result" style={styles.result}>
           <ReplyBox label={outcome.replyLabel} reply={outcome.reply} demo={outcome.demo} />
           <LeverChips levers={outcome.levers} />
           <PixelText testID="fw-score" size={fontSize.h3} color={outcome.passed ? colors.ok : colors.no}>{`${outcome.leversHit}/5 LEVERS`}</PixelText>
           <View testID="fw-tip" style={styles.tip}>
             <PixelText size={fontSize.tiny} color={colors.ac}>{COPY.tipLabel}</PixelText>
-            <PixelText long>{outcome.tip}</PixelText>
+            <PixelText long size={fontSize.small}>{outcome.tip}</PixelText>
           </View>
           {outcome.passed ? <PixelButton testID="fw-finish" label={COPY.finish} variant="primary" disabled={finished} onPress={finish} /> : null}
+          {!outcome.passed && narrow ? <PixelButton testID="fw-edit" label={COPY.edit} variant="primary" disabled={api.over} onPress={() => setEditing(true)} /> : null}
         </View>
       ) : null}
 
-      <PromptLog />
+      {narrow && outcome ? null : <PromptLog />}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 10 },
-  goalCard: { padding: 14 },
-  banner: { backgroundColor: colors.ac, borderWidth: border.width, borderColor: colors.ink, padding: 10 },
-  editor: { gap: 6 },
+  wrap: { gap: 6 },
+  wrapWide: { flexDirection: 'row' },
+  column: { gap: 4 },
+  columnWide: { flex: 1, minWidth: 0 },
+  hidden: { display: 'none' },
+  goalCard: { paddingVertical: 6, paddingHorizontal: 8 },
+  banner: { backgroundColor: colors.ac, borderWidth: border.width, borderColor: colors.ink, padding: 4 },
+  editor: { gap: 2 },
   input: {
     color: colors.tx,
     backgroundColor: colors.deep,
     borderWidth: border.width,
     borderColor: colors.ln,
-    padding: 10,
-    minHeight: 120,
+    padding: 6,
+    minHeight: 76,
     minWidth: layout.minTouch,
     textAlignVertical: 'top',
   },
   inputLocked: { opacity: 0.6 },
   count: { alignSelf: 'flex-end' },
-  result: { gap: 6 },
-  tip: { borderWidth: border.thin, borderColor: colors.ac, padding: 10, gap: 4 },
+  result: { gap: 4 },
+  tip: { borderLeftWidth: border.width, borderLeftColor: colors.ac, backgroundColor: colors.deep, paddingVertical: 4, paddingHorizontal: 6, gap: 2 },
 });

@@ -14,6 +14,8 @@ non-identifying counters (Phase 1 in memory; Phase 2+ in the blob cache) and, fr
 | `profile.onboarded` | boolean | Welcome done. |
 | `profile.createdAt` | ISO string | First launch. |
 | `settings.readableFont` | boolean | Default false. |
+| `settings.help` | `auto` \| `more` \| `less` | v4. Default `auto`. Power uses per game (`engine/adapt.ts`). |
+| `fairnessCases` | int ≥ 0 | v4. Fairness Lab cases cleared; picks the next case. |
 | `xp` | integer ≥ 0 | Level = floor(xp/100)+1. |
 | `streak.current` / `streak.best` | integer ≥ 0 | Daily rules in `course-shell.md`. |
 | `streak.lastPlayDay` | `YYYY-MM-DD` \| null | Local date. |

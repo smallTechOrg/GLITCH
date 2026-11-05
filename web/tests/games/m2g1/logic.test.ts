@@ -1,40 +1,40 @@
-// m2g1 · Tune the Sorter — v3 invariants (spec/capabilities/v3-games.md → m2g1, v3 lines 521–540).
+// m2g1 · Inbox Filter — scoring invariants (spec/capabilities/v3-games.md → m2g1, v3 lines 521–540).
 import { CAPS_WEIGHT, FOCUS_ALL_MET_LINE, ROUNDS, ROUND_1, ROUND_2, THRESHOLD, WIN_SUMMARY, XRAY_LINE } from '@/games/m2g1/data';
 import { evaluate, focusLine, lockIn, rowLabel, scoreOf } from '@/games/m2g1/logic';
 import game from '@/games/m2g1';
 
-describe('m2g1 data (v3 verbatim)', () => {
-  it('has v3 title, goal and intro', () => {
+describe('m2g1 data', () => {
+  it('has the plain title, goal and intro', () => {
     expect(game.id).toBe('m2g1');
     expect(game.module).toBe(2);
-    expect(game.title).toBe('Tune the Sorter');
-    expect(game.goal).toBe('SLIDERS · TWO ROUNDS');
-    expect(game.intro).toBe('Move the threshold and the weight. Watch how the sorter changes.');
+    expect(game.title).toBe('Inbox Filter');
+    expect(game.goal).toBe('MISSION: Move both sliders until both goals say OK, then lock in');
+    expect(game.intro).toBe('Both sliders start at 0. You set them.');
   });
 
-  it('slider ranges and start values are v3 (threshold 0–100 @50, caps 0–40 @30)', () => {
-    expect(THRESHOLD).toMatchObject({ id: 'th', label: 'THRESHOLD', min: 0, max: 100, start: 50 });
-    expect(CAPS_WEIGHT).toMatchObject({ id: 'wc', label: 'ALL-CAPS WEIGHT', min: 0, max: 40, start: 30 });
+  it('both sliders start at 0 (flag score 0–100, all-caps points 0–40)', () => {
+    expect(THRESHOLD).toMatchObject({ id: 'th', label: 'FLAG AT SCORE', min: 0, max: 100, start: 0 });
+    expect(CAPS_WEIGHT).toMatchObject({ id: 'wc', label: 'ALL-CAPS POINTS', min: 0, max: 40, start: 0 });
   });
 
-  it('round 1 config is v3: wd 30, wk 20, ga 0, gb 1, URGENT/WAIT, solution (55,30)', () => {
+  it('round 1 config: wd 30, wk 20, ga 0, gb 1, URGENT/WAIT, solution (55,30)', () => {
     expect(ROUND_1).toMatchObject({
       title: 'ROUND 1 · EMERGENCY INBOX', wd: 30, wk: 20, ga: 0, gb: 1, yes: 'URGENT', no: 'WAIT',
       ma: 'EMERGENCIES MISSED', mbl: 'FALSE ALARMS', sol: [55, 30],
-      fa: 'A real emergency was missed. Lower the threshold.',
-      fb: 'Too many false alarms. Raise the threshold a little.',
+      fa: 'A real emergency was missed. Lower FLAG AT SCORE.',
+      fb: 'Too many false alarms. Raise FLAG AT SCORE a little.',
     });
     expect(ROUND_1.msgs).toHaveLength(8);
     expect(ROUND_1.msgs[0]).toEqual(['Mum: come home NOW!', 0, 1, 1, 1]);
     expect(ROUND_1.msgs[7]).toEqual(['WIN PHONE deadline today!!!', 1, 1, 0, 0]);
   });
 
-  it('round 2 config is v3: wd 40, wk 0, ga 1, gb 0, BLOCKED/INBOX, solution (47,30)', () => {
+  it('round 2 config: wd 40, wk 0, ga 1, gb 0, BLOCKED/INBOX, solution (47,30)', () => {
     expect(ROUND_2).toMatchObject({
       title: 'ROUND 2 · SPAM FOLDER', wd: 40, wk: 0, ga: 1, gb: 0, yes: 'BLOCKED', no: 'INBOX',
       ma: 'SPAM LEAKED', mbl: 'REAL MAIL BLOCKED', sol: [47, 30],
-      fa: 'Too much spam got through. Lower the threshold.',
-      fb: 'Real mail got blocked. Raise the threshold or lower the caps weight.',
+      fa: 'Too much spam got through. Lower FLAG AT SCORE.',
+      fb: 'Real mail got blocked. Raise FLAG AT SCORE or lower ALL-CAPS POINTS.',
     });
     expect(ROUND_2.msgs).toHaveLength(8);
     expect(ROUND_2.msgs[6]).toEqual(['Great deal on shoes', 1, 0, 0, 1]);
@@ -42,9 +42,9 @@ describe('m2g1 data (v3 verbatim)', () => {
     expect(ROUNDS).toEqual([ROUND_1, ROUND_2]);
   });
 
-  it('keeps the v3 copy for X-RAY and the win summary', () => {
+  it('keeps the X-RAY copy, and the win summary still teaches the word threshold', () => {
     expect(XRAY_LINE).toBe('X-RAY: the sliders are set to a good answer. Lock it in.');
-    expect(WIN_SUMMARY).toMatch(/^A threshold is a trade-off\./);
+    expect(WIN_SUMMARY).toMatch(/a threshold is a trade-off\./);
   });
 });
 
@@ -63,11 +63,16 @@ describe('m2g1 scoring', () => {
     expect(at61.rows[1]).toMatchObject({ score: 60, flagged: false, ok: false });
   });
 
-  it('PARITY QUIRK: the v3 start (50,30) already passes both rounds (R1 A=0 B=1, R2 A=0 B=0)', () => {
+  it('the zero start fails both rounds: the player has to set the sliders', () => {
+    expect(evaluate(ROUND_1, THRESHOLD.start, CAPS_WEIGHT.start)).toMatchObject({ a: 0, b: 4, passes: false });
+    expect(evaluate(ROUND_2, THRESHOLD.start, CAPS_WEIGHT.start)).toMatchObject({ a: 0, b: 4, passes: false });
+    expect(lockIn(ROUND_1, THRESHOLD.start, CAPS_WEIGHT.start)).toEqual({ pass: false, message: ROUND_1.fb });
+    expect(lockIn(ROUND_2, THRESHOLD.start, CAPS_WEIGHT.start)).toEqual({ pass: false, message: ROUND_2.fb });
+  });
+
+  it('(50,30) also passes both rounds (R1 A=0 B=1, R2 A=0 B=0)', () => {
     expect(evaluate(ROUND_1, 50, 30)).toMatchObject({ a: 0, b: 1, passes: true });
     expect(evaluate(ROUND_2, 50, 30)).toMatchObject({ a: 0, b: 0, passes: true });
-    expect(lockIn(ROUND_1, THRESHOLD.start, CAPS_WEIGHT.start)).toEqual({ pass: true });
-    expect(lockIn(ROUND_2, THRESHOLD.start, CAPS_WEIGHT.start)).toEqual({ pass: true });
   });
 
   it('the X-RAY solutions pass: (55,30) for R1 and (47,30) for R2', () => {
@@ -78,7 +83,7 @@ describe('m2g1 scoring', () => {
   it('R1 at t=61, wC=30 fails with the missed-emergency message', () => {
     const v = evaluate(ROUND_1, 61, 30);
     expect(v.a).toBe(4);
-    expect(lockIn(ROUND_1, 61, 30)).toEqual({ pass: false, message: 'A real emergency was missed. Lower the threshold.' });
+    expect(lockIn(ROUND_1, 61, 30)).toEqual({ pass: false, message: 'A real emergency was missed. Lower FLAG AT SCORE.' });
   });
 
   it('too low a threshold fails with the false-alarm message (fb) when no emergency is missed', () => {
@@ -104,12 +109,12 @@ describe('m2g1 scoring', () => {
 
 describe('m2g1 FOCUS line', () => {
   it('names fa when A > ga', () => {
-    expect(focusLine(ROUND_1, 61, 30)).toBe('FOCUS: A real emergency was missed. Lower the threshold.');
+    expect(focusLine(ROUND_1, 61, 30)).toBe('FOCUS: A real emergency was missed. Lower FLAG AT SCORE.');
   });
 
   it('names fb when only B > gb', () => {
-    expect(focusLine(ROUND_1, 0, 30)).toBe('FOCUS: Too many false alarms. Raise the threshold a little.');
-    expect(focusLine(ROUND_2, 50, 40)).toBe('FOCUS: Real mail got blocked. Raise the threshold or lower the caps weight.');
+    expect(focusLine(ROUND_1, 0, 30)).toBe('FOCUS: Too many false alarms. Raise FLAG AT SCORE a little.');
+    expect(focusLine(ROUND_2, 50, 40)).toBe('FOCUS: Real mail got blocked. Raise FLAG AT SCORE or lower ALL-CAPS POINTS.');
   });
 
   it('says both goals are met when the setting already passes (deliberate change from v3)', () => {

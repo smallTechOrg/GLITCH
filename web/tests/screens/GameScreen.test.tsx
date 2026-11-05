@@ -4,6 +4,7 @@
 // The game registry is replaced by a tiny probe game, and the tutor / recap / memory mount
 // points by probes that expose the props the frame passes, so the frame is tested in isolation.
 import React from 'react';
+import { Dimensions } from 'react-native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import type { HeroId } from '@/contracts/ids';
 import type { PersistedState } from '@/contracts/state';
@@ -103,10 +104,10 @@ jest.mock('@/games/registry', () => {
       React.createElement(Text, { testID: 'probe-hearts' }, `api hearts ${api.hearts} over ${api.over ? 'yes' : 'no'}`),
     );
   }
-  const mk = (id: string, module: number, title: string) => ({ id, module, title, goal: `GOAL ${id}`, intro: `Intro ${id}.`, Component: ProbeGame });
+  const mk = (id: string, module: number, title: string) => ({ id, module, title, goal: `GOAL ${id}`, intro: `Intro ${id}.`, steps: [`Step one of ${id}.`, 'Step two.'], Component: ProbeGame });
   const GAMES = {
-    m1g1: mk('m1g1', 1, 'Train the Model'), m1g2: mk('m1g2', 1, 'Fact or Fib'),
-    m2g1: mk('m2g1', 2, 'Tune the Sorter'), m2g2: mk('m2g2', 2, 'Prompt Forge'),
+    m1g1: mk('m1g1', 1, 'Train the Model'), m1g2: mk('m1g2', 1, 'Fact or Glitch'),
+    m2g1: mk('m2g1', 2, 'Inbox Filter'), m2g2: mk('m2g2', 2, 'Prompt Forge'),
     m3g1: mk('m3g1', 3, 'Proxy Hunt'), m3g2: mk('m3g2', 3, 'Fairness Lab'),
     m4g1: mk('m4g1', 4, 'Source Detective'), m4g2: mk('m4g2', 4, 'Confidence Court'), m4g3: mk('m4g3', 4, 'Design the Companion'),
   };
@@ -176,7 +177,7 @@ describe('GameScreen · session start', () => {
   });
 
   it('shows the locked screen for a module that is not open yet (deep link)', async () => {
-    await renderWithProviders(<GameScreen mod={2} gameId="m2g1" />, { state: M1_READY, now: NOW });
+    await renderWithProviders(<GameScreen mod={3} gameId="m3g1" />, { state: M1_READY, now: NOW });
     expect(screen.getByTestId('locked-screen')).toBeTruthy();
     expect(screen.queryByTestId('game-body')).toBeNull();
   });
@@ -348,7 +349,6 @@ describe('GameScreen · winning', () => {
     expect(win).not.toHaveTextContent(/COMING SOON/);
     expect(screen.getByTestId('recap')).toHaveTextContent(/"n":0/);
     expect(mockMemory.won).toEqual([['m1g1', 3]]);
-    expect(screen.getByTestId('say-bubble')).toHaveTextContent('Level clear!');
     expect(screen.getByTestId('win-continue')).toHaveTextContent('Continue ▶');
     const s = useGlitchStore.getState();
     expect(s.xp).toBe(xp0 + 55);
@@ -412,7 +412,38 @@ describe('GameScreen · winning', () => {
     expect(screen.getByTestId('win-continue')).toHaveTextContent('Finish module ▶');
     await press('win-continue');
     expect(router.navigate).toHaveBeenLastCalledWith('/module/1/complete');
+  });
+
+  it('clearing the first module of the course unlocks Boot Up; its last game is Inbox Filter', async () => {
+    await renderWithProviders(<GameScreen mod={2} gameId="m2g1" />, { state: { ...M1_READY, steps: { m2h: true, m2s: true, m2g2: true } }, now: NOW });
+    await press('probe-win');
+    expect(screen.getByTestId('win-continue')).toHaveTextContent('Finish module ▶');
+    await press('win-continue');
+    expect(router.navigate).toHaveBeenLastCalledWith('/module/2/complete');
     expect(useGlitchStore.getState().badges.boot).toBeDefined();
+  });
+
+  it('the speech bubble says "Level clear!" beside the activity on wide screens, and gives its room to the result on phones', async () => {
+    const dims = jest.spyOn(Dimensions, 'get').mockReturnValue({ width: 1280, height: 720, scale: 1, fontScale: 1 });
+    try {
+      await open();
+      await press('probe-win');
+      expect(screen.getByTestId('say-bubble')).toHaveTextContent('Level clear!');
+    } finally {
+      dims.mockRestore();
+    }
+  });
+
+  it('at phone width the bubble is hidden on the result screen', async () => {
+    const dims = jest.spyOn(Dimensions, 'get').mockReturnValue({ width: 390, height: 844, scale: 1, fontScale: 1 });
+    try {
+      await open();
+      await press('probe-win');
+      expect(screen.queryByTestId('say-bubble')).toBeNull();
+      expect(screen.getByTestId('win-screen')).toBeTruthy();
+    } finally {
+      dims.mockRestore();
+    }
   });
 
   it('announces copy constants used for screen readers', () => {
@@ -436,6 +467,122 @@ describe('GameScreen · stale callbacks', () => {
     expect(label('hearts')).toBe('Hearts 3 of 3');
     expect(screen.queryByTestId('win-screen')).toBeNull();
     expect(mockCtl.api!.over).toBe(false);
+  });
+});
+
+describe('GameScreen · mission brief', () => {
+  it('opens on a game not cleared yet, with the mission, steps, how to clear it and the hero power', async () => {
+    await open('oracle');
+    expect(screen.getByTestId('brief')).toBeTruthy();
+    expect(screen.getByTestId('brief-mission')).toHaveTextContent('GOAL m1g1');
+    expect(screen.getByTestId('brief-step-0')).toHaveTextContent('Step one of m1g1.');
+    expect(screen.getByTestId('brief-step-1')).toHaveTextContent('Step two.');
+    expect(screen.getByTestId('brief-win')).toHaveTextContent(/You start with 3 hearts/);
+    expect(screen.getByTestId('brief-power')).toHaveTextContent('Your hero power: FOCUS, 2 uses.');
+    expect(screen.getByTestId('brief-start')).toHaveTextContent('▶ Start mission');
+    await press('brief-start');
+    expect(screen.queryByTestId('brief')).toBeNull();
+    expect(screen.getByTestId('game-goal')).toHaveTextContent('GOAL m1g1');
+  });
+
+  it('greets the player by name', async () => {
+    await open('scout', { profile: { nickname: 'Ada', onboarded: true, createdAt: NOW.toISOString() } });
+    expect(screen.getByTestId('brief')).toHaveTextContent(/MISSION BRIEF · ADA/);
+  });
+
+  it('stays closed on a cleared game; HOW TO PLAY reopens it and it goes back to the mission', async () => {
+    await open('scout', { steps: { m1h: true, m1s: true, m1g1: true } }, 'm1g1');
+    expect(screen.queryByTestId('brief')).toBeNull();
+    await press('brief-open');
+    expect(screen.getByTestId('brief-start')).toHaveTextContent('▶ Back to the mission');
+    await press('brief-start');
+    expect(screen.queryByTestId('brief')).toBeNull();
+  });
+
+  it('does not reopen on a retry', async () => {
+    await open();
+    await press('brief-start');
+    for (let i = 0; i < 3; i++) await press('probe-miss');
+    await press('fail-retry');
+    expect(screen.queryByTestId('brief')).toBeNull();
+  });
+});
+
+describe('GameScreen · adapting to the player', () => {
+  const missRec = (i: number) => ({ gameId: 'm1g1' as const, variationId: 'v3', itemId: `e${i}`, answer: 'ok', concept: 'Training data' as const, shielded: false, at: NOW.toISOString() });
+
+  it('auto with no history: 2 uses and no adaptation note', async () => {
+    await open();
+    expect(label('power-button')).toBe('X-RAY power, 2 uses left');
+    expect(screen.getByTestId('brief-power')).toHaveTextContent('Your hero power: X-RAY, 2 uses.');
+  });
+
+  it('MORE HELP adds a use and says so; it carries through a retry', async () => {
+    await open('scout', { settings: { readableFont: true, help: 'more' } });
+    expect(label('power-button')).toBe('X-RAY power, 3 uses left');
+    expect(screen.getByTestId('brief-power')).toHaveTextContent('Your hero power: X-RAY, 3 uses. You asked for more help: +1 power use.');
+    for (let i = 0; i < 3; i++) await press('probe-miss');
+    await press('fail-retry');
+    expect(label('power-button')).toBe('X-RAY power, 3 uses left');
+  });
+
+  it('MORE CHALLENGE removes a use and says so', async () => {
+    await open('scout', { settings: { readableFont: true, help: 'less' } });
+    expect(label('power-button')).toBe('X-RAY power, 1 use left');
+    expect(screen.getByTestId('brief-power')).toHaveTextContent('Your hero power: X-RAY, 1 use. You asked for less help: -1 power use.');
+  });
+
+  it('auto: earlier struggles on this game add a use, and NOVA says why', async () => {
+    await open('scout', { mistakes: [missRec(1), missRec(2), missRec(3)] });
+    expect(label('power-button')).toBe('X-RAY power, 3 uses left');
+    expect(screen.getByTestId('brief-power')).toHaveTextContent(/NOVA noticed this one was tricky/);
+  });
+
+  it('auto: replaying a 3-star game gives a tougher run', async () => {
+    await open('scout', { steps: { m1h: true, m1s: true, m1g1: true }, stars: { m1g1: 3 } }, 'm1g1');
+    expect(label('power-button')).toBe('X-RAY power, 1 use left');
+    await press('brief-open');
+    expect(screen.getByTestId('brief-power')).toHaveTextContent(/You mastered this one/);
+  });
+});
+
+describe('GameScreen · heartbreak', () => {
+  // The layer is decorative, so it is hidden from assistive tech: queries must opt in.
+  const heartbreak = () => screen.queryByTestId('heartbreak', { includeHiddenElements: true });
+
+  it('a lost heart plays the heartbreak, which then clears', async () => {
+    setReducedMotionOverride(false);
+    jest.useFakeTimers();
+    try {
+      await open();
+      expect(heartbreak()).toBeNull();
+      await press('probe-miss');
+      expect(heartbreak()).toBeTruthy();
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      expect(heartbreak()).toBeNull();
+      await press('probe-miss');
+      expect(heartbreak()).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('a shielded miss breaks no heart', async () => {
+    setReducedMotionOverride(false);
+    await open('guard');
+    await press('power-button');
+    await press('probe-miss');
+    expect(label('hearts')).toBe('Hearts 3 of 3');
+    expect(heartbreak()).toBeNull();
+  });
+
+  it('reduced motion renders no heartbreak, and the heart is still lost', async () => {
+    await open();
+    await press('probe-miss');
+    expect(label('hearts')).toBe('Hearts 2 of 3');
+    expect(heartbreak()).toBeNull();
   });
 });
 

@@ -1,4 +1,4 @@
-// m1g2 · Fact or Fib — v3 data + invariants (spec/capabilities/v3-games.md → m1g2).
+// m1g2 · Fact or Glitch — v3 data + invariants (spec/capabilities/v3-games.md → m1g2).
 import game from '@/games/m1g2';
 import { GAMES } from '@/games/registry';
 import { createPick, focus, isComplete, tap, xray } from '@/dnd/pickEngine';
@@ -6,14 +6,14 @@ import { COUNTER_LABEL, FIB_TAG, FOCUS_LINE, PAPER_TAG, SENTENCES, TRUE_MISS, TR
 import { fibIndices, foundLine, pickLines } from '@/games/m1g2/logic';
 
 describe('m1g2 definition', () => {
-  it('registers v3 title, goal and intro under id m1g2 in module 1', () => {
+  it('registers the title, goal and intro under id m1g2 in module 1', () => {
     expect(GAMES.m1g2).toBe(game);
     expect(game).toMatchObject({
       id: 'm1g2',
       module: 1,
-      title: 'Fact or Fib',
-      goal: 'SPOT THE ERROR · FIND 3 FIBS',
-      intro: 'NOVA wrote 6 sentences about AI. Three are fibs. Tap them!',
+      title: 'Fact or Glitch',
+      goal: "MISSION: Find all 3 glitches in NOVA's essay",
+      intro: 'NOVA wrote 6 sentences. Three are glitches. Tap them!',
     });
   });
 });
@@ -48,8 +48,8 @@ describe('m1g2 data', () => {
 
   it('keeps the v3 copy: paper tag, counter, tags, miss, FOCUS and win summary', () => {
     expect(PAPER_TAG).toBe('NOVA · DRAFT ESSAY');
-    expect(COUNTER_LABEL).toBe('FIBS FOUND');
-    expect(FIB_TAG).toBe('FIB');
+    expect(COUNTER_LABEL).toBe('GLITCHES FOUND');
+    expect(FIB_TAG).toBe('GLITCH');
     expect(TRUE_TAG).toBe('TRUE');
     expect(TRUE_MISS).toBe('That one is actually true. Look for something that sounds too sure.');
     expect(FOCUS_LINE).toBe('FOCUS: that one is true. Ignore it.');
@@ -57,8 +57,8 @@ describe('m1g2 data', () => {
     expect(WIN_SUMMARY).toBe("Rules, learning, labels and testing: a model's output is a prediction, and memorizing training data is not the same as generalizing.");
   });
 
-  it('the found line is "Fib caught! " + the explanation', () => {
-    expect(foundLine(pickLines()[3]!)).toBe('Fib caught! A prediction is an informed guess and it can be wrong.');
+  it('the found line is "Glitch caught! " + the explanation', () => {
+    expect(foundLine(pickLines()[3]!)).toBe('Glitch caught! A prediction is an informed guess and it can be wrong.');
   });
 });
 

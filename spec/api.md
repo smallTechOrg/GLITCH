@@ -24,7 +24,7 @@ header was sent.
 | `AI_INVALID_OUTPUT` | 502 | Output unparseable / failed schema or domain validation / duplicate of a seen scenario | true |
 | `MODERATED` | 502 | Output blocked by the safety filter | true |
 | `INTERNAL` | 500 | Anything unexpected | true |
-| `NO_CASE_FILE` | 404 | First-play draw (`?first=1`) landed on v3, or nothing is cached: play v3, no note | false |
+| `NO_CASE_FILE` | 404 | Not sent any more: a first play that draws v3 answers `200` with `classic: true` | false |
 
 ## `GET /health` (alias `/healthz`)
 `/health` is canonical — Cloud Run's front end reserves `/healthz` and answers it with its own 404. `/healthz` stays for local tools and tests.
@@ -64,8 +64,9 @@ of `[A-Za-z0-9_-]{1,64}`; absent/empty = none seen (else `BAD_REQUEST`).
 `first=1` (a device's first play of the game): the server draws uniformly from the v3 case and
 the cached variations not in `seen`. It **never generates and never charges energy**. A drawn
 variation is the normal `200` (`cached: true`). Drawing v3, having nothing cached, or
-`GLITCH_FIRST_PLAY_RANDOM=false` answers `404 NO_CASE_FILE` (`retryable: false`, with
-`energy`), and the client plays v3 silently.
+`GLITCH_FIRST_PLAY_RANDOM=false` answers `200 {"ok":true,"data":{"gameId":"m1g2","classic":true},"energy":…}`,
+and the client plays v3 silently. (It used to be `404 NO_CASE_FILE`, which every browser logged
+as a console error on every first play; the error code stays defined but is no longer sent.)
 
 Success `200`:
 ```json
@@ -139,15 +140,19 @@ v3 mapping: `[text, proxy === null ? null : proxy ? 1 : 0, note]`.
 
 **`m4g1` Source Detective**
 ```json
-{ "citations": [ { "id": "c1", "text": "UNESCO (2021). Recommendation on the Ethics of Artificial Intelligence. Paris.", "real": true },
-                 { "id": "c2", "text": "Dr. Mia Vance (2022). 'GPT-12 Knows Your Future'. Annals of Unlikely Science.", "real": false } ] }
+{ "citations": [ { "id": "c1", "text": "UNESCO (2021). Recommendation on the Ethics of Artificial Intelligence. Paris.", "real": true, "excerpt": "Adopted by UNESCO's 193 member states, ..." },
+                 { "id": "c2", "text": "Dr. Mia Vance (2022). 'GPT-12 Knows Your Future'. Annals of Unlikely Science.", "real": false, "excerpt": "GPT-12 predicts every event in your life with total certainty. No data is needed." } ] }
 ```
+Every citation has an `excerpt` (30–200 chars). A real citation's excerpt is always the
+hand-written summary in `REAL_EXCERPTS` (`scenarios/schemas/m4g1.py`), whatever the model sent; the
+model writes excerpts for invented sources only. Stored case files without excerpts fail validation
+on read and are skipped, so re-stock m4g1 with `glitch-bank` after deploying this.
 Exactly 5 (ids `c1`–`c5`), 2 or 3 `real: false`; every text matches
 `Author (Year). Title. Venue.` (20–140 chars; the web's `short = text.split(" (")[0]`),
 all different, all authors different. Every `real: true` text is verbatim from the
 hand-checked list `REAL_CITATIONS` in `scenarios/schemas/m4g1.py`; an invented one never
 matches that list nor reuses one of its authors. No URLs (so no "blog.x.biz" style clue).
-v3 mapping: `[id, text, real ? 1 : 0]`.
+v3 mapping: `[id, text, real ? 1 : 0, excerpt]`.
 
 **`m4g2` Confidence Court**
 ```json

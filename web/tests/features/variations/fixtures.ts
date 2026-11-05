@@ -48,11 +48,11 @@ export const WIRE: Record<ContentGameId, unknown> = {
   },
   m4g1: {
     citations: [
-      { id: 'c1', text: 'Prof. Ada Quill (2024). Robots That Dream. Moon Review, 3(1).', real: false },
-      { id: 'c2', text: 'European Union (2024). Regulation (EU) 2024/1689, the Artificial Intelligence Act. Official Journal of the EU.', real: true },
-      { id: 'c3', text: 'Russell & Norvig (2020). Artificial Intelligence: A Modern Approach, 4th ed. Pearson.', real: true },
-      { id: 'c4', text: 'Anon (2023). 100% True AI Secrets. Mystery Press.', real: false },
-      { id: 'c5', text: 'Turing (1950). Computing Machinery and Intelligence. Mind, 59(236).', real: true },
+      { id: 'c1', text: 'Prof. Ada Quill (2024). Robots That Dream. Moon Review, 3(1).', real: false, excerpt: 'Robots dream every night, we are certain. Our method is secret.' },
+      { id: 'c2', text: 'European Union (2024). Regulation (EU) 2024/1689, the Artificial Intelligence Act. Official Journal of the EU.', real: true, excerpt: 'Sets EU-wide rules that sort AI systems by risk, banning some practices and placing duties on high-risk systems.' },
+      { id: 'c3', text: 'Russell & Norvig (2020). Artificial Intelligence: A Modern Approach, 4th ed. Pearson.', real: true, excerpt: 'A university textbook covering search, knowledge, planning, machine learning and the ethics of artificial intelligence.' },
+      { id: 'c4', text: 'Anon (2023). 100% True AI Secrets. Mystery Press.', real: false, excerpt: 'Every word here is true because I said so. No sources needed.' },
+      { id: 'c5', text: 'Turing (1950). Computing Machinery and Intelligence. Mind, 59(236).', real: true, excerpt: "Opens with the question 'Can machines think?', then replaces it with a test of behaviour: the imitation game." },
     ],
   },
   m4g2: {
@@ -84,7 +84,7 @@ export interface FakeScenarioServer {
   mode: ScenarioMode;
   /** Variation bank per game: [variationId, wire data]. */
   bank: Partial<Record<ContentGameId, [string, unknown][]>>;
-  /** How a first play (`?first=1`) draws: the classic v3 case (NO_CASE_FILE) or a cached variation. */
+  /** How a first play (`?first=1`) draws: the classic v3 case (`classic: true`) or a cached variation. */
   firstPlay: 'classic' | 'variation';
   requests: { url: string; gameId: string; seen: string[]; first: boolean; device: string | undefined }[];
   client: ReturnType<typeof createApiClient>;
@@ -131,7 +131,7 @@ export function createFakeScenarioServer(): FakeScenarioServer {
         });
       }
       if (mode.kind === 'error') return res(mode.status, { ok: false, error: { code: mode.code, message: mode.code, retryable: false } });
-      if (first && s.firstPlay === 'classic') return res(404, { ok: false, error: { code: 'NO_CASE_FILE', message: 'Play the classic case file.', retryable: false } });
+      if (first && s.firstPlay === 'classic') return res(200, { ok: true, data: { gameId, classic: true } });
       const list = s.bank[gameId as ContentGameId] ?? [];
       if (mode.kind === 'garbage') return res(200, { ok: true, data: { variationId: 'bad1', gameId, data: { sentences: [] }, cached: true } });
       const pick = mode.kind === 'repeat' ? list[0] : list.find(([id]) => !seen.includes(id));

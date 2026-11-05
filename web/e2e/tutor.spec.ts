@@ -1,6 +1,6 @@
 // Phase 3 · Ask NOVA why (ask-nova-why.md, spec/roadmap.md → P3-W1 / Phase 3 gate step 6–7).
 // Real backend: POST /v1/explain looks up the global cache, then makes ONE provider call on a
-// miss (1 device energy). Fact or Fib is the journey the user tests: a wrong tap on a TRUE line
+// miss (1 device energy). Fact or Glitch is the journey the user tests: a wrong tap on a TRUE line
 // → "ASK NOVA WHY" → the explanation + one tip under NOVA's bubble. A second, fresh device asking
 // the same mistake gets it from the cache for free (energy unchanged). With /v1/explain aborted
 // the panel shows the in-world offline line + the game's canned miss message within 8 s.
@@ -8,7 +8,7 @@
 // `openrouter` (1 provider call).
 import type { Browser, Page, Response } from '@playwright/test';
 import { WEB_URL } from './helpers/config';
-import { test, expect, waitForApp, API_URL, EXPECTED_PROVIDER } from './helpers/fixtures';
+import { test, expect, waitForApp, autoDismissBrief, API_URL, EXPECTED_PROVIDER } from './helpers/fixtures';
 
 const FAKE = EXPECTED_PROVIDER === 'fake';
 const LIVE = EXPECTED_PROVIDER === 'openrouter';
@@ -26,7 +26,7 @@ interface ExplainBody {
   energy?: { remaining: number; limit: number };
 }
 
-/** Seed (once, before boot) a device with Module 1 open up to Fact or Fib (a v1 save; migrates). */
+/** Seed (once, before boot) a device with Module 1 open up to Fact or Glitch (a v1 save; migrates). */
 async function seed(page: Page): Promise<void> {
   const state = {
     version: 1,
@@ -58,11 +58,11 @@ async function energyOf(device: string): Promise<number> {
 
 const isExplain = (r: Response): boolean => r.url().endsWith('/v1/explain') && r.request().method() === 'POST';
 
-/** Open Fact or Fib and tap line 0 (a TRUE line) → a miss with the chip under the bubble. */
+/** Open Fact or Glitch and tap line 0 (a TRUE line) → a miss with the chip under the bubble. */
 async function missLineZero(page: Page): Promise<void> {
   await page.goto('./module/1/game/m1g2');
   await waitForApp(page);
-  await expect(page.getByTestId('game-title')).toContainText('Fact or Fib');
+  await expect(page.getByTestId('game-title')).toContainText('Fact or Glitch');
   await page.getByTestId('pick-line-0').click();
   await expect(page.getByTestId('ask-nova-why')).toBeVisible();
   await expect(page.getByTestId('ask-nova-why')).toHaveText('ASK NOVA WHY');
@@ -106,6 +106,7 @@ async function askOnSecondDevice(browser: Browser, expected: ExplainBody): Promi
   try {
     const pageB = await ctx.newPage();
     pageB.on('pageerror', (e) => errors.push(e.message));
+    await autoDismissBrief(pageB);
     await seed(pageB);
     await missLineZero(pageB);
     const { device, body } = await ask(pageB);
@@ -126,7 +127,7 @@ async function askOnSecondDevice(browser: Browser, expected: ExplainBody): Promi
 test.describe('ASK NOVA WHY · demo NOVA', () => {
   test.skip(!FAKE, 'demo-mode checks need GLITCH_E2E_EXPECT_PROVIDER=fake');
 
-  test('a wrong tap in Fact or Fib → ASK NOVA WHY → explanation + tip + DEMO tag; a second device gets it from the cache for free', async ({ page, browser }) => {
+  test('a wrong tap in Fact or Glitch → ASK NOVA WHY → explanation + tip + DEMO tag; a second device gets it from the cache for free', async ({ page, browser }) => {
     await seed(page);
     await missLineZero(page);
     const { device, body, requests } = await ask(page);

@@ -58,8 +58,9 @@ export function shipMistake(design: Design): Mistake | undefined {
 
 /** v3 FOCUS line (always consumed). */
 export function focusHint(design: Design): string {
-  const first = failures(design)[0];
-  return first === undefined ? FOCUS_ALL_MET : focusLine(first);
+  const c = calc(design);
+  const m = METRICS.find((x) => !metricMet(x.id, c[x.id]));
+  return m ? focusLine(m.failure, m.fix) : FOCUS_ALL_MET;
 }
 
 export const flip = (design: Design, id: ToggleId): Design => ({ ...design, [id]: design[id] ? 0 : 1 });

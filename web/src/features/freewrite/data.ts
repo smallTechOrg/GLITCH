@@ -136,12 +136,12 @@ export const ALL_LEVERS_TIP = "All five levers. That's a prompt NOVA can't misre
 
 export const COPY = {
   header: 'FORGE 3 · FREE WRITE',
-  sub: 'Now write your own. Use the five levers: task, context, role, format, limit.',
   goalLabel: 'YOUR GOAL:',
   inputLabel: 'Your prompt',
   placeholder: 'e.g. Act as…',
   send: 'SEND TO NOVA ▶',
   resend: 'EDIT AND RESEND ▶',
+  edit: 'Edit my prompt ▶',
   sendOffline: 'CHECK MY PROMPT (OFFLINE) ▶',
   intro: "Your turn. Write a prompt NOVA can't misread.",
   thinking: 'NOVA IS THINKING…',

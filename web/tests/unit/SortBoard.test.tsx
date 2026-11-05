@@ -29,6 +29,74 @@ async function setup(hero: 'scout' | 'oracle' = 'scout') {
   return { api, onDone };
 }
 
+describe('<SortBoard deck>', () => {
+  const deckCfg: SortConfig = { ...cfg, items: cfg.items.filter((i) => i.answer !== null).concat({ id: 'e3', answer: 'spam', text: 'Cheap watches' }) };
+
+  async function setupDeck() {
+    const api = createTestGameApi({ hero: 'oracle' });
+    const onDone = jest.fn();
+    await renderWithProviders(<SortBoard cfg={deckCfg} api={api} onDone={onDone} deck layout="side" />);
+    return { api, onDone };
+  }
+
+  it('renders only the shown item, with a labelled tab for each remaining one', async () => {
+    await setupDeck();
+    const pool = within(screen.getByTestId('dnd-pool'));
+    expect(pool.getByTestId('dnd-item-e1')).toBeTruthy();
+    expect(pool.queryByTestId('dnd-item-e2')).toBeNull();
+    expect(screen.getByTestId('deck-tab-e2').props.accessibilityLabel).toBe("Item 2 of 3: Lunch at 1? I'm outside");
+  });
+
+  it('a tab switches the shown item', async () => {
+    await setupDeck();
+    await fireEvent.press(screen.getByTestId('deck-tab-e2'));
+    const pool = within(screen.getByTestId('dnd-pool'));
+    expect(pool.getByTestId('dnd-item-e2')).toBeTruthy();
+    expect(pool.queryByTestId('dnd-item-e1')).toBeNull();
+  });
+
+  it('tapping a zone drops the shown item with no selection needed, then shows the next', async () => {
+    await setupDeck();
+    await fireEvent.press(screen.getByTestId('dnd-zone-spam'));
+    expect(within(screen.getByTestId('dnd-zone-spam')).getByTestId('dnd-item-e1')).toBeTruthy();
+    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e2')).toBeTruthy();
+    expect(screen.queryByTestId('deck-tab-e1')).toBeNull();
+  });
+
+  it('a wrong zone tap misses and keeps the item on show', async () => {
+    const { api } = await setupDeck();
+    await fireEvent.press(screen.getByTestId('dnd-zone-ok'));
+    expect(api.calls.miss).toHaveLength(1);
+    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e1')).toBeTruthy();
+  });
+
+  it('switching tabs clears a selection so the hidden item is never dropped', async () => {
+    await setupDeck();
+    await fireEvent.press(screen.getByTestId('dnd-item-e1'));
+    await fireEvent.press(screen.getByTestId('deck-tab-e2'));
+    await fireEvent.press(screen.getByTestId('dnd-zone-ok'));
+    expect(within(screen.getByTestId('dnd-zone-ok')).getByTestId('dnd-item-e2')).toBeTruthy();
+    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e1')).toBeTruthy();
+  });
+
+  it('the last item shows no tabs; FOCUS brings its target up', async () => {
+    const { api } = await setupDeck();
+    await fireEvent.press(screen.getByTestId('deck-tab-e3'));
+    await act(async () => {
+      expect(api.usePower()).toBe(true);
+    });
+    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e1')).toBeTruthy();
+    await act(async () => {
+      jest.advanceTimersByTime(2200);
+    });
+    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e3')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('dnd-zone-spam'));
+    await fireEvent.press(screen.getByTestId('dnd-zone-spam'));
+    expect(screen.queryByTestId('deck-tab-e2')).toBeNull();
+    expect(within(screen.getByTestId('dnd-pool')).getByTestId('dnd-item-e2')).toBeTruthy();
+  });
+});
+
 describe('<SortBoard>', () => {
   it('renders every item in the pool and every zone as an accessible button', async () => {
     await setup();
