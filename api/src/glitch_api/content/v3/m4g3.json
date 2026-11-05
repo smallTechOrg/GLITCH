@@ -1,0 +1,75 @@
+{
+  "gameId": "m4g3",
+  "data": {
+    "metrics": [
+      {
+        "id": "time",
+        "label": "TIME ON APP",
+        "target": 30,
+        "dir": 1,
+        "failure": "People barely use it"
+      },
+      {
+        "id": "well",
+        "label": "WELLBEING",
+        "target": 65,
+        "dir": 1,
+        "failure": "wellbeing is too low"
+      },
+      {
+        "id": "fr",
+        "label": "REAL FRIENDSHIPS",
+        "target": 55,
+        "dir": 1,
+        "failure": "it replaces real friends"
+      },
+      {
+        "id": "pv",
+        "label": "PRIVACY RISK",
+        "target": 35,
+        "dir": -1,
+        "failure": "privacy risk is too high"
+      },
+      {
+        "id": "help",
+        "label": "HELPFULNESS",
+        "target": 50,
+        "dir": 1,
+        "failure": "it isn't helpful enough"
+      }
+    ],
+    "toggles": [
+      {
+        "id": "R",
+        "label": "Refers teens to a trusted adult"
+      },
+      {
+        "id": "H",
+        "label": "Human review of chats"
+      },
+      {
+        "id": "A",
+        "label": "\"I am an AI\" reminders"
+      }
+    ],
+    "sliders": [
+      {
+        "id": "en",
+        "label": "ENGAGEMENT PUSH"
+      },
+      {
+        "id": "da",
+        "label": "DATA COLLECTED"
+      }
+    ]
+  },
+  "copy": {
+    "notYetPrefix": "Not yet: "
+  },
+  "conceptRules": [
+    [
+      "",
+      "Human oversight"
+    ]
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "gameId": "m3g2",
+  "data": {
+    "features": [
+      {
+        "id": "code",
+        "name": "Coding test score",
+        "kind": "skill",
+        "weight": 14
+      },
+      {
+        "id": "gpa",
+        "name": "GPA",
+        "kind": "skill",
+        "weight": 10
+      },
+      {
+        "id": "int",
+        "name": "Internship",
+        "kind": "skill",
+        "weight": 12
+      },
+      {
+        "id": "col",
+        "name": "Women's college",
+        "kind": "proxy",
+        "weight": 10
+      },
+      {
+        "id": "cap",
+        "name": "Girls' team captain",
+        "kind": "proxy",
+        "weight": 6
+      },
+      {
+        "id": "brk",
+        "name": "Career break",
+        "kind": "proxy",
+        "weight": 8
+      },
+      {
+        "id": "pc",
+        "name": "Postcode",
+        "kind": "proxy",
+        "weight": 5
+      }
+    ],
+    "gapGoal": 6,
+    "accuracyGoal": 80
+  },
+  "copy": {
+    "gapFail": "The gap is still {n} points. Some proxies are still switched on.",
+    "accuracyFail": "Accuracy fell to {n}%. Keep the skill features on."
+  },
+  "conceptRules": [
+    [
+      "",
+      "Algorithmic discrimination"
+    ]
+  ]
+}

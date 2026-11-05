@@ -1,0 +1,18 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`determinism matches the recorded fingerprints 1`] = `
+{
+  "city:0": "192x80:7a1893bf",
+  "city:1": "192x80:5f6449b9",
+  "forge:0": "192x80:a3aa8854",
+  "forge:1": "192x80:5c9dccd1",
+  "lab:0": "192x80:5521abd1",
+  "lab:1": "192x80:99792a59",
+  "meadow:0": "192x80:904c3fb3",
+  "meadow:1": "192x80:904c3fb3",
+  "news:0": "192x80:687fde66",
+  "news:1": "192x80:52fcd0b2",
+  "title:0": "192x80:8a2d0c03",
+  "title:1": "192x80:3c5859f2",
+}
+`;

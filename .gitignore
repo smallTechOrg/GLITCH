@@ -1,0 +1,43 @@
+# --- secrets: only .env.example is ever committed ---
+.env
+.env.*
+!.env.example
+
+# --- OS / editors ---
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# --- api (Python / uv) ---
+.venv/
+api/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+api/.cache/
+*.egg-info/
+api/build/
+api/dist/
+
+# --- web (Node / Expo) ---
+node_modules/
+web/node_modules/
+web/dist/
+web/dist-e2e*/
+web/.expo/
+.expo/
+.expo-shared/
+web/test-results/
+web/playwright-report/
+test-results/
+playwright-report/
+blob-report/
+web/web-build/
+*.tsbuildinfo
+npm-debug.log*
+
+# --- logs ---
+*.log
