@@ -23,7 +23,7 @@ from glitch_api.config import Settings, get_settings, reset_settings
 from glitch_api.main import create_app
 from glitch_api.metrics import reset_metrics
 
-PENDING_KEY_MESSAGE = "PENDING-KEY: GLITCH_OPENROUTER_API_KEY missing from .env"
+PENDING_KEY_MESSAGE = "PENDING-KEY: neither GLITCH_ANTHROPIC_API_KEY nor GLITCH_OPENROUTER_API_KEY is in .env"
 
 # A valid UUID v4 device id for tests (never a real learner's).
 TEST_DEVICE_ID = "3f2b8c1e-9a4d-4e7b-8c2a-1d5e6f7a8b9c"
@@ -46,7 +46,8 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     if not _selects_marker(session.config.option.markexpr or "", "live"):
         return
     reset_settings()
-    if not get_settings().has_openrouter_key:
+    live = get_settings()
+    if not (live.has_anthropic_key or live.has_openrouter_key):
         pytest.exit(PENDING_KEY_MESSAGE, returncode=1)
 
 

@@ -172,7 +172,7 @@ def test_auto_prefers_anthropic_then_openrouter(make_settings) -> None:
     both = make_settings(anthropic_api_key="a", openrouter_api_key="o")
     assert both.resolved_provider == "anthropic"
     assert both.uses_openrouter_backup is True
-    assert both.primary_model == "claude-opus-5-5"
+    assert both.primary_model == "claude-haiku-5-5"
     assert make_settings(anthropic_api_key="a").uses_openrouter_backup is False
     assert make_settings(openrouter_api_key="o").uses_openrouter_backup is False
     assert make_settings(anthropic_api_key="  ").resolved_provider == "fake"

@@ -6,11 +6,14 @@
 - ``system`` messages become the top-level ``system`` prompt; the rest go in ``messages``.
 - JSON output uses structured outputs (``output_config.format``), so the text block is
   schema-valid JSON.
-- Claude Opus 5.5 always thinks; ``GLITCH_ANTHROPIC_EFFORT`` sets the depth. Thinking
-  shares ``max_tokens`` with the answer, so the cap is ``GLITCH_ANTHROPIC_MAX_TOKENS``.
+- Current Claude models think adaptively; ``GLITCH_ANTHROPIC_EFFORT`` sets the depth.
+  Thinking shares ``max_tokens`` with the answer, so the cap is ``GLITCH_ANTHROPIC_MAX_TOKENS``.
+- ``GLITCH_ANTHROPIC_WORKSPACE_ID`` is sent as ``anthropic-workspace-id`` (required for
+  keys that are not scoped to one workspace).
 - No ``temperature``: current Claude models reject sampling parameters.
-- Server-side refusal fallback is on (``fallbacks: "default"``): a declined request is
-  re-run on Anthropic's recommended fallback model inside the same call.
+- On models that support it, server-side refusal fallback is on (``fallbacks: "default"``):
+  a declined request is re-run on Anthropic's recommended fallback model inside the same
+  call. Claude Haiku 5.5 has none; a refusal there goes to the OpenRouter backup.
 - Error messages are fixed, actionable strings; never the key, the prompt or raw output.
 """
 
@@ -36,6 +39,11 @@ from glitch_api.llm.base import (
 )
 
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
+# Models that accept ``fallbacks: "default"`` on the Claude API.
+SERVER_FALLBACK_MODELS = frozenset(
+    {"claude-fable-5-1", "claude-fable-5", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"}
+)
+WORKSPACE_HEADER = "anthropic-workspace-id"
 
 MISSING_KEY_MESSAGE = "GLITCH_ANTHROPIC_API_KEY missing — add it to .env"
 AUTH_MESSAGE = "Anthropic key rejected — check GLITCH_ANTHROPIC_API_KEY in .env"
@@ -66,8 +74,12 @@ class AnthropicProvider:
         if client is None:
             key = settings.anthropic_api_key
             assert key is not None
+            headers = {WORKSPACE_HEADER: settings.anthropic_workspace_id} if settings.anthropic_workspace_id else None
             client = anthropic.AsyncAnthropic(
-                api_key=key.get_secret_value(), max_retries=0, timeout=settings.llm_timeout_s
+                api_key=key.get_secret_value(),
+                max_retries=0,
+                timeout=settings.llm_timeout_s,
+                default_headers=headers,
             )
         self._client = client
 
@@ -82,9 +94,10 @@ class AnthropicProvider:
             "max_tokens": self.settings.anthropic_max_tokens,
             "messages": messages,
             "output_config": output_config,
-            "betas": [FALLBACK_BETA],
-            "fallbacks": "default",
         }
+        if self.model in SERVER_FALLBACK_MODELS:
+            params["betas"] = [FALLBACK_BETA]
+            params["fallbacks"] = "default"
         if system:
             params["system"] = system
         return params

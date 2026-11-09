@@ -75,6 +75,7 @@ FATAL_STATUSES = frozenset(
 
 # USD per 1M tokens (input, output) for the configured slugs — an ESTIMATE for the report.
 PRICES_PER_M: dict[str, tuple[float, float]] = {
+    "claude-haiku-5-5": (0.10, 0.50),
     "claude-opus-5-5": (4.00, 20.00),
     "google/gemini-3.1-flash-lite": (0.25, 1.50),
     "google/gemini-2.5-flash-lite": (0.10, 0.40),

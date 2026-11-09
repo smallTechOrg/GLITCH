@@ -41,7 +41,7 @@ async def live_scenario_app(tmp_path: Path, live_log: Path) -> AsyncIterator[tup
     assert FREEWRITE_LIVE_CALLS + len(GAME_IDS) * MAX_ATTEMPTS <= MAX_LIVE_CALLS, "worst case must fit the live guard"
     settings = live_settings(tmp_path, log_file=str(live_log))
     assert settings.cache_path == tmp_path / "cache", "live tests must never use the repo's api/.cache"
-    assert settings.resolved_provider == "openrouter", "live tests need the OpenRouter provider"
+    assert settings.resolved_provider in ("anthropic", "openrouter"), "live tests need a real provider"
     app = create_app(settings)
     provider: Any = CountingProvider(build_provider(settings))
     app.state.provider = provider

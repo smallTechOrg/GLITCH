@@ -89,7 +89,8 @@ which directory it is started from. The important ones:
 | Var | Default | Notes |
 |---|---|---|
 | `GLITCH_ANTHROPIC_API_KEY` | empty | Secret. The primary AI: Claude via the Anthropic API |
-| `GLITCH_ANTHROPIC_MODEL` | `claude-opus-5-5` | Claude model id |
+| `GLITCH_ANTHROPIC_WORKSPACE_ID` | empty | `wrkspc_…`; required when the key is not scoped to one workspace (sent as `anthropic-workspace-id`) |
+| `GLITCH_ANTHROPIC_MODEL` | `claude-haiku-5-5` | Claude model id |
 | `GLITCH_ANTHROPIC_EFFORT` | `low` | `low`…`max`. How much Claude thinks before answering (more = slower, costlier) |
 | `GLITCH_ANTHROPIC_MAX_TOKENS` | `4096` | Output cap per Claude call; thinking counts towards it |
 | `GLITCH_OPENROUTER_API_KEY` | empty | Secret. The backup AI. With neither key the API runs the **demo provider** ("DEMO NOVA") |
@@ -111,7 +112,7 @@ which directory it is started from. The important ones:
 **Which AI answers.** The keys live in the local root `.env`. With
 `GLITCH_LLM_PROVIDER=auto` (the default) the API picks its provider at startup:
 
-- **Anthropic key present** → Claude (`claude-opus-5-5`). If the OpenRouter key is also
+- **Anthropic key present** → Claude (`claude-haiku-5-5`). If the OpenRouter key is also
   set, a Claude call that fails (timeout, network, 5xx, rate limit, refusal) is retried
   once on OpenRouter. The two share the `GLITCH_LLM_TIMEOUT_S` budget: Claude gets about
   60% of it and OpenRouter the rest. Unusable output is not retried there (the callers
@@ -150,7 +151,7 @@ cd api && uv run python -m glitch_api
 
 # check it (from any directory, while the API is running)
 curl -sf http://127.0.0.1:8787/healthz
-# both keys:      {"ok":true,"data":{"status":"ok","provider":"anthropic","model":"claude-opus-5-5","env":"dev","version":"0.1.0","backup":{"provider":"openrouter","model":"google/gemini-2.5-flash-lite"}}}
+# both keys:      {"ok":true,"data":{"status":"ok","provider":"anthropic","model":"claude-haiku-5-5","env":"dev","version":"0.1.0","backup":{"provider":"openrouter","model":"google/gemini-2.5-flash-lite"}}}
 # OpenRouter key: {"ok":true,"data":{"status":"ok","provider":"openrouter","model":"google/gemini-2.5-flash-lite","env":"dev","version":"0.1.0"}}
 # without a key: {"ok":true,"data":{"status":"ok","provider":"fake","model":"glitch/demo-nova","env":"dev","version":"0.1.0"}}
 
@@ -411,7 +412,7 @@ printf %s "$ANTHROPIC_KEY" | gcloud secrets create glitch-anthropic-key --projec
 gcloud secrets add-iam-policy-binding glitch-anthropic-key --project $P --member serviceAccount:$RUNSA --role roles/secretmanager.secretAccessor
 gcloud run services update glitch-api --project $P --region us-central1 \
   --update-secrets GLITCH_ANTHROPIC_API_KEY=glitch-anthropic-key:latest \
-  --update-env-vars GLITCH_LLM_PROVIDER=auto
+  --update-env-vars GLITCH_LLM_PROVIDER=auto,GLITCH_ANTHROPIC_WORKSPACE_ID=<wrkspc_…>
 curl -s https://glitch-api-870371939888.us-central1.run.app/health   # → "provider":"anthropic", "backup":{…}
 ```
 To go back to OpenRouter only: `--update-env-vars GLITCH_LLM_PROVIDER=openrouter`.

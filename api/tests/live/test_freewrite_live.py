@@ -55,7 +55,7 @@ def _validate_envelope(resp: httpx.Response, elapsed_s: float) -> dict[str, Any]
     assert all(isinstance(v, bool) for v in data["levers"].values())
     assert data["leversHit"] == sum(data["levers"].values())
     assert data["passed"] is (data["leversHit"] >= 4)
-    assert data["provider"] == "openrouter" and data["model"]
+    assert data["provider"] in ("anthropic", "openrouter") and data["model"]
     assert moderation_check(data["reply"] + "\n" + data["tip"]).allowed
     assert "http://" not in data["reply"] and "https://" not in data["reply"]
     energy = payload["energy"]

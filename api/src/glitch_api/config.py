@@ -53,8 +53,10 @@ class Settings(BaseSettings):
     llm_provider: ProviderChoice = "auto"
     # Primary: Claude via the Anthropic API. OpenRouter (below) is the backup.
     anthropic_api_key: SecretStr | None = None
-    anthropic_model: str = "claude-opus-5-5"
-    # Opus 5.5 always thinks; effort is the depth/latency knob (its own default is medium).
+    # Needed when the key is not scoped to one workspace (sent as anthropic-workspace-id).
+    anthropic_workspace_id: str | None = None
+    anthropic_model: str = "claude-haiku-5-5"
+    # Effort is the thinking depth/latency knob (Haiku 5.5's own default is medium).
     anthropic_effort: Effort = "low"
     # Thinking shares max_tokens with the answer, so this sits above llm_max_output_tokens.
     anthropic_max_tokens: int = 4096
@@ -110,7 +112,7 @@ class Settings(BaseSettings):
             return value.strip()
         return value
 
-    @field_validator("log_file", "gcs_bucket", mode="before")
+    @field_validator("log_file", "gcs_bucket", "anthropic_workspace_id", mode="before")
     @classmethod
     def _blank_log_file_is_none(cls, value: Any) -> Any:
         if isinstance(value, str) and not value.strip():

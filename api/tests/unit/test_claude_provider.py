@@ -19,7 +19,7 @@ from glitch_api.llm.base import (
     LLMRequest,
     LLMTimeoutError,
 )
-from glitch_api.llm.claude import FALLBACK_BETA, AnthropicProvider
+from glitch_api.llm.claude import FALLBACK_BETA, WORKSPACE_HEADER, AnthropicProvider
 
 SCHEMA = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"], "additionalProperties": False}
 
@@ -35,7 +35,7 @@ def _request(**overrides: Any) -> LLMRequest:
     return LLMRequest(**fields)
 
 
-def _response(text: str = '{"ok": true}', stop_reason: str = "end_turn", model: str = "claude-opus-5-5") -> Any:
+def _response(text: str = '{"ok": true}', stop_reason: str = "end_turn", model: str = "claude-haiku-5-5") -> Any:
     return SimpleNamespace(
         content=[SimpleNamespace(type="thinking", thinking=""), SimpleNamespace(type="text", text=text)],
         stop_reason=stop_reason,
@@ -80,18 +80,18 @@ async def test_request_shape(make_settings) -> None:
     result = await provider.complete(_request())
 
     call = stub.calls[0]
-    assert call["model"] == "claude-opus-5-5"
+    assert call["model"] == "claude-haiku-5-5"
     assert call["system"] == "be brief"
     assert call["messages"] == [{"role": "user", "content": "hi"}]
     assert call["max_tokens"] == 2000
     assert call["output_config"] == {"effort": "medium", "format": {"type": "json_schema", "schema": SCHEMA}}
-    assert call["fallbacks"] == "default" and call["betas"] == [FALLBACK_BETA]
+    assert "fallbacks" not in call and "betas" not in call  # Haiku 5.5 has no server-side fallback
     assert call["timeout"] == 2.0
     assert "temperature" not in call  # current Claude models reject sampling params
 
     assert result.text == '{"ok": true}'  # thinking block skipped
     assert result.provider == "anthropic"
-    assert result.model_used == "claude-opus-5-5"
+    assert result.model_used == "claude-haiku-5-5"
     assert (result.prompt_tokens, result.completion_tokens) == (12, 34)
 
 
@@ -105,9 +105,21 @@ async def test_no_schema_means_no_format_and_no_system(make_settings) -> None:
     assert "system" not in stub.calls[0]
 
 
-async def test_model_used_reports_the_server_side_fallback_model(make_settings) -> None:
-    provider = AnthropicProvider(make_settings(), client=StubClient(_response(model="claude-opus-4-8")))
-    assert (await provider.complete(_request())).model_used == "claude-opus-4-8"
+async def test_models_with_server_side_fallback_opt_in(make_settings) -> None:
+    stub = StubClient(_response(model="claude-opus-4-8"))
+    provider = AnthropicProvider(make_settings(anthropic_model="claude-opus-5-5"), client=stub)
+
+    result = await provider.complete(_request())
+
+    assert stub.calls[0]["fallbacks"] == "default" and stub.calls[0]["betas"] == [FALLBACK_BETA]
+    assert result.model_used == "claude-opus-4-8"  # the fallback model that answered
+
+
+def test_workspace_id_is_sent_as_a_header(make_settings) -> None:
+    provider = AnthropicProvider(make_settings(anthropic_api_key="sk-ant-test", anthropic_workspace_id="wrkspc_x"))
+    assert provider._client.default_headers[WORKSPACE_HEADER] == "wrkspc_x"
+    plain = AnthropicProvider(make_settings(anthropic_api_key="sk-ant-test"))
+    assert WORKSPACE_HEADER not in plain._client.default_headers
 
 
 @pytest.mark.parametrize(

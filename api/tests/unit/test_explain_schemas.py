@@ -49,6 +49,14 @@ def test_output_is_normalised_and_bounded() -> None:
     validate_output({"text": " ".join(["word"] * 60), "tip": " ".join(["w"] * 25)})  # boundary passes
 
 
+def test_over_long_text_keeps_the_leading_sentences_that_fit() -> None:
+    first = " ".join(["one"] * 30) + "."
+    second = " ".join(["two"] * 25) + "!"
+    third = " ".join(["three"] * 10) + "."
+    text, _ = validate_output({"text": f"{first} {second} {third}", "tip": "ok"})
+    assert text == f"{first} {second}"  # 55 words; the third sentence would pass 60
+
+
 @pytest.mark.parametrize("obj, rule", [
     ({"text": " ".join(["word"] * 61), "tip": "ok"}, "more than 60 words"),
     ({"text": "ok", "tip": " ".join(["w"] * 26)}, "more than 25 words"),

@@ -50,7 +50,7 @@ def test_anthropic_key_selects_claude_with_openrouter_backup(make_settings) -> N
     provider = build_provider(make_settings(anthropic_api_key="sk-ant-test", openrouter_api_key="sk-or-v1-test"))
     assert isinstance(provider, FallbackProvider)
     assert isinstance(provider.primary, AnthropicProvider) and isinstance(provider.backup, OpenRouterProvider)
-    assert (provider.name, provider.model) == ("anthropic", "claude-opus-5-5")
+    assert (provider.name, provider.model) == ("anthropic", "claude-haiku-5-5")
 
 
 def test_anthropic_key_alone_selects_claude_without_backup(make_settings) -> None:
