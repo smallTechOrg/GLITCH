@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 FAKE_MODEL_SLUG = "glitch/demo-nova"
 
 Purpose = Literal["freewrite_eval", "scenario_gen", "explain"]
+ProviderName = Literal["anthropic", "openrouter", "fake"]
 LLMOutcome = Literal["ok", "timeout", "provider_error", "invalid_output", "moderated"]
 
 
@@ -42,7 +43,7 @@ class LLMResult(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     text: str  # raw assistant content (JSON text when json_schema was given)
-    provider: Literal["openrouter", "fake"]
+    provider: ProviderName  # who actually served it (the fallback chain reports the hop that answered)
     model_requested: str
     model_used: str  # what the provider actually served (OpenRouter fallback may differ)
     prompt_tokens: int = 0
@@ -73,11 +74,11 @@ class LLMProviderError(LLMError):
 
 
 class LLMAuthError(LLMProviderError):
-    """401/403 — 'OpenRouter key rejected — check GLITCH_OPENROUTER_API_KEY in .env'."""
+    """401/403 — the provider rejected the key (message names the env var to check)."""
 
 
 class LLMModelNotFoundError(LLMProviderError):
-    """404 / invalid slug — 'model slug not found — check GLITCH_OPENROUTER_MODEL'."""
+    """404 / invalid model id (message names the env var to check)."""
 
 
 class LLMRateLimitError(LLMProviderError):
@@ -93,7 +94,7 @@ class LLMInvalidOutputError(LLMError):
 
 @runtime_checkable
 class LLMProvider(Protocol):
-    name: Literal["openrouter", "fake"]
+    name: ProviderName
     model: str  # primary model slug
 
     async def complete(self, request: LLMRequest) -> LLMResult:

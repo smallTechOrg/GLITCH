@@ -75,7 +75,7 @@ class EvaluateData(BaseModel):
     levers_hit: int = Field(alias="leversHit")
     passed: bool
     tip: str
-    provider: Literal["openrouter", "fake"]
+    provider: Literal["anthropic", "openrouter", "fake"]
     model: str
 
 

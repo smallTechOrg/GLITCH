@@ -14,6 +14,8 @@ from fastapi import Request
 from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from glitch_api.llm.base import FAKE_MODEL_SLUG
+
 # api/src/glitch_api/config.py → parents[3] is the repo root.
 REPO_ROOT: Path = Path(__file__).resolve().parents[3]
 ROOT_ENV_FILE: Path = REPO_ROOT / ".env"
@@ -24,8 +26,9 @@ DEFAULT_CORS_ORIGINS = (
     "http://127.0.0.1:8092,http://localhost:8092"
 )
 
-ProviderChoice = Literal["auto", "openrouter", "fake"]
-ResolvedProvider = Literal["openrouter", "fake"]
+ProviderChoice = Literal["auto", "anthropic", "openrouter", "fake"]
+ResolvedProvider = Literal["anthropic", "openrouter", "fake"]
+Effort = Literal["low", "medium", "high", "xhigh", "max"]
 
 
 class ConfigError(RuntimeError):
@@ -48,6 +51,15 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8787
     llm_provider: ProviderChoice = "auto"
+    # Primary: Claude via the Anthropic API. OpenRouter (below) is the backup.
+    anthropic_api_key: SecretStr | None = None
+    anthropic_model: str = "claude-opus-5-5"
+    # Opus 5.5 always thinks; effort is the depth/latency knob (its own default is medium).
+    anthropic_effort: Effort = "low"
+    # Thinking shares max_tokens with the answer, so this sits above llm_max_output_tokens.
+    anthropic_max_tokens: int = 4096
+    # When the primary is Anthropic and an OpenRouter key is set, failed calls retry there.
+    openrouter_backup: bool = True
     openrouter_api_key: SecretStr | None = None
     openrouter_model: str = "google/gemini-2.5-flash-lite"
     openrouter_fallback_models: str = "openai/gpt-4o-mini"
@@ -72,7 +84,9 @@ class Settings(BaseSettings):
     blob_prefix: str = ""  # optional key prefix inside the bucket / cache dir
 
     # ---- normalisation -------------------------------------------------------------
-    @field_validator("env", "llm_provider", "openrouter_response_format", "log_level", "blob_backend", mode="before")
+    @field_validator(
+        "env", "llm_provider", "openrouter_response_format", "anthropic_effort", "log_level", "blob_backend", mode="before"
+    )
     @classmethod
     def _strip_enum(cls, value: Any) -> Any:
         """Drop inline ``# comments`` and whitespace that .env editors leave behind."""
@@ -85,7 +99,7 @@ class Settings(BaseSettings):
     def _upper_level(cls, value: Any) -> Any:
         return value.upper() if isinstance(value, str) else value
 
-    @field_validator("openrouter_api_key", mode="before")
+    @field_validator("openrouter_api_key", "anthropic_api_key", mode="before")
     @classmethod
     def _blank_key_is_none(cls, value: Any) -> Any:
         if isinstance(value, SecretStr):
@@ -118,10 +132,32 @@ class Settings(BaseSettings):
         return self.openrouter_api_key is not None and bool(self.openrouter_api_key.get_secret_value())
 
     @property
+    def has_anthropic_key(self) -> bool:
+        return self.anthropic_api_key is not None and bool(self.anthropic_api_key.get_secret_value())
+
+    @property
     def resolved_provider(self) -> ResolvedProvider:
+        """The primary provider. ``auto``: Anthropic key → OpenRouter key → demo."""
         if self.llm_provider == "auto":
+            if self.has_anthropic_key:
+                return "anthropic"
             return "openrouter" if self.has_openrouter_key else "fake"
         return self.llm_provider
+
+    @property
+    def uses_openrouter_backup(self) -> bool:
+        """Anthropic primary + OpenRouter key + backup enabled → calls fall back to OpenRouter."""
+        return self.resolved_provider == "anthropic" and self.openrouter_backup and self.has_openrouter_key
+
+    @property
+    def primary_model(self) -> str:
+        """Model id of the primary provider (what /health reports)."""
+        provider = self.resolved_provider
+        if provider == "anthropic":
+            return self.anthropic_model
+        if provider == "openrouter":
+            return self.openrouter_model
+        return FAKE_MODEL_SLUG
 
     @property
     def fallback_model_list(self) -> list[str]:
@@ -139,6 +175,10 @@ class Settings(BaseSettings):
 
     def startup_check(self) -> None:
         """Raise ConfigError for configurations the server must refuse to boot with."""
+        if self.llm_provider == "anthropic" and not self.has_anthropic_key:
+            raise ConfigError(
+                "GLITCH_LLM_PROVIDER=anthropic but GLITCH_ANTHROPIC_API_KEY is missing — add it to .env"
+            )
         if self.llm_provider == "openrouter" and not self.has_openrouter_key:
             raise ConfigError(
                 "GLITCH_LLM_PROVIDER=openrouter but GLITCH_OPENROUTER_API_KEY is missing — add it to .env"
@@ -150,8 +190,8 @@ class Settings(BaseSettings):
             )
         if self.env == "prod" and self.resolved_provider == "fake":
             raise ConfigError(
-                "GLITCH_ENV=prod cannot run the fake demo provider — set GLITCH_OPENROUTER_API_KEY "
-                "(and GLITCH_LLM_PROVIDER=openrouter)"
+                "GLITCH_ENV=prod cannot run the fake demo provider — set GLITCH_ANTHROPIC_API_KEY "
+                "and/or GLITCH_OPENROUTER_API_KEY"
             )
         if self.env == "prod" and self.blob_backend != "gcs":
             # Cloud Run's filesystem is ephemeral: a local backend would lose the durable

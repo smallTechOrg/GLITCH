@@ -9,8 +9,8 @@ gets wrong and make the call*. It is a rebuild of the single-file prototype
   Pages at `https://smalltechorg.github.io/GLITCH/` (and to iOS/Android later). The
   whole game, every rule and all learner progress live on the device. It works with no
   server at all.
-- **`api/`** — a small Python FastAPI service (Cloud Run). It only guards the OpenRouter
-  key, scores the learner's free-written prompt with one AI call, filters the AI output,
+- **`api/`** — a small Python FastAPI service (Cloud Run). It only guards the AI keys
+  (Claude first, OpenRouter as backup), scores the learner's free-written prompt with one AI call, filters the AI output,
   enforces daily AI budgets, and owns the generate-once caches: fresh case files (Phase 2)
   and NOVA's mistake explanations (Phase 3), each made once and reused by every learner.
   It never stores or logs learner text.
@@ -88,10 +88,15 @@ which directory it is started from. The important ones:
 
 | Var | Default | Notes |
 |---|---|---|
-| `GLITCH_OPENROUTER_API_KEY` | empty | Secret. Without it the API runs the **demo provider** ("DEMO NOVA") |
-| `GLITCH_LLM_PROVIDER` | `auto` | `auto` = `openrouter` when the key is set, else `fake` |
-| `GLITCH_OPENROUTER_MODEL` | `google/gemini-2.5-flash-lite` | Primary model slug |
-| `GLITCH_OPENROUTER_FALLBACK_MODELS` | `openai/gpt-4o-mini` | Comma-separated |
+| `GLITCH_ANTHROPIC_API_KEY` | empty | Secret. The primary AI: Claude via the Anthropic API |
+| `GLITCH_ANTHROPIC_MODEL` | `claude-opus-5-5` | Claude model id |
+| `GLITCH_ANTHROPIC_EFFORT` | `low` | `low`…`max`. How much Claude thinks before answering (more = slower, costlier) |
+| `GLITCH_ANTHROPIC_MAX_TOKENS` | `4096` | Output cap per Claude call; thinking counts towards it |
+| `GLITCH_OPENROUTER_API_KEY` | empty | Secret. The backup AI. With neither key the API runs the **demo provider** ("DEMO NOVA") |
+| `GLITCH_OPENROUTER_BACKUP` | `true` | Retry failed Claude calls on OpenRouter (when both keys are set) |
+| `GLITCH_LLM_PROVIDER` | `auto` | `auto` = `anthropic` when its key is set, else `openrouter` when its key is set, else `fake` |
+| `GLITCH_OPENROUTER_MODEL` | `google/gemini-2.5-flash-lite` | OpenRouter model slug |
+| `GLITCH_OPENROUTER_FALLBACK_MODELS` | `openai/gpt-4o-mini` | Comma-separated; tried by OpenRouter inside the same call |
 | `GLITCH_HOST` | `127.0.0.1` | API bind address; `0.0.0.0` to reach it from other devices on the LAN |
 | `GLITCH_PORT` | `8787` | If unset and `PORT` is set (Cloud Run), `PORT` wins |
 | `GLITCH_CORS_ORIGINS` | GH Pages + `127.0.0.1`/`localhost` on 8090 and 8092 | Exact origins, comma-separated |
@@ -103,11 +108,17 @@ which directory it is started from. The important ones:
 | `GLITCH_BLOB_PREFIX` | empty | Optional key prefix inside the cache dir / bucket |
 | `EXPO_PUBLIC_GLITCH_API_URL` | `http://127.0.0.1:8787` | Web build-time: the API base URL baked into the export |
 
-**Which AI answers.** The OpenRouter key is configured in the local root `.env`. With
+**Which AI answers.** The keys live in the local root `.env`. With
 `GLITCH_LLM_PROVIDER=auto` (the default) the API picks its provider at startup:
 
-- **key present** → OpenRouter, model `google/gemini-2.5-flash-lite`, falling back to
-  `openai/gpt-4o-mini`. `/healthz` reports `"provider":"openrouter"`.
+- **Anthropic key present** → Claude (`claude-opus-5-5`). If the OpenRouter key is also
+  set, a Claude call that fails (timeout, network, 5xx, rate limit, refusal) is retried
+  once on OpenRouter. The two share the `GLITCH_LLM_TIMEOUT_S` budget: Claude gets about
+  60% of it and OpenRouter the rest. Unusable output is not retried there (the callers
+  already regenerate once). `/health` reports `"provider":"anthropic"` plus a `backup`
+  object.
+- **only the OpenRouter key** → OpenRouter, model `google/gemini-2.5-flash-lite`, falling
+  back to `openai/gpt-4o-mini`. `/health` reports `"provider":"openrouter"`.
 - **no key** → the deterministic demo provider. Free-write replies carry a "DEMO NOVA"
   tag and `/healthz` reports `"provider":"fake"`. The game still works end to end.
 
@@ -119,7 +130,7 @@ To force the demo provider even when a key is present (offline work, no spend), 
 cd api && GLITCH_LLM_PROVIDER=fake uv run python -m glitch_api
 ```
 
-`GLITCH_LLM_PROVIDER=openrouter` without a key refuses to start, and so does
+`GLITCH_LLM_PROVIDER=anthropic` or `=openrouter` without that key refuses to start, and so does
 `GLITCH_ENV=prod` with the demo provider. Steps marked `[live]` below need the key and
 spend real (small) credits. `uv run pytest -m live` fails loudly (it does not skip) when
 the key is missing.
@@ -139,7 +150,8 @@ cd api && uv run python -m glitch_api
 
 # check it (from any directory, while the API is running)
 curl -sf http://127.0.0.1:8787/healthz
-# with the key:  {"ok":true,"data":{"status":"ok","provider":"openrouter","model":"google/gemini-2.5-flash-lite","env":"dev","version":"0.1.0"}}
+# both keys:      {"ok":true,"data":{"status":"ok","provider":"anthropic","model":"claude-opus-5-5","env":"dev","version":"0.1.0","backup":{"provider":"openrouter","model":"google/gemini-2.5-flash-lite"}}}
+# OpenRouter key: {"ok":true,"data":{"status":"ok","provider":"openrouter","model":"google/gemini-2.5-flash-lite","env":"dev","version":"0.1.0"}}
 # without a key: {"ok":true,"data":{"status":"ok","provider":"fake","model":"glitch/demo-nova","env":"dev","version":"0.1.0"}}
 
 # tests (unit + integration; no key, no network)
@@ -223,7 +235,7 @@ uv run python -m glitch_api.tools.build_bank --game m1g2 --count 3 --backend gcs
 ```
 
 - `--game` is one of `m1g1 m1g2 m3g1 m4g1 m4g2`, or `all`. `--count` is 1–100 (default 3).
-- `--backend local|gcs`, `--cache-dir`, `--bucket` and `--provider auto|openrouter|fake`
+- `--backend local|gcs`, `--cache-dir`, `--bucket` and `--provider auto|anthropic|openrouter|fake`
   default to `GLITCH_BLOB_BACKEND`, `GLITCH_CACHE_DIR`, `GLITCH_GCS_BUCKET` and
   `GLITCH_LLM_PROVIDER` from `.env`.
 - `--max-calls` (default 20) caps the AI calls in one run, counting retries and the
@@ -349,6 +361,8 @@ deploys nothing; promoting `dev` → `main` does.
   counters (`caps/`, auto-deleted after 7 days) plus the case-file and explanation caches.
 - **Secret** `glitch-openrouter-key`: the OpenRouter key, mounted as
   `GLITCH_OPENROUTER_API_KEY`.
+- **Secret** `glitch-anthropic-key`: the Anthropic key, mounted as
+  `GLITCH_ANTHROPIC_API_KEY` (see "Switching production to Claude" below).
 - **Artifact Registry** `glitch`: the API images, tagged by commit SHA.
 - **CI auth is keyless.** GitHub's OIDC token goes through Workload Identity Federation
   (pool `github`, provider `glitch-github`, restricted to `smallTechOrg/GLITCH`) to act as
@@ -387,7 +401,22 @@ printf %s "$NEW_KEY" | gcloud secrets versions add glitch-openrouter-key --data-
 gcloud run services update glitch-api --project ai-agent-boilerplate0 --region us-central1   # pick up the new secret version
 ```
 
-Also set a credit limit on the OpenRouter key. It is the hard spend backstop on top of
+### Switching production to Claude (Anthropic primary, OpenRouter backup)
+The service was first deployed with `GLITCH_LLM_PROVIDER=openrouter`, which pins
+OpenRouter even when an Anthropic key is mounted. After the code is deployed:
+
+```bash
+P=ai-agent-boilerplate0; RUNSA=glitch-api@$P.iam.gserviceaccount.com
+printf %s "$ANTHROPIC_KEY" | gcloud secrets create glitch-anthropic-key --project $P --data-file=-
+gcloud secrets add-iam-policy-binding glitch-anthropic-key --project $P --member serviceAccount:$RUNSA --role roles/secretmanager.secretAccessor
+gcloud run services update glitch-api --project $P --region us-central1 \
+  --update-secrets GLITCH_ANTHROPIC_API_KEY=glitch-anthropic-key:latest \
+  --update-env-vars GLITCH_LLM_PROVIDER=auto
+curl -s https://glitch-api-870371939888.us-central1.run.app/health   # → "provider":"anthropic", "backup":{…}
+```
+To go back to OpenRouter only: `--update-env-vars GLITCH_LLM_PROVIDER=openrouter`.
+
+Also set a spend limit on the Anthropic key and a credit limit on the OpenRouter key. They are the hard spend backstop on top of
 the daily counters.
 
 ### One-time setup (already done, kept for a rebuild)

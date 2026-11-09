@@ -11,6 +11,7 @@ dependencies = [
     "pydantic-settings>=2.6",
     "structlog>=24.4",
     "google-cloud-storage>=2.18",
+    "anthropic>=2.6,<3",
 ]
 
 [dependency-groups]

@@ -75,6 +75,8 @@ FATAL_STATUSES = frozenset(
 
 # USD per 1M tokens (input, output) for the configured slugs — an ESTIMATE for the report.
 PRICES_PER_M: dict[str, tuple[float, float]] = {
+    "claude-opus-5-5": (4.00, 20.00),
+    "google/gemini-3.1-flash-lite": (0.25, 1.50),
     "google/gemini-2.5-flash-lite": (0.10, 0.40),
     "openai/gpt-4o-mini": (0.15, 0.60),
     "glitch/demo-nova": (0.0, 0.0),
@@ -458,7 +460,7 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     )
     p.add_argument(
         "--provider",
-        choices=["auto", "openrouter", "fake"],
+        choices=["auto", "anthropic", "openrouter", "fake"],
         default=None,
         help="default: GLITCH_LLM_PROVIDER",
     )
@@ -520,6 +522,10 @@ def main(
         return 2
     try:
         cfg = effective_settings(settings or Settings(), args)
+        if cfg.llm_provider == "anthropic" and not cfg.has_anthropic_key:
+            raise ConfigError(
+                "--provider anthropic but GLITCH_ANTHROPIC_API_KEY is missing — add it to .env"
+            )
         if cfg.llm_provider == "openrouter" and not cfg.has_openrouter_key:
             raise ConfigError(
                 "--provider openrouter but GLITCH_OPENROUTER_API_KEY is missing — add it to .env"
@@ -527,7 +533,8 @@ def main(
         llm = provider or build_provider(cfg)
         if llm.name == "fake" and not (args.dry_run or args.allow_demo):
             raise ConfigError(
-                "refusing to build the bank with the demo provider (no GLITCH_OPENROUTER_API_KEY / "
+                "refusing to build the bank with the demo provider (no GLITCH_ANTHROPIC_API_KEY or "
+                "GLITCH_OPENROUTER_API_KEY / "
                 "GLITCH_LLM_PROVIDER=fake) — add the key, or use --dry-run"
             )
         store = make_store(cfg, gcs_client=gcs_client)
