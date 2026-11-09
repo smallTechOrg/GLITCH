@@ -22,7 +22,9 @@ def build_provider(settings: Settings) -> LLMProvider:
     if settings.resolved_provider == "anthropic":
         claude = AnthropicProvider(settings)
         if settings.uses_openrouter_backup:
-            return FallbackProvider(claude, OpenRouterProvider(settings))
+            return FallbackProvider(
+                claude, OpenRouterProvider(settings), primary_share=settings.llm_primary_timeout_share
+            )
         return claude
     if settings.resolved_provider == "openrouter":
         return OpenRouterProvider(settings)

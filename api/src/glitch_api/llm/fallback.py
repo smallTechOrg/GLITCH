@@ -20,7 +20,7 @@ from glitch_api.llm.base import LLMError, LLMInvalidOutputError, LLMProvider, LL
 from glitch_api.logging import get_logger
 
 
-DEFAULT_PRIMARY_SHARE = 0.6
+DEFAULT_PRIMARY_SHARE = 0.7
 MIN_BACKUP_S = 1.0
 
 

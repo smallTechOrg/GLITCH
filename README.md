@@ -95,6 +95,7 @@ which directory it is started from. The important ones:
 | `GLITCH_ANTHROPIC_MAX_TOKENS` | `4096` | Output cap per Claude call; thinking counts towards it |
 | `GLITCH_OPENROUTER_API_KEY` | empty | Secret. The backup AI. With neither key the API runs the **demo provider** ("DEMO NOVA") |
 | `GLITCH_OPENROUTER_BACKUP` | `true` | Retry failed Claude calls on OpenRouter (when both keys are set) |
+| `GLITCH_LLM_PRIMARY_TIMEOUT_SHARE` | `0.7` | Share of `GLITCH_LLM_TIMEOUT_S` Claude gets before OpenRouter takes over |
 | `GLITCH_LLM_PROVIDER` | `auto` | `auto` = `anthropic` when its key is set, else `openrouter` when its key is set, else `fake` |
 | `GLITCH_OPENROUTER_MODEL` | `google/gemini-2.5-flash-lite` | OpenRouter model slug |
 | `GLITCH_OPENROUTER_FALLBACK_MODELS` | `openai/gpt-4o-mini` | Comma-separated; tried by OpenRouter inside the same call |
@@ -114,8 +115,8 @@ which directory it is started from. The important ones:
 
 - **Anthropic key present** → Claude (`claude-haiku-5-5`). If the OpenRouter key is also
   set, a Claude call that fails (timeout, network, 5xx, rate limit, refusal) is retried
-  once on OpenRouter. The two share the `GLITCH_LLM_TIMEOUT_S` budget: Claude gets about
-  60% of it and OpenRouter the rest. Unusable output is not retried there (the callers
+  once on OpenRouter. The two share the `GLITCH_LLM_TIMEOUT_S` budget: Claude gets 70% of it
+  (`GLITCH_LLM_PRIMARY_TIMEOUT_SHARE`) and OpenRouter the rest. Unusable output is not retried there (the callers
   already regenerate once). `/health` reports `"provider":"anthropic"` plus a `backup`
   object.
 - **only the OpenRouter key** → OpenRouter, model `google/gemini-2.5-flash-lite`, falling

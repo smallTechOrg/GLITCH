@@ -51,7 +51,7 @@ async def test_primary_success_skips_the_backup() -> None:
 
     assert result.provider == "anthropic"
     assert backup.timeouts == []
-    assert primary.timeouts == [pytest.approx(7.0 * 0.6)]
+    assert primary.timeouts == [pytest.approx(7.0 * 0.7)]
     assert (chain.name, chain.model) == ("anthropic", "anthropic-model")
 
 
