@@ -6,7 +6,9 @@
 - ``system`` messages become the top-level ``system`` prompt; the rest go in ``messages``.
 - JSON output uses structured outputs (``output_config.format``), so the text block is
   schema-valid JSON.
-- Current Claude models think adaptively; ``GLITCH_ANTHROPIC_EFFORT`` sets the depth.
+- Thinking is off by default (``GLITCH_ANTHROPIC_THINKING=disabled``): these are short
+  structured answers and the call budget is a few seconds. Models that always think
+  ignore it. ``GLITCH_ANTHROPIC_EFFORT`` sets the depth when thinking is on.
   Thinking shares ``max_tokens`` with the answer, so the cap is ``GLITCH_ANTHROPIC_MAX_TOKENS``.
 - ``GLITCH_ANTHROPIC_WORKSPACE_ID`` is sent as ``anthropic-workspace-id`` (required for
   keys that are not scoped to one workspace).
@@ -43,6 +45,8 @@ FALLBACK_BETA = "server-side-fallback-2026-07-01"
 SERVER_FALLBACK_MODELS = frozenset(
     {"claude-fable-5-1", "claude-fable-5", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"}
 )
+# Models that reject ``thinking: {"type": "disabled"}`` (thinking is always on).
+ALWAYS_THINKING_MODELS = frozenset({"claude-fable-5-1", "claude-fable-5", "claude-opus-5-5", "claude-sonnet-5-5"})
 WORKSPACE_HEADER = "anthropic-workspace-id"
 
 MISSING_KEY_MESSAGE = "GLITCH_ANTHROPIC_API_KEY missing — add it to .env"
@@ -98,6 +102,8 @@ class AnthropicProvider:
         if self.model in SERVER_FALLBACK_MODELS:
             params["betas"] = [FALLBACK_BETA]
             params["fallbacks"] = "default"
+        if self.settings.anthropic_thinking == "disabled" and self.model not in ALWAYS_THINKING_MODELS:
+            params["thinking"] = {"type": "disabled"}
         if system:
             params["system"] = system
         return params
