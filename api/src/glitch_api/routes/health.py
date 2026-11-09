@@ -12,7 +12,6 @@ from fastapi.responses import JSONResponse
 from glitch_api import __version__
 from glitch_api.config import Settings, app_settings
 from glitch_api.envelope import ok
-from glitch_api.llm.base import FAKE_MODEL_SLUG
 
 router = APIRouter()
 
@@ -20,6 +19,13 @@ router = APIRouter()
 @router.get("/health")
 @router.get("/healthz")
 async def healthz(settings: Settings = Depends(app_settings)) -> JSONResponse:
-    provider = settings.resolved_provider
-    model = settings.openrouter_model if provider == "openrouter" else FAKE_MODEL_SLUG
-    return ok({"status": "ok", "provider": provider, "model": model, "env": settings.env, "version": __version__})
+    data = {
+        "status": "ok",
+        "provider": settings.resolved_provider,
+        "model": settings.primary_model,
+        "env": settings.env,
+        "version": __version__,
+    }
+    if settings.uses_openrouter_backup:
+        data["backup"] = {"provider": "openrouter", "model": settings.openrouter_model}
+    return ok(data)

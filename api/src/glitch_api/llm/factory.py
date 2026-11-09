@@ -1,4 +1,5 @@
-"""Provider selection: ``settings.resolved_provider`` → OpenRouterProvider | FakeProvider.
+"""Provider selection: ``settings.resolved_provider`` → Claude (with OpenRouter backup) |
+OpenRouterProvider | FakeProvider.
 
 ``get_provider(settings)`` / ``reset_provider()`` is the process singleton; the HTTP
 routes use ``provider_for(app)``, which keeps one provider per app instance (tests inject
@@ -11,11 +12,18 @@ from typing import Any
 
 from glitch_api.config import Settings
 from glitch_api.llm.base import LLMProvider
+from glitch_api.llm.claude import AnthropicProvider
 from glitch_api.llm.fake import FakeProvider
+from glitch_api.llm.fallback import FallbackProvider
 from glitch_api.llm.openrouter import OpenRouterProvider
 
 
 def build_provider(settings: Settings) -> LLMProvider:
+    if settings.resolved_provider == "anthropic":
+        claude = AnthropicProvider(settings)
+        if settings.uses_openrouter_backup:
+            return FallbackProvider(claude, OpenRouterProvider(settings))
+        return claude
     if settings.resolved_provider == "openrouter":
         return OpenRouterProvider(settings)
     return FakeProvider(latency_ms=settings.fake_latency_ms)

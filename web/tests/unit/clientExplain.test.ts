@@ -43,6 +43,11 @@ describe('explainMistake', () => {
     await expect(client(f).explainMistake(req)).resolves.toMatchObject({ ok: true, data: { cached: true, provider: 'openrouter' } });
   });
 
+  it('accepts an answer served by Claude (provider: anthropic)', async () => {
+    const { f } = fakeFetch(() => jsonResponse(200, { ok: true, data: { ...data, provider: 'anthropic' }, energy }));
+    await expect(client(f).explainMistake(req)).resolves.toMatchObject({ ok: true, data: { provider: 'anthropic' } });
+  });
+
   it('passes error envelopes through with energy (CAP_DEVICE, AI_UNAVAILABLE stub, BAD_REQUEST)', async () => {
     for (const [status, code] of [[429, 'CAP_DEVICE'], [502, 'AI_UNAVAILABLE'], [400, 'BAD_REQUEST']] as const) {
       const { f } = fakeFetch(() => jsonResponse(status, { ok: false, error: { code, message: 'm', retryable: false }, energy }));

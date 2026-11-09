@@ -51,7 +51,8 @@ export interface ClientErr {
 /** What every client call resolves to. Client functions never throw. */
 export type ApiResult<T> = ApiOk<T> | ApiErr | ClientErr;
 
-export type ProviderName = 'fake' | 'openrouter';
+export type ProviderName = 'fake' | 'openrouter' | 'anthropic';
+export const PROVIDER_NAMES: readonly ProviderName[] = ['fake', 'openrouter', 'anthropic'];
 
 export interface HealthDTO {
   status: 'ok';

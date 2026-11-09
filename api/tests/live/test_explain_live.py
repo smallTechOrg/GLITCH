@@ -50,7 +50,7 @@ async def test_two_real_explanations_then_free_hits(tmp_path: Path, live_log: Pa
 
     settings = live_settings(tmp_path, log_file=str(live_log))
     assert settings.cache_path == tmp_path / "cache", "live tests must never use the repo's api/.cache"
-    assert settings.resolved_provider == "openrouter", "live tests need the OpenRouter provider"
+    assert settings.resolved_provider in ("anthropic", "openrouter"), "live tests need a real provider"
     app = create_app(settings)
     provider = LocalCount(build_provider(settings))
     app.state.provider = provider
@@ -61,7 +61,7 @@ async def test_two_real_explanations_then_free_hits(tmp_path: Path, live_log: Pa
                 out = miss.json()
                 assert miss.status_code == 200, out.get("error")
                 data = out["data"]
-                assert data["cached"] is False and data["provider"] == "openrouter"
+                assert data["cached"] is False and data["provider"] in ("anthropic", "openrouter")
                 assert 1 <= len(data["text"].split()) <= TEXT_MAX_WORDS and len(data["text"]) <= TEXT_MAX_CHARS
                 assert 1 <= len(data["tip"].split()) <= TIP_MAX_WORDS and len(data["tip"]) <= TIP_MAX_CHARS
                 assert moderation_check(data["text"]).allowed and moderation_check(data["tip"]).allowed

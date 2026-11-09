@@ -9,4 +9,4 @@ Concept: {concept}
 <canned>{canned}</canned>
 </case_item>
 
-The learner chose the <learner_answer>, but the <correct_answer> is right. The game's short hint was the <canned> line. Write the JSON object with "text" (at most 60 words) and "tip" (at most 25 words).
+The learner chose the <learner_answer>, but the <correct_answer> is right. The game's short hint was the <canned> line. Write the JSON object with "text" (about 40 words, never more than 60) and "tip" (at most 25 words).

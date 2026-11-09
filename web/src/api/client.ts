@@ -1,6 +1,7 @@
 // GLITCH API client. Every call resolves to ApiResult<T> and NEVER throws/rejects:
 // server envelopes pass through; network failure → NETWORK; abort after timeout → TIMEOUT.
 import {
+  PROVIDER_NAMES,
   CLIENT_TIMEOUT_MS, EXPLAIN_TIMEOUT_MS, SCENARIO_TIMEOUT_MS,
   type ApiErrorCode, type ApiResult, type ClientErr, type EnergyData, type EnergyDTO,
   type ExplainData, type ExplainRequest, type FreewriteEvaluateData, type FreewriteEvaluateRequest, type HealthDTO, type ScenarioNextData,
@@ -29,6 +30,7 @@ const API_CODES: readonly ApiErrorCode[] = [
 const clientErr = (code: ClientErr['error']['code'], message: string): ClientErr => ({ ok: false, error: { code, message, retryable: true } });
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+const isProvider = (v: unknown): boolean => (PROVIDER_NAMES as readonly unknown[]).includes(v);
 
 export function parseEnergy(v: unknown): EnergyDTO | undefined {
   if (!isObj(v)) return undefined;
@@ -55,7 +57,7 @@ export function parseEnvelope<T>(body: unknown, isData: (d: unknown) => d is T):
 const isEmptyObj = (d: unknown): d is EnergyData => isObj(d);
 
 export const isHealth = (d: unknown): d is HealthDTO =>
-  isObj(d) && d.status === 'ok' && (d.provider === 'fake' || d.provider === 'openrouter') && typeof d.model === 'string';
+  isObj(d) && d.status === 'ok' && isProvider(d.provider) && typeof d.model === 'string';
 
 export const isFreewriteData = (d: unknown): d is FreewriteEvaluateData => {
   if (!isObj(d)) return false;
@@ -67,7 +69,7 @@ export const isFreewriteData = (d: unknown): d is FreewriteEvaluateData => {
     typeof d.leversHit === 'number' &&
     typeof d.passed === 'boolean' &&
     typeof d.model === 'string' &&
-    (d.provider === 'fake' || d.provider === 'openrouter') &&
+    isProvider(d.provider) &&
     LEVER_IDS.every((k) => typeof l[k] === 'boolean')
   );
 };
@@ -95,7 +97,7 @@ export const isExplainData = (d: unknown): d is ExplainData =>
   d.text.trim().length > 0 &&
   typeof d.tip === 'string' &&
   typeof d.cached === 'boolean' &&
-  (d.provider === 'fake' || d.provider === 'openrouter');
+  isProvider(d.provider);
 
 /** The exact wire body: only the four closed-id keys (never free text, never extra fields). */
 export function explainBody(req: ExplainRequest): ExplainRequest {

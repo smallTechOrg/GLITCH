@@ -166,3 +166,22 @@ def test_env_example_documents_every_setting_and_loads_cleanly() -> None:
     assert s.resolved_provider == "fake"
     assert s.log_file is None
     assert s.port == 8787
+
+
+def test_auto_prefers_anthropic_then_openrouter(make_settings) -> None:
+    both = make_settings(anthropic_api_key="a", openrouter_api_key="o")
+    assert both.resolved_provider == "anthropic"
+    assert both.uses_openrouter_backup is True
+    assert both.primary_model == "claude-haiku-5-5"
+    assert make_settings(anthropic_api_key="a").uses_openrouter_backup is False
+    assert make_settings(openrouter_api_key="o").uses_openrouter_backup is False
+    assert make_settings(anthropic_api_key="  ").resolved_provider == "fake"
+
+
+def test_startup_check_rejects_anthropic_without_key(make_settings) -> None:
+    with pytest.raises(ConfigError, match="GLITCH_ANTHROPIC_API_KEY"):
+        make_settings(llm_provider="anthropic").startup_check()
+
+
+def test_startup_check_accepts_prod_with_only_an_anthropic_key(make_settings) -> None:
+    make_settings(env="prod", anthropic_api_key="a", blob_backend="gcs", gcs_bucket="glitch-cache").startup_check()

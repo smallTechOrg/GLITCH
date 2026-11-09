@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from glitch_api.llm.claude import AnthropicProvider
 from glitch_api.llm.factory import build_provider, get_provider, reset_provider
+from glitch_api.llm.fallback import FallbackProvider
 from glitch_api.llm.fake import FakeProvider
 from glitch_api.llm.openrouter import OpenRouterProvider
 
@@ -42,3 +44,29 @@ def test_get_provider_is_a_resettable_singleton(make_settings) -> None:
         assert get_provider(settings) is not first
     finally:
         reset_provider()
+
+
+def test_anthropic_key_selects_claude_with_openrouter_backup(make_settings) -> None:
+    provider = build_provider(make_settings(anthropic_api_key="sk-ant-test", openrouter_api_key="sk-or-v1-test"))
+    assert isinstance(provider, FallbackProvider)
+    assert isinstance(provider.primary, AnthropicProvider) and isinstance(provider.backup, OpenRouterProvider)
+    assert (provider.name, provider.model) == ("anthropic", "claude-haiku-5-5")
+
+
+def test_anthropic_key_alone_selects_claude_without_backup(make_settings) -> None:
+    provider = build_provider(make_settings(anthropic_api_key="sk-ant-test"))
+    assert isinstance(provider, AnthropicProvider)
+
+
+def test_backup_can_be_turned_off(make_settings) -> None:
+    provider = build_provider(
+        make_settings(anthropic_api_key="sk-ant-test", openrouter_api_key="sk-or-v1-test", openrouter_backup=False)
+    )
+    assert isinstance(provider, AnthropicProvider)
+
+
+def test_forcing_openrouter_ignores_the_anthropic_key(make_settings) -> None:
+    provider = build_provider(
+        make_settings(llm_provider="openrouter", anthropic_api_key="sk-ant-test", openrouter_api_key="sk-or-v1-test")
+    )
+    assert isinstance(provider, OpenRouterProvider)

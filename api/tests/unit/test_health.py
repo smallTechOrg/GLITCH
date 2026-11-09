@@ -36,6 +36,17 @@ async def test_healthz_reports_openrouter_and_configured_model_when_key_set(make
     assert data["model"] == "vendor/model-x"
 
 
+async def test_health_reports_claude_and_the_openrouter_backup(make_settings) -> None:
+    from glitch_api.main import create_app
+
+    app = create_app(make_settings(anthropic_api_key="test-a", openrouter_api_key="test-o"))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        data = (await c.get("/health")).json()["data"]
+
+    assert (data["provider"], data["model"]) == ("anthropic", "claude-haiku-5-5")
+    assert data["backup"] == {"provider": "openrouter", "model": "google/gemini-2.5-flash-lite"}
+
+
 async def test_healthz_never_includes_the_key(make_settings) -> None:
     from glitch_api.main import create_app
 

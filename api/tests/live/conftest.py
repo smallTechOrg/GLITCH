@@ -74,7 +74,7 @@ def live_cache_dir(tmp_path: Path) -> Path:
 async def live_client(live_log: Path, live_cache_dir: Path) -> AsyncIterator[httpx.AsyncClient]:
     settings = live_settings(live_cache_dir.parent, log_file=str(live_log))
     assert settings.cache_path == live_cache_dir, "live tests must never use the repo's api/.cache"
-    assert settings.resolved_provider == "openrouter", "live tests need the OpenRouter provider"
+    assert settings.resolved_provider in ("anthropic", "openrouter"), "live tests need a real provider"
     app = create_app(settings)
     provider: Any = CountingProvider(build_provider(settings))
     app.state.provider = provider
@@ -87,4 +87,4 @@ async def live_client(live_log: Path, live_cache_dir: Path) -> AsyncIterator[htt
 
 def pytest_terminal_summary(terminalreporter: Any) -> None:
     if _calls["n"]:
-        terminalreporter.write_line(f"live OpenRouter calls this run: {_calls['n']} (cap {MAX_LIVE_CALLS})")
+        terminalreporter.write_line(f"live provider calls this run: {_calls['n']} (cap {MAX_LIVE_CALLS})")

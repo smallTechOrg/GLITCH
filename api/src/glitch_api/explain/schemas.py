@@ -59,6 +59,7 @@ def _clean(value: Any, field: str, max_words: int, max_chars: int, errors: list[
         errors.append(f"{field}: not a string")
         return ""
     text = _WS.sub(" ", value).strip()  # newlines (and runs of spaces) collapse to one space
+    text = fit_sentences(text, max_words, max_chars)
     words = len(text.split())
     if words == 0:
         errors.append(f"{field}: empty")
@@ -71,6 +72,26 @@ def _clean(value: Any, field: str, max_words: int, max_chars: int, errors: list[
     if _MARKDOWN.search(text):
         errors.append(f"{field}: contains a markdown marker")
     return text
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+
+
+def fit_sentences(text: str, max_words: int, max_chars: int) -> str:
+    """Over the limit → the leading whole sentences that fit; unchanged when none fit.
+
+    Models sometimes run a sentence past the word cap. Dropping trailing sentences keeps
+    a complete, shorter answer; a single over-long sentence still fails validation.
+    """
+    if len(text.split()) <= max_words and len(text) <= max_chars:
+        return text
+    kept: list[str] = []
+    for sentence in _SENTENCE_END.split(text):
+        candidate = " ".join([*kept, sentence])
+        if len(candidate.split()) > max_words or len(candidate) > max_chars:
+            break
+        kept.append(sentence)
+    return " ".join(kept) if kept else text
 
 
 def validate_output(obj: Any) -> tuple[str, str]:
