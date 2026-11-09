@@ -29,6 +29,7 @@ DEFAULT_CORS_ORIGINS = (
 ProviderChoice = Literal["auto", "anthropic", "openrouter", "fake"]
 ResolvedProvider = Literal["anthropic", "openrouter", "fake"]
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
+Thinking = Literal["disabled", "adaptive"]
 
 
 class ConfigError(RuntimeError):
@@ -58,6 +59,9 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-haiku-5-5"
     # Effort is the thinking depth/latency knob (Haiku 5.5's own default is medium).
     anthropic_effort: Effort = "low"
+    # disabled = answer straight away (faster; these are short structured answers).
+    # Ignored for models that always think (Opus 5.5, Sonnet 5.5, Fable).
+    anthropic_thinking: Thinking = "disabled"
     # Thinking shares max_tokens with the answer, so this sits above llm_max_output_tokens.
     anthropic_max_tokens: int = 4096
     # When the primary is Anthropic and an OpenRouter key is set, failed calls retry there.
@@ -89,7 +93,14 @@ class Settings(BaseSettings):
 
     # ---- normalisation -------------------------------------------------------------
     @field_validator(
-        "env", "llm_provider", "openrouter_response_format", "anthropic_effort", "log_level", "blob_backend", mode="before"
+        "env",
+        "llm_provider",
+        "openrouter_response_format",
+        "anthropic_effort",
+        "anthropic_thinking",
+        "log_level",
+        "blob_backend",
+        mode="before",
     )
     @classmethod
     def _strip_enum(cls, value: Any) -> Any:

@@ -92,6 +92,7 @@ which directory it is started from. The important ones:
 | `GLITCH_ANTHROPIC_WORKSPACE_ID` | empty | `wrkspc_…`; required when the key is not scoped to one workspace (sent as `anthropic-workspace-id`) |
 | `GLITCH_ANTHROPIC_MODEL` | `claude-haiku-5-5` | Claude model id |
 | `GLITCH_ANTHROPIC_EFFORT` | `low` | `low`…`max`. How much Claude thinks before answering (more = slower, costlier) |
+| `GLITCH_ANTHROPIC_THINKING` | `disabled` | `disabled` answers straight away (faster); `adaptive` lets Claude think first. Always-thinking models ignore it |
 | `GLITCH_ANTHROPIC_MAX_TOKENS` | `4096` | Output cap per Claude call; thinking counts towards it |
 | `GLITCH_OPENROUTER_API_KEY` | empty | Secret. The backup AI. With neither key the API runs the **demo provider** ("DEMO NOVA") |
 | `GLITCH_OPENROUTER_BACKUP` | `true` | Retry failed Claude calls on OpenRouter (when both keys are set) |

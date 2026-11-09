@@ -88,6 +88,7 @@ async def test_request_shape(make_settings) -> None:
     assert "fallbacks" not in call and "betas" not in call  # Haiku 5.5 has no server-side fallback
     assert call["timeout"] == 2.0
     assert "temperature" not in call  # current Claude models reject sampling params
+    assert call["thinking"] == {"type": "disabled"}
 
     assert result.text == '{"ok": true}'  # thinking block skipped
     assert result.provider == "anthropic"
@@ -113,6 +114,15 @@ async def test_models_with_server_side_fallback_opt_in(make_settings) -> None:
 
     assert stub.calls[0]["fallbacks"] == "default" and stub.calls[0]["betas"] == [FALLBACK_BETA]
     assert result.model_used == "claude-opus-4-8"  # the fallback model that answered
+
+
+async def test_thinking_setting(make_settings) -> None:
+    on = StubClient()
+    await AnthropicProvider(make_settings(anthropic_thinking="adaptive"), client=on).complete(_request())
+    assert "thinking" not in on.calls[0]
+    opus = StubClient()
+    await AnthropicProvider(make_settings(anthropic_model="claude-opus-5-5"), client=opus).complete(_request())
+    assert "thinking" not in opus.calls[0]  # always-thinking models reject "disabled"
 
 
 def test_workspace_id_is_sent_as_a_header(make_settings) -> None:
