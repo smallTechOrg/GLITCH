@@ -62,6 +62,8 @@ class Settings(BaseSettings):
     anthropic_max_tokens: int = 4096
     # When the primary is Anthropic and an OpenRouter key is set, failed calls retry there.
     openrouter_backup: bool = True
+    # Share of GLITCH_LLM_TIMEOUT_S the primary gets before the backup takes over.
+    llm_primary_timeout_share: float = 0.7
     openrouter_api_key: SecretStr | None = None
     openrouter_model: str = "google/gemini-2.5-flash-lite"
     openrouter_fallback_models: str = "openai/gpt-4o-mini"
